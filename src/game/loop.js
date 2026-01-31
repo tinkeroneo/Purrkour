@@ -18,6 +18,8 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
                 game.setpiece.active = true;
                 game.setpiece.t = 0;
                 game.setpiece.cooldown = 0;
+                objects.list.length = 0;
+                objects.pawprints.length = 0;
                 // optional: kleine Meldung
                 // hud.toast?.("Auf zum Ozean… 🎈", 120);
             }

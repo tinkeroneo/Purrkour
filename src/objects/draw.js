@@ -1,12 +1,16 @@
-import { clamp, roundRect, tri } from "../core/util.js";
+import { clamp, lerp, roundRect, smoothstep, tri } from "../core/util.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
     function drawBalloonSetpiece() {
-        // anchor point: slightly above cat
-
-        const x = cat.x + 40;
-        const y = cat.y - 80;
+        const progress = clamp((game.setpiece?.t ?? 0) / (game.setpiece?.dur ?? 1), 0, 1);
+        const W = canvas.W;
+        const baseX = lerp(-80, W + 80, progress);
+        const flightY = canvas.H * 0.34;
+        const bob = Math.sin(game.tick * 0.08) * 4;
+        const landingY = terrain.surfaceAt(baseX) - 44;
+        const landT = clamp((progress - 0.85) / 0.15, 0, 1);
+        const y = lerp(flightY + bob, landingY, smoothstep(landT));
 
         ctx.save();
 
@@ -14,27 +18,35 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.globalAlpha = 0.95;
         ctx.fillStyle = "rgba(240,120,160,0.9)";
         ctx.beginPath();
-        ctx.ellipse(x, y, 26, 34, 0, 0, Math.PI * 2);
+        ctx.ellipse(baseX, y, 30, 38, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // stripes
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.fillRect(x - 2, y - 34, 4, 68);
+        ctx.fillRect(baseX - 2.5, y - 38, 5, 76);
         ctx.globalAlpha = 1;
 
-        // ropes + basket
+        // ropes
         ctx.strokeStyle = "rgba(255,255,255,0.55)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(x - 12, y + 28); ctx.lineTo(x - 10, y + 54);
-        ctx.moveTo(x + 12, y + 28); ctx.lineTo(x + 10, y + 54);
+        ctx.moveTo(baseX - 14, y + 30); ctx.lineTo(baseX - 12, y + 62);
+        ctx.moveTo(baseX + 14, y + 30); ctx.lineTo(baseX + 12, y + 62);
         ctx.stroke();
 
+        // basket
         ctx.fillStyle = "rgba(170,110,60,0.95)";
-        ctx.beginPath();
-        ctx.roundRect(x - 14, y + 54, 28, 14, 6);
+        roundRect(ctx, baseX - 18, y + 62, 36, 18, 6);
         ctx.fill();
+
+        // cat sitting in basket
+        ctx.fillStyle = "#3b3b3b";
+        roundRect(ctx, baseX - 9, y + 54, 18, 14, 6);
+        roundRect(ctx, baseX - 6, y + 46, 12, 10, 5);
+        ctx.fillStyle = "#2a2a2a";
+        tri(ctx, baseX - 6, y + 46, baseX - 2, y + 40, baseX + 2, y + 46);
+        tri(ctx, baseX + 6, y + 46, baseX + 2, y + 40, baseX - 2, y + 46);
 
         ctx.restore();
     }
@@ -310,20 +322,23 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
 
         // cat shadow + sprite
         const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
-        if (blink) {
-            ctx.globalAlpha = 0.18;
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            const surfaceY = terrain.surfaceAt(cat.x);
-            const shadowW = cat.w * (cat.onSurface ? 0.72 : 0.52);
-            const shadowH = cat.h * 0.12;
-            ctx.ellipse(cat.x + cat.w * 0.55, surfaceY - 3, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-        }
+        if (!game.setpiece?.active) {
+            if (blink) {
+                ctx.globalAlpha = 0.18;
+                ctx.fillStyle = "#000";
+                ctx.beginPath();
+                const surfaceY = terrain.surfaceAt(cat.x);
+                const shadowW = cat.w * (cat.onSurface ? 0.72 : 0.52);
+                const shadowH = cat.h * 0.12;
+                ctx.ellipse(cat.x + cat.w * 0.55, surfaceY - 3, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
 
-        if (blink) catApi.draw(ctx);
-        if (game.setpiece?.active) drawBalloonSetpiece();
+            if (blink) catApi.draw(ctx);
+        } else {
+            drawBalloonSetpiece();
+        }
 
         // overlays
         if (game.catnipTimer > 0) {
