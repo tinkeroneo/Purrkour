@@ -5,14 +5,39 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     function drawBalloonSetpiece() {
         const progress = clamp((game.setpiece?.t ?? 0) / (game.setpiece?.dur ?? 1), 0, 1);
         const W = canvas.W;
-        const baseX = lerp(-80, W + 80, progress);
         const flightY = canvas.H * 0.34;
         const bob = Math.sin(game.tick * 0.08) * 4;
-        const landingY = terrain.surfaceAt(baseX) - 44;
-        const landT = clamp((progress - 0.85) / 0.15, 0, 1);
-        const y = lerp(flightY + bob, landingY, smoothstep(landT));
+        const approachEnd = 0.25;
+        const boardEnd = 0.55;
+        const flightEnd = 0.9;
+        const landingX1 = W * 0.42;
+        const landingX2 = W * 0.72;
+        const landingY1 = terrain.surfaceAt(clamp(landingX1, 0, W)) - 44;
+        const landingY2 = terrain.surfaceAt(clamp(landingX2, 0, W)) - 44;
+
+        let baseX = landingX1;
+        let y = landingY1;
+        if (progress < approachEnd) {
+            const t = smoothstep(progress / approachEnd);
+            baseX = lerp(-80, landingX1, t);
+            y = lerp(flightY + bob, landingY1, t);
+        } else if (progress < boardEnd) {
+            baseX = landingX1;
+            y = landingY1;
+        } else if (progress < flightEnd) {
+            const t = smoothstep((progress - boardEnd) / (flightEnd - boardEnd));
+            baseX = lerp(landingX1, landingX2, t);
+            y = lerp(landingY1, flightY + bob, smoothstep(t));
+        } else {
+            const t = smoothstep((progress - flightEnd) / (1 - flightEnd));
+            baseX = lerp(landingX2, landingX2 + 40, t);
+            y = lerp(flightY + bob, landingY2, t);
+        }
+
+        if (!Number.isFinite(baseX) || !Number.isFinite(y)) return;
 
         ctx.save();
+        ctx.globalCompositeOperation = "source-over";
 
         // balloon
         ctx.globalAlpha = 0.95;
@@ -40,15 +65,50 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         roundRect(ctx, baseX - 18, y + 62, 36, 18, 6);
         ctx.fill();
 
-        // cat sitting in basket
-        ctx.fillStyle = "#3b3b3b";
-        roundRect(ctx, baseX - 9, y + 54, 18, 14, 6);
-        roundRect(ctx, baseX - 6, y + 46, 12, 10, 5);
-        ctx.fillStyle = "#2a2a2a";
-        tri(ctx, baseX - 6, y + 46, baseX - 2, y + 40, baseX + 2, y + 46);
-        tri(ctx, baseX + 6, y + 46, baseX + 2, y + 40, baseX - 2, y + 46);
+        const catInBasket = progress >= boardEnd && progress < flightEnd + 0.05;
+        if (catInBasket) {
+            ctx.fillStyle = "#3b3b3b";
+            roundRect(ctx, baseX - 9, y + 54, 18, 14, 6);
+            roundRect(ctx, baseX - 6, y + 46, 12, 10, 5);
+            ctx.fill();
+            ctx.fillStyle = "#2a2a2a";
+            tri(ctx, baseX - 6, y + 46, baseX - 2, y + 40, baseX + 2, y + 46);
+            tri(ctx, baseX + 6, y + 46, baseX + 2, y + 40, baseX - 2, y + 46);
+        }
 
         ctx.restore();
+
+        const drawCatAt = (x, yPos, frame) => {
+            const prev = { x: cat.x, y: cat.y, frame: cat.frame, onSurface: cat.onSurface };
+            cat.x = x;
+            cat.y = yPos;
+            cat.frame = frame;
+            cat.onSurface = true;
+            catApi.draw(ctx);
+            cat.x = prev.x;
+            cat.y = prev.y;
+            cat.frame = prev.frame;
+            cat.onSurface = prev.onSurface;
+        };
+
+        const groundWalkFrame = Math.floor(game.tick / 6) % 4;
+        const groundY1 = terrain.surfaceAt(clamp(landingX1, 0, W)) - cat.h;
+        const groundY2 = terrain.surfaceAt(clamp(landingX2, 0, W)) - cat.h;
+        if (progress >= approachEnd && progress < boardEnd) {
+            const t = smoothstep((progress - approachEnd) / (boardEnd - approachEnd));
+            const catStartX = landingX1 - 120;
+            const catEndX = landingX1 - 6;
+            const catX = lerp(catStartX, catEndX, t);
+            drawCatAt(catX, groundY1, groundWalkFrame);
+        } else if (progress >= boardEnd && progress < flightEnd) {
+            // cat is in basket
+        } else if (progress >= flightEnd) {
+            const t = smoothstep((progress - flightEnd) / (1 - flightEnd));
+            const catStartX = landingX2 - 6;
+            const catEndX = landingX2 + 120;
+            const catX = lerp(catStartX, catEndX, t);
+            drawCatAt(catX, groundY2, groundWalkFrame);
+        }
     }
 
     function drawPawprints(objects) {
