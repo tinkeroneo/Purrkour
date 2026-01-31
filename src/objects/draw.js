@@ -4,8 +4,9 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
     function drawBalloonSetpiece() {
         // anchor point: slightly above cat
-        const x = cat.cat.x + 40;
-        const y = cat.cat.y - 80;
+
+        const x = cat.x + 40;
+        const y = cat.y - 80;
 
         ctx.save();
 
@@ -267,14 +268,17 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         bg.drawSky(ctx);
         bg.drawParallax(ctx);
 
-        if (game.setpiece?.active) {
-            bg.drawOcean(ctx);           // Ozean überlagert unteren Bereich
-        } else {
-            terrain.drawGround(ctx, palette);
+        // Ocean is just a background layer (ground stays playable)
+        if (game.setpiece?.active && typeof bg.drawOcean === "function") {
+            bg.drawOcean(ctx);
+        }
+
+        terrain.drawGround(ctx, palette);
+
+        if (typeof bg.drawGroundFog === "function") {
             bg.drawGroundFog(ctx);
         }
-        // Soft fog sits on the ground layer and should be drawn before entities.
-        if (typeof bg.drawGroundFog === "function") bg.drawGroundFog(ctx);
+
         drawPawprints(objects);
 
         // objects
@@ -317,7 +321,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.fill();
             ctx.globalAlpha = 1;
         }
-        
+
         if (blink) catApi.draw(ctx);
         if (game.setpiece?.active) drawBalloonSetpiece();
 

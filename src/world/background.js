@@ -128,36 +128,41 @@ export function createBackground(getW, getH, lakes, game, hud) {
         ctx.restore();
     }
     function drawOcean(ctx) {
-        const Wv = W(), Hv = H();
+  const Wv = getW();
+  const Hv = getH();
 
-        // horizon
-        const horizonY = Hv * 0.62;
+  // horizon
+  const horizonY = Hv * 0.62;
 
-        // water gradient
-        ctx.save();
-        const g = ctx.createLinearGradient(0, horizonY, 0, Hv);
-        g.addColorStop(0, "rgba(30,80,120,0.30)");
-        g.addColorStop(1, "rgba(10,30,60,0.55)");
-        ctx.fillStyle = g;
-        ctx.fillRect(0, horizonY, Wv, Hv - horizonY);
+  ctx.save();
 
-        // waves
-        ctx.globalAlpha = 0.18;
-        ctx.strokeStyle = "rgba(255,255,255,0.8)";
-        for (let k = 0; k < 10; k++) {
-            const y0 = horizonY + 20 + k * 24;
-            const phase = (game.tick * 0.04) + k * 40;
-            ctx.beginPath();
-            ctx.moveTo(0, y0);
-            for (let x = 0; x <= Wv; x += 26) {
-                const y = y0 + Math.sin((x + phase) * 0.05) * 3.2;
-                ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-        }
+  // water gradient
+  const g = ctx.createLinearGradient(0, horizonY, 0, Hv);
+  g.addColorStop(0, "rgba(30,80,120,0.30)");
+  g.addColorStop(1, "rgba(10,30,60,0.55)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, horizonY, Wv, Hv - horizonY);
 
-        ctx.restore();
+  // waves
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = "rgba(255,255,255,0.8)";
+  ctx.lineWidth = 2;
+
+  for (let k = 0; k < 10; k++) {
+    const y0 = horizonY + 20 + k * 24;
+    const phase = (game.tick * 0.04) + k * 40;
+    ctx.beginPath();
+    ctx.moveTo(0, y0);
+    for (let x = 0; x <= Wv; x += 26) {
+      const y = y0 + Math.sin((x + phase) * 0.05) * 3.2;
+      ctx.lineTo(x, y);
     }
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 
     return { palette, drawSky, drawParallax, drawGroundFog, drawOcean, currentBiome };
 }
