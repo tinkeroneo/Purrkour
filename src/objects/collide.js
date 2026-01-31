@@ -162,22 +162,18 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         const catnipMult = (game.catnipTimer > 0) ? 0.82 : 1.0;
         const slowMult = (game.slowTimer > 0) ? game.slowStrength : 1.0;
         const eff = game.speed * catnipMult * slowMult;
-        // --- setpiece: disable ground physics, keep cat on balloon ---
-        if (game.setpiece?.active) {
-            // Positioniere Katze stabil im linken Bereich (leicht nach links gedrängt)
-            cat.x = Math.min(cat.x, 120);
-            cat.vy = 0;
-            cat.onSurface = true;
-
-            // Score läuft weiter (optional, wenn du willst)
-            // game.score += 0; // nix extra, nur durch normale Passes
-
-            // während setpiece keine Kollisionen/Collectibles (optional)
-            // return early, aber lass timers laufen:
-            // -> Wenn du early-return willst, dann vorher Timer/Speed-Updates gemacht haben.
-        }
 
         game._effSpeed = eff;
+
+        // --- setpiece: disable ground physics + collisions ---
+        if (game.setpiece?.active) {
+            cat.x = cat.baseX;
+            cat.vy = 0;
+            cat.onSurface = true;
+            cat.jumpsLeft = cat.maxJumps;
+            objects.updateBubbles();
+            return;
+        }
 
         // home movement / finish
         if (game.homePhase === 1) {
