@@ -165,9 +165,9 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         // --- setpiece: disable ground physics, keep cat on balloon ---
         if (game.setpiece?.active) {
             // Positioniere Katze stabil im linken Bereich (leicht nach links gedrängt)
-            cat.cat.x = Math.min(cat.cat.x, 120);
-            cat.cat.vy = 0;
-            cat.cat.onSurface = true;
+            cat.x = Math.min(cat.x, 120);
+            cat.vy = 0;
+            cat.onSurface = true;
 
             // Score läuft weiter (optional, wenn du willst)
             // game.score += 0; // nix extra, nur durch normale Passes
