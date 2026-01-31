@@ -8,11 +8,14 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         const baseX = lerp(-80, W + 80, progress);
         const flightY = canvas.H * 0.34;
         const bob = Math.sin(game.tick * 0.08) * 4;
-        const landingY = terrain.surfaceAt(baseX) - 44;
+        const landingX = clamp(baseX, 0, W);
+        const landingY = terrain.surfaceAt(landingX) - 44;
         const landT = clamp((progress - 0.85) / 0.15, 0, 1);
         const y = lerp(flightY + bob, landingY, smoothstep(landT));
+        if (!Number.isFinite(baseX) || !Number.isFinite(y)) return;
 
         ctx.save();
+        ctx.globalCompositeOperation = "source-over";
 
         // balloon
         ctx.globalAlpha = 0.95;
@@ -44,6 +47,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.fillStyle = "#3b3b3b";
         roundRect(ctx, baseX - 9, y + 54, 18, 14, 6);
         roundRect(ctx, baseX - 6, y + 46, 12, 10, 5);
+        ctx.fill();
         ctx.fillStyle = "#2a2a2a";
         tri(ctx, baseX - 6, y + 46, baseX - 2, y + 40, baseX + 2, y + 46);
         tri(ctx, baseX + 6, y + 46, baseX + 2, y + 40, baseX - 2, y + 46);
