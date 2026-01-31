@@ -72,3 +72,11 @@ const loop = createLoop({
   drawer, hud
 });
 loop.start();
+// DEBUG helpers
+window.__purrkour = {
+  game,
+  cat,
+  objects,
+  terrain,
+  bg
+};

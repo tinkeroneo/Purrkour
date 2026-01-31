@@ -225,6 +225,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // platform side collision (solid fence)
         for (const o of objects.list) {
+            if (o.kind === "setpiece") continue;
             if (o.kind !== "platform") continue;
 
             const inset = 10;
