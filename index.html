@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Purrkour</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; overflow:hidden; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b1520; }
+    canvas { display:block; width:100vw; height:100vh; touch-action:manipulation; }
+
+    #ui{
+      position:fixed; top:10px; left:50%; transform:translateX(-50%);
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      padding:10px 12px; border-radius:16px;
+      background:rgba(20,30,40,0.72); backdrop-filter:blur(8px);
+      z-index:10; max-width:calc(100vw - 16px);
+    }
+    #ui>div{ color:#fff; font-weight:800; }
+    .pill{
+      padding:5px 10px; border-radius:999px;
+      background:rgba(255,255,255,0.10); color:#fff; font-weight:900; white-space:nowrap;
+    }
+    .btn{
+      border:0; padding:6px 10px; border-radius:999px;
+      background:rgba(255,255,255,0.16); color:#fff; font-weight:900; cursor:pointer;
+    }
+    #lives{ letter-spacing:1px; }
+    #hint{
+      position:fixed; left:0; right:0; bottom:10px; text-align:center;
+      color:rgba(255,255,255,0.65); font-size:13px; z-index:10; pointer-events:none;
+      text-shadow:0 1px 10px rgba(0,0,0,0.35); padding:0 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div>Score: <span id="score">0</span></div>
+    <div class="pill" id="lives">❤️❤️❤️❤️❤️❤️❤️</div>
+    <div class="pill" id="miceDisplay">🐭 × 0</div>
+    <div class="pill">Catnip: <span id="catnip">aus</span></div>
+    <button class="btn" id="soundBtn" title="Sound an/aus">🔊</button>
+  </div>
+
+  <div id="hint">
+    Tap/Klick überall oder Space = Springen • Wollknäuel = Slow • Hund nicht berühren 🐶 • Checkpoint alle 50
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
