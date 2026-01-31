@@ -278,51 +278,51 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         const palette = bg.palette();
 
         bg.drawSky(ctx);
-        bg.drawParallax(ctx);
 
-        // Ocean is just a background layer (ground stays playable)
-        if (game.setpiece?.active && typeof bg.drawOcean === "function") {
-            bg.drawOcean(ctx);
-        }
-
-        terrain.drawGround(ctx, palette);
-
-        if (typeof bg.drawGroundFog === "function") {
-            bg.drawGroundFog(ctx);
-        }
-
-        drawPawprints(objects);
-
-        // objects
-        for (const o of objects.list) {
-            if (o.kind === "platform") drawFence(o);
-            else if (o.kind === "obstacle") {
-                if (o.type === "bird") drawBird(o);
-                else if (o.type === "dog") drawDog(o);
-                else drawYarn(o);
-            } else if (o.kind === "collectible") {
-                if (o.type === "mouse") drawMouse(o);
-                else if (o.type === "catnip") drawCatnip(o);
-                else if (o.type === "fish") drawFish(o);
-            } else if (o.kind === "checkpoint") {
-                if (!o.used) drawBlanket(o);
+        if (game.setpiece?.active) {
+            if (typeof bg.drawOcean === "function") {
+                bg.drawOcean(ctx);
             }
-        }
+            drawBalloonSetpiece();
+        } else {
+            bg.drawParallax(ctx);
+            terrain.drawGround(ctx, palette);
 
-        // home
-        if (game.homePhase >= 1) drawHome();
+            if (typeof bg.drawGroundFog === "function") {
+                bg.drawGroundFog(ctx);
+            }
 
-        // checkpoint glow
-        if (game.checkpointGlow > 0) {
-            ctx.globalAlpha = clamp(game.checkpointGlow / 120, 0, 1) * 0.16;
-            ctx.fillStyle = "rgba(255,120,170,1)";
-            ctx.fillRect(0, 0, canvas.W, canvas.H);
-            ctx.globalAlpha = 1;
-        }
+            drawPawprints(objects);
 
-        // cat shadow + sprite
-        const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
-        if (!game.setpiece?.active) {
+            // objects
+            for (const o of objects.list) {
+                if (o.kind === "platform") drawFence(o);
+                else if (o.kind === "obstacle") {
+                    if (o.type === "bird") drawBird(o);
+                    else if (o.type === "dog") drawDog(o);
+                    else drawYarn(o);
+                } else if (o.kind === "collectible") {
+                    if (o.type === "mouse") drawMouse(o);
+                    else if (o.type === "catnip") drawCatnip(o);
+                    else if (o.type === "fish") drawFish(o);
+                } else if (o.kind === "checkpoint") {
+                    if (!o.used) drawBlanket(o);
+                }
+            }
+
+            // home
+            if (game.homePhase >= 1) drawHome();
+
+            // checkpoint glow
+            if (game.checkpointGlow > 0) {
+                ctx.globalAlpha = clamp(game.checkpointGlow / 120, 0, 1) * 0.16;
+                ctx.fillStyle = "rgba(255,120,170,1)";
+                ctx.fillRect(0, 0, canvas.W, canvas.H);
+                ctx.globalAlpha = 1;
+            }
+
+            // cat shadow + sprite
+            const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
             if (blink) {
                 ctx.globalAlpha = 0.18;
                 ctx.fillStyle = "#000";
@@ -336,8 +336,6 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             }
 
             if (blink) catApi.draw(ctx);
-        } else {
-            drawBalloonSetpiece();
         }
 
         // overlays

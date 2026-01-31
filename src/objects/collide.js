@@ -168,6 +168,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         // --- setpiece: disable ground physics + collisions ---
         if (game.setpiece?.active) {
             cat.x = cat.baseX;
+            cat.y = terrain.surfaceAt(cat.x) - cat.h;
             cat.vy = 0;
             cat.onSurface = true;
             cat.jumpsLeft = cat.maxJumps;
