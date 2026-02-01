@@ -39,7 +39,7 @@ export function createAudio(soundBtnEl) {
         if (!enabled) stopAmbience();
     }
 
-    
+
 
     function tone({ freq = 440, dur = 0.08, type = "sine", vol = 0.05, slideTo = null }) {
         if (!enabled || !audioCtx) return;
@@ -125,31 +125,47 @@ export function createAudio(soundBtnEl) {
         wind: null,
         ocean: null,
         night: null,
+        whoosh: null,
+        rumble: null,
+
         windGain: null,
         oceanGain: null,
         nightGain: null,
+        whooshGain: null,
+        rumbleGain: null,
+
+        whooshLfo: null,
+        whooshLfogain: null
     };
     setEnabled(enabled);
     function stopNode(n) { try { n?.stop?.(); } catch { } }
 
     function stopAmbience() {
         stopNode(amb.wind); stopNode(amb.ocean); stopNode(amb.night);
-        amb.wind = amb.ocean = amb.night = null;
-        amb.windGain = amb.oceanGain = amb.nightGain = null;
+        stopNode(amb.whoosh); stopNode(amb.rumble);
+        stopNode(amb.whooshLfo);
+
+        amb.wind = amb.ocean = amb.night = amb.whoosh = amb.rumble = null;
+        amb.windGain = amb.oceanGain = amb.nightGain = amb.whooshGain = amb.rumbleGain = null;
+        amb.whooshLfo = amb.whooshLfoGain = null;
     }
 
-    function setAmbience({ wind = 0, ocean = 0, night = 0 } = {}) {
+
+    function setAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0 } = {}) {
+
         if (!enabled) { stopAmbience(); return; }
         ensureAll();
 
         // lazy-create each layer
         function ensureLayer(key, freq, type) {
             if (amb[key]) return;
+
             const g = audioCtx.createGain();
             g.gain.value = 0.0001;
 
             if (type === "noise") {
                 const src = makeNoiseSource();
+
                 const bp = audioCtx.createBiquadFilter();
                 bp.type = "bandpass";
                 bp.frequency.value = freq;
@@ -157,19 +173,75 @@ export function createAudio(soundBtnEl) {
 
                 src.connect(bp).connect(g).connect(ambBus);
                 src.start();
+
                 amb[key] = src;
                 amb[key + "Gain"] = g;
+                return;
+            }
+
+            // whoosh: noise + bandpass + slow LFO on gain (gusts)
+            if (type === "whoosh") {
+                const src = makeNoiseSource();
+
+                const bp = audioCtx.createBiquadFilter();
+                bp.type = "bandpass";
+                bp.frequency.value = freq; // ~900
+                bp.Q.value = 0.55;
+
+                // LFO -> modulates gain for gentle gusts
+                const lfo = audioCtx.createOscillator();
+                lfo.type = "sine";
+                lfo.frequency.value = 0.18; // slow gust cycle
+
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 0.55; // gust depth (relative)
+
+                // base gain will be controlled by setAmbience via g.gain
+                lfo.connect(lfoGain).connect(g.gain);
+                lfo.start();
+
+                src.connect(bp).connect(g).connect(ambBus);
+                src.start();
+
+                amb[key] = src;
+                amb[key + "Gain"] = g;
+                amb.whooshLfo = lfo;
+                amb.whooshLfoGain = lfoGain;
+                return;
+            }
+
+            // rumble: low bandpass “engine/air” feel
+            if (type === "rumble") {
+                const src = makeNoiseSource();
+
+                const bp = audioCtx.createBiquadFilter();
+                bp.type = "bandpass";
+                bp.frequency.value = freq; // ~90–120
+                bp.Q.value = 0.9;
+
+                src.connect(bp).connect(g).connect(ambBus);
+                src.start();
+
+                amb[key] = src;
+                amb[key + "Gain"] = g;
+                return;
             }
         }
+
 
         ensureLayer("wind", 380, "noise");
         ensureLayer("ocean", 140, "noise");
         ensureLayer("night", 2600, "noise");
+        ensureLayer("whoosh", 120, "whoosh");
+        ensureLayer("rumble", 100, "rumble");
 
         const t0 = audioCtx.currentTime;
         amb.windGain.gain.setTargetAtTime(Math.max(0.0001, wind), t0, 0.12);
         amb.oceanGain.gain.setTargetAtTime(Math.max(0.0001, ocean), t0, 0.12);
         amb.nightGain.gain.setTargetAtTime(Math.max(0.0001, night), t0, 0.12);
+        amb.whooshGain.gain.setTargetAtTime(Math.max(0.0001, whoosh), t0, 0.12);
+        amb.rumbleGain.gain.setTargetAtTime(Math.max(0.0001, rumble), t0, 0.12);
+
     }
 
     const SFX = {

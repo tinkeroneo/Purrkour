@@ -22,6 +22,9 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
                     wind: isOcean ? 0.05 : 0.03,
                     ocean: isOcean ? 0.10 : 0.0001,
                     night: isOcean ? 0.0001 : (0.02 + night * 0.03),
+                    // sweeteners only during flight
+                    whoosh: isOcean ? 0.012 : 0.0001,
+                    rumble: isOcean ? 0.010 : 0.0001,
                 });
             }
 
