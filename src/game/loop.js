@@ -51,9 +51,20 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
                 // base ambience from theme
                 theme.ambience?.({ audio, night: n, tau });
 
-                // extra layers during flight
+                // extra layers during flight / ocean-crossing
                 if (isFlight) {
-                    audio.setAmbience?.({ whoosh: 0.22, ocean: 0.18, rumble: 0.06, night: n * 0.18, tau: 0.18 });
+                    const type = game.setpiece?.type || "balloon";
+                    const mix = (type === "zeppelin")
+                        ? { whoosh: 0.12, ocean: 0.22, rumble: 0.08, engine: 0.05 }
+                        : (type === "raft")
+                            ? { whoosh: 0.04, ocean: 0.30, rumble: 0.02, engine: 0.0001 }
+                            : { whoosh: 0.18, ocean: 0.24, rumble: 0.03, engine: 0.0001 };
+
+                    audio.setAmbience?.({
+                        ...mix,
+                        night: n * 0.18,
+                        tau: 0.18,
+                    });
                 }
             }
             // --- setpieces (ocean crossing etc.) ---

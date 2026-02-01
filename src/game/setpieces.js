@@ -10,9 +10,24 @@ export function createSetpieceManager({ game, objects, startThemeFade }) {
 
   function triggerOceanCrossing() {
     if (!game.setpiece) return;
+
+    // pick a vehicle for the crossing (balloon usually, zeppelin sometimes, raft rarely)
+    // (kept deterministic for the whole setpiece — don't re-roll in update())
+    const r = Math.random();
+    game.setpiece.type = (r < 0.18) ? "zeppelin" : (r < 0.35) ? "raft" : "balloon";
+
     game.setpiece.active = true;
     game.setpiece.t = 0;
     game.setpiece.cooldown = 0;
+
+    // motion state for gentle drift (updated in draw based on sp.t)
+    game.setpiece.motion = {
+      dx: 0,
+      dy: 0,
+      vx: 0,
+      vy: 0,
+      phase: Math.random() * 1000
+    };
 
     // switch to ocean theme for crossing
     startThemeFade("ocean", 90);
@@ -25,6 +40,7 @@ export function createSetpieceManager({ game, objects, startThemeFade }) {
 
   function finishOceanCrossing() {
     if (!game.setpiece) return;
+
     game.setpiece.active = false;
     game.setpiece.cooldown = 0;
 

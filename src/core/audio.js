@@ -151,7 +151,7 @@ export function createAudio(soundBtnEl) {
     }
 
 
-    function setAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0, tau = 0.12 } = {}) {
+    function setAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0, engine = 0, tau = 0.12 } = {}) {
 
         if (!enabled) { stopAmbience(); return; }
         ensureAll();
@@ -226,6 +226,36 @@ export function createAudio(soundBtnEl) {
                 amb[key + "Gain"] = g;
                 return;
             }
+
+            // engine: warm saw + lowpass (zeppelin)
+            if (type === "engine") {
+                const o = audioCtx.createOscillator();
+                o.type = "sawtooth";
+                o.frequency.value = freq; // ~55–75
+
+                // subtle vibrato
+                const lfo = audioCtx.createOscillator();
+                lfo.type = "sine";
+                lfo.frequency.value = 0.9;
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 1.6;
+                lfo.connect(lfoGain).connect(o.frequency);
+                lfo.start();
+
+                const lp = audioCtx.createBiquadFilter();
+                lp.type = "lowpass";
+                lp.frequency.value = 520;
+                lp.Q.value = 0.6;
+
+                o.connect(lp).connect(g).connect(ambBus);
+                o.start();
+
+                amb[key] = o;
+                amb[key + "Gain"] = g;
+                amb[key + "Lfo"] = lfo;
+                amb[key + "LfoGain"] = lfoGain;
+                return;
+            }
         }
 
 
@@ -234,6 +264,7 @@ export function createAudio(soundBtnEl) {
         ensureLayer("night", 2600, "noise");
         ensureLayer("whoosh", 120, "whoosh");
         ensureLayer("rumble", 100, "rumble");
+        ensureLayer("engine", 62, "engine");
 
         const t0 = audioCtx.currentTime;
         amb.windGain.gain.setTargetAtTime(Math.max(0.0001, wind), t0, tau);
@@ -241,6 +272,7 @@ export function createAudio(soundBtnEl) {
         amb.nightGain.gain.setTargetAtTime(Math.max(0.0001, night), t0, tau);
         amb.whooshGain.gain.setTargetAtTime(Math.max(0.0001, whoosh), t0, tau);
         amb.rumbleGain.gain.setTargetAtTime(Math.max(0.0001, rumble), t0, tau);
+        amb.engineGain.gain.setTargetAtTime(Math.max(0.0001, engine), t0, tau);
 
     }
 

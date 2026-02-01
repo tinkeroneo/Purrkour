@@ -1,91 +1,15 @@
 import { clamp, roundRect, tri } from "../core/util.js";
+import { drawVehicle } from "../game/vehicles/index.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
     
-    function drawBalloonSetpiece() {
-        // Hot-air balloon / zeppelin crossing. During setpiece the cat rides in the basket.
+    function drawSetpieceVehicle() {
         const sp = game.setpiece;
         if (!sp || !sp.active) return;
-
-        const W = canvas.W, H = canvas.H;
-
-        const p = clamp(sp.t / Math.max(1, sp.dur), 0, 1);
-
-        // flight path: enter from left, cross ocean, then land on the right
-        const x = (-90) + (W + 180) * p;
-
-        const flightY = H * 0.30;
-        const bob = Math.sin((game.tick + sp.t) * 0.06) * 4;
-        const landingY = terrain.surfaceAt(x) - 78; // basket sits above ground
-        const landT = clamp((p - 0.86) / 0.14, 0, 1);
-        const y = (1 - landT) * (flightY + bob) + landT * landingY;
-
-        const sway = Math.sin((game.tick + sp.t) * 0.02) * 0.06;
-
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(sway);
-
-        // balloon (only if type balloon; zeppelin later)
-        if (sp.type === "balloon") {
-            const g = ctx.createLinearGradient(-28, -46, 28, 30);
-            g.addColorStop(0, "rgba(255,170,205,0.95)");
-            g.addColorStop(1, "rgba(235,95,150,0.95)");
-
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // highlight
-            ctx.globalAlpha = 0.22;
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.beginPath();
-            ctx.ellipse(-10, -10, 10, 18, -0.3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-
-            // stripe
-            ctx.globalAlpha = 0.16;
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.fillRect(-2.2, -38, 4.4, 76);
-            ctx.globalAlpha = 1;
-        }
-
-        // ropes
-        ctx.strokeStyle = "rgba(255,255,255,0.65)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-14, 28); ctx.lineTo(-10, 62);
-        ctx.moveTo(14, 28);  ctx.lineTo(10, 62);
-        ctx.stroke();
-
-        // basket
-        ctx.fillStyle = "rgba(176,112,48,0.96)";
-        roundRect(ctx, -20, 62, 40, 18, 7); ctx.fill();
-
-        // basket rim
-        ctx.globalAlpha = 0.18;
-        ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.fillRect(-18, 64, 36, 3);
-        ctx.globalAlpha = 1;
-
-        // cat inside basket (simple silhouette)
-        ctx.save();
-        ctx.translate(0, 58);
-
-        ctx.fillStyle = "#3b3b3b";
-        roundRect(ctx, -9, 10, 18, 14, 6); ctx.fill();          // body
-        roundRect(ctx, -6, 2, 12, 10, 5); ctx.fill();           // head
-
-        ctx.fillStyle = "#2a2a2a";
-        tri(ctx, -6, 2, -2, -4, 2, 2);                          // ear
-        tri(ctx, 6, 2, 2, -4, -2, 2);                           // ear
-
-        ctx.restore();
-        ctx.restore();
+        drawVehicle(ctx, { canvas, terrain, game, setpiece: sp });
     }
+
 
 
     function drawPawprints(objects) {
@@ -320,7 +244,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         // Setpiece mode: only sky + ocean + balloon (no ground/obstacles)
         if (game.setpiece?.active) {
             if (typeof bg.drawOcean === "function") bg.drawOcean(ctx);
-            drawBalloonSetpiece();
+            drawSetpieceVehicle();
             drawBubbles(objects);
             return;
         }
