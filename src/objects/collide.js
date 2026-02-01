@@ -152,6 +152,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         if (game.tripleJumpTimer > 0) game.tripleJumpTimer--;
         if (game.checkpointGlow > 0) game.checkpointGlow--;
         if (game.slowTimer > 0) game.slowTimer--;
+        if (game.safeTimer > 0) game.safeTimer--;
 
         // jump capacity
         cat.maxJumps = (game.tripleJumpTimer > 0) ? 3 : cat.baseMaxJumps;

@@ -1,8 +1,11 @@
 import { getTheme } from "../world/themes.js";
+import { createSetpieceManager } from "./setpieces.js";
 
 
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
+    const setpieces = createSetpieceManager({ game, objects, startThemeFade });
+
     function startThemeFade(toKey, dur = 70) {
         const fromKey = game.theme;
         if (fromKey === toKey) return;
@@ -39,47 +42,22 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
 
             // 2) physics + collisions + scoring + timers (setzt game._effSpeed neu)
             collider.update(bg.palette?.());
-            // ambience mix: subtle by default
+            // ambience mix: theme-driven + smoother during transitions
             if (audio?.enabled) {
-                const isOcean = !!game.setpiece?.active;
-                const night = bg?.nightFactor ? bg.nightFactor() : 0; // falls du’s schon exposed hast
+                const isFlight = !!game.setpiece?.active;
+                const n = bg?.nightFactor?.() ?? 0;
+                const tau = (game.themeFade?.active ? 0.22 : 0.12);
 
-                theme.ambience?.({
-                    audio,
-                    night: bg?.nightFactor?.() ?? 0,
-                });
+                // base ambience from theme
+                theme.ambience?.({ audio, night: n, tau });
 
-            }
-
-            // --- setpiece trigger ---
-            if (game.setpiece && !game.setpiece.active && game.score >= game.setpiece.startScore && game.setpiece.cooldown > 99999) {
-                game.setpiece.active = true;
-                game.setpiece.t = 0;
-                game.setpiece.cooldown = 0;
-
-                // switch to ocean theme for the crossing
-                startThemeFade("ocean", 80);
-
-                // clear world objects so nothing collides while we fly
-                objects.list.length = 0;
-                objects.pawprints.length = 0;
-                // keep bubbles/toast
-                // hud.toast?.("Auf zum Ozean… 🎈", 120);
-            }
-            if (game.setpiece.active) {
-                game.setpiece.t++;
-                if (game.setpiece.t >= game.setpiece.dur) {
-                    game.setpiece.active = false;
-                    // danach z.B. erst ab Score+120 wieder erlauben
-                    game.setpiece.cooldown = 0; // (oder einfach so lassen)
-
-                    // arrive at island
-                    startThemeFade("island", 110);
+                // extra layers during flight
+                if (isFlight) {
+                    audio.setAmbience?.({ whoosh: 0.22, ocean: 0.18, rumble: 0.06, night: n * 0.18, tau: 0.18 });
                 }
-            } else {
-                // cooldown zählt hoch, damit wir nicht sofort wieder triggern
-                if (game.setpiece.cooldown < 999999) game.setpiece.cooldown++;
             }
+            // --- setpieces (ocean crossing etc.) ---
+            setpieces.update();
 
             // 3) spawns (nutzt game._effSpeed)
             if (!game.setpiece.active) spawner.update(bg.palette?.());

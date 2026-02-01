@@ -51,6 +51,9 @@ export function createGameState() {
         calmTimer: 0,
         comboGlow: 0,
 
+        // grace window after big transitions (no stress spawns)
+        safeTimer: 0,
+
         lastHitTick: -99999
     };
 }

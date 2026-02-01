@@ -34,7 +34,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     objects.add({ kind: "checkpoint", type: "blanket", x: spawnX, y: surf - 16, w: 62, h: 16, used: false, yMode: "ground", yOffset: -16 });
   }
 
-  function spawnPack(spawnX) {
+  function spawnPack(spawnX, safeMode = false) {
     const gapMin = minGapForScore(game.score);
     const allowClose = (Math.random() < closeGapChance(game.score));
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
@@ -44,11 +44,18 @@ export function createSpawner(game, terrain, objects, canvas) {
     const pDog  = clamp((0.10 + game.score * 0.0017) * CALM.animalsScale, 0.08, 0.16);
     const pYarn = 0.18;
 
+    // grace window: no stressful obstacles right after big transitions
+    if (safeMode) {
+      // only fences + goodies (no dog/bird/yarn)
+    }
+
+
     const pMouse  = 0.18 * CALM.collectiblesScale;
     const pFish   = clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.07);
     const pCatnip = (game.catnipTimer > 0) ? 0.0 : clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08);
 
     function rndType() {
+      if (safeMode) return "fence";
       const r = Math.random();
       if (r < pFence) return "fence";
       if (r < pFence + pDog) return "dog";
@@ -167,6 +174,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     }
 
     nextSpawnIn = gapMin + Math.floor(Math.random() * 105);
+    if (safeMode) nextSpawnIn += 120;
   }
 
   function update(palette) {
@@ -174,7 +182,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     if (game.homePhase === 2) return;
 
     nextSpawnIn -= game._effSpeed;
-    if (nextSpawnIn <= 0) spawnPack(canvas.W + 140);
+    if (nextSpawnIn <= 0) spawnPack(canvas.W + 140, game.safeTimer > 0);
 
     // checkpoint every 50
     if (!game.checkpointActive && game.score > 0 && game.score % 50 === 0) {

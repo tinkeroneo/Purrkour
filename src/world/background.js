@@ -20,6 +20,14 @@ export function createBackground(getW, getH, lakes, game, hud) {
     const W = () => getW();
     const H = () => getH();
 
+    function themeSeed(key) {
+        // stable small offset per theme key to avoid "popping" when switching themes
+        let h = 0;
+        const s = String(key || "");
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        return (h % 997) / 997; // 0..1
+    }
+
     function palette() {
         // Theme-based palette + optional crossfade
         const t = game.themeFade;
@@ -71,6 +79,33 @@ export function createBackground(getW, getH, lakes, game, hud) {
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, W, H);
 
+        // theme crossfade sweep (soft fog band)
+        if (game.themeFade?.active && game.themeFade.dur > 0) {
+            const u = clamp(game.themeFade.t / game.themeFade.dur, 0, 1);
+            const uu = smoothstep(u);
+            const sweepX = (-W * 0.35) + uu * (W * 1.70);
+
+            ctx.save();
+            ctx.globalAlpha = 0.18;
+            const g2 = ctx.createLinearGradient(sweepX - 140, 0, sweepX + 140, 0);
+            g2.addColorStop(0, "rgba(255,255,255,0.0)");
+            g2.addColorStop(0.5, "rgba(255,255,255,0.55)");
+            g2.addColorStop(1, "rgba(255,255,255,0.0)");
+            ctx.fillStyle = g2;
+            ctx.fillRect(0, 0, W, H);
+
+            // a second, broader pass
+            ctx.globalAlpha = 0.10;
+            const g3 = ctx.createLinearGradient(sweepX - 260, 0, sweepX + 260, 0);
+            g3.addColorStop(0, "rgba(220,230,240,0.0)");
+            g3.addColorStop(0.5, "rgba(220,230,240,0.45)");
+            g3.addColorStop(1, "rgba(220,230,240,0.0)");
+            ctx.fillStyle = g3;
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.restore();
+        }
+
         // night veil
         if (p.n > 0) {
             ctx.globalAlpha = 0.45 * p.n;
@@ -98,9 +133,19 @@ export function createBackground(getW, getH, lakes, game, hud) {
         const p = palette();
 
         const tick = game.tick;
-        const far = (game.score * 6 + tick) * 0.10;
-        const mid = (game.score * 9 + tick) * 0.18;
-        const near = (game.score * 13 + tick) * 0.26;
+
+        // small per-theme offset + interpolated offset during fade
+        const tf = game.themeFade;
+        const seedA = themeSeed(tf?.from ?? game.theme);
+        const seedB = themeSeed(tf?.to ?? game.theme);
+        const u = (tf?.active && tf.dur > 0) ? smoothstep(clamp(tf.t / tf.dur, 0, 1)) : 1;
+        const seed = lerp(seedA, seedB, u);
+        const off = seed * 1200;
+
+        // depth scroll with a tiny "delay" so layers feel separated
+        const far = (game.score * 6 + tick) * 0.095 + off * 0.22;
+        const mid = (game.score * 9 + tick) * 0.170 + off * 0.35;
+        const near = (game.score * 13 + tick) * 0.245 + off * 0.55;
 
         ctx.globalAlpha = 0.55;
         ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.55)`;

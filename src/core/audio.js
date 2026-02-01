@@ -151,7 +151,7 @@ export function createAudio(soundBtnEl) {
     }
 
 
-    function setAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0 } = {}) {
+    function setAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0, tau = 0.12 } = {}) {
 
         if (!enabled) { stopAmbience(); return; }
         ensureAll();
@@ -236,11 +236,11 @@ export function createAudio(soundBtnEl) {
         ensureLayer("rumble", 100, "rumble");
 
         const t0 = audioCtx.currentTime;
-        amb.windGain.gain.setTargetAtTime(Math.max(0.0001, wind), t0, 0.12);
-        amb.oceanGain.gain.setTargetAtTime(Math.max(0.0001, ocean), t0, 0.12);
-        amb.nightGain.gain.setTargetAtTime(Math.max(0.0001, night), t0, 0.12);
-        amb.whooshGain.gain.setTargetAtTime(Math.max(0.0001, whoosh), t0, 0.12);
-        amb.rumbleGain.gain.setTargetAtTime(Math.max(0.0001, rumble), t0, 0.12);
+        amb.windGain.gain.setTargetAtTime(Math.max(0.0001, wind), t0, tau);
+        amb.oceanGain.gain.setTargetAtTime(Math.max(0.0001, ocean), t0, tau);
+        amb.nightGain.gain.setTargetAtTime(Math.max(0.0001, night), t0, tau);
+        amb.whooshGain.gain.setTargetAtTime(Math.max(0.0001, whoosh), t0, tau);
+        amb.rumbleGain.gain.setTargetAtTime(Math.max(0.0001, rumble), t0, tau);
 
     }
 
