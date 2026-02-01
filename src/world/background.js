@@ -1,14 +1,5 @@
-import { lerp } from "../core/util.js";
-const fireflies = []; // {x,y,phase,r,life}
 import { getTheme } from "./themes.js";
 
-function mixRGB(a, b, t) {
-    return [
-        Math.round(lerp(a[0], b[0], t)),
-        Math.round(lerp(a[1], b[1], t)),
-        Math.round(lerp(a[2], b[2], t)),
-    ];
-}
 
 export function createBackground(getW, getH, lakes, game, hud) {
     const W = () => getW();

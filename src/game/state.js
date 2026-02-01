@@ -13,6 +13,10 @@ export function createGameState() {
         lives: 7,
         invulnTimer: 0,
         theme: "forest",
+
+        // Theme Trigger bookkeeping
+        _lastSetpieceActive: false,
+        _pendingThemes: null,
         nextTheme: null,
 
         // setpiece: ocean crossing

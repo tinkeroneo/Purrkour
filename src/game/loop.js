@@ -1,6 +1,5 @@
 import { getTheme } from "../world/themes.js";
 
-
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
     function step() {
@@ -19,8 +18,6 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
             collider.update(bg.palette?.());
             // ambience mix: subtle by default
             if (audio?.enabled) {
-                const isOcean = !!game.setpiece?.active;
-                const night = bg?.nightFactor ? bg.nightFactor() : 0; // falls du’s schon exposed hast
 
                 theme.ambience?.({
                     audio,
