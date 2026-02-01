@@ -13,9 +13,10 @@ export function createGameState() {
         lives: 7,
         invulnTimer: 0,
         theme: "forest",
-        // story-driven theme order (ocean/island/mountain)
-        themeCycle: { order: ["ocean","island","mountain","forest"], idx: 0, nextAt: 120, step: 140 },
+  themeCycle: { order: ["island","mountain","forest","jungle","city","desert"], idx: 0, nextAt: 999999, step: 140 },
         nextTheme: null,
+
+        vertical: { band: "ground" },
 
         // theme crossfade helper (handled in loop)
         themeFade: {
@@ -26,19 +27,14 @@ export function createGameState() {
             dur: 60,
         },
 
-        // setpieces: story beats (ocean/air)
+        // setpiece: ocean crossing
         setpiece: {
             active: false,
-            type: "balloon", // current
-            t: 0,
-            dur: 60 * 10,
-            cooldown: 999999,
-            used: {},
-            schedule: [
-                // score, vehicle, theme to fade into while crossing, theme after landing
-                { score: 5, type: "balloon", toTheme: "ocean", afterTheme: "island", dur: 60 * 10 },
-                { score: 10, type: "zeppelin", toTheme: "mountain", afterTheme: "mountain", dur: 60 * 9 },
-            ],
+            type: "balloon",     // "balloon" | "zeppelin" (later)
+            t: 0,                // frames elapsed
+            dur: 60 * 10,        // ~10s crossing
+            startScore: 120,     // trigger once when score reaches this
+            cooldown: 999999,    // counts up while inactive; prevents spam
         },
 
 

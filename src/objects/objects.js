@@ -4,6 +4,7 @@ export function createObjects() {
   const list = [];
   const pawprints = [];
   const bubbles = [];
+  const puffs = []; // {x,y,vx,vy,r,life}
   let toastTimer = 0;
   let toastText = "";
 
@@ -13,6 +14,20 @@ export function createObjects() {
     bubbles.push({ text, x, y, life: 70 });
   }
 
+  function addPuff(x, y) {
+    // 3 soft circles drifting up/right
+    for (let i = 0; i < 3; i++) {
+      puffs.push({
+        x: x + (Math.random() * 10 - 5),
+        y: y + (Math.random() * 6 - 3),
+        vx: 0.15 + Math.random() * 0.25,
+        vy: -0.35 - Math.random() * 0.25,
+        r: 5 + Math.random() * 5,
+        life: 18 + Math.floor(Math.random() * 8),
+      });
+    }
+  }
+
   function toast(text, frames = 120) {
     toastText = text;
     toastTimer = frames;
@@ -20,7 +35,9 @@ export function createObjects() {
 
   function updateBubbles() {
     for (const b of bubbles) { b.y -= 0.08; b.life--; }
+    for (const p of puffs) { p.x += p.vx; p.y += p.vy; p.vx *= 0.98; p.vy *= 0.98; p.life--; p.r *= 0.985; }
     for (let i = bubbles.length - 1; i >= 0; i--) if (bubbles[i].life <= 0) bubbles.splice(i, 1);
+    for (let i = puffs.length - 1; i >= 0; i--) if (puffs[i].life <= 0 || puffs[i].r < 0.5) puffs.splice(i, 1);
     if (toastTimer > 0) toastTimer--;
   }
 

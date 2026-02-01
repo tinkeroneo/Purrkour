@@ -2,8 +2,8 @@ export const forestTheme = {
   key: "forest",
   label: "Wald",
 
-  time: { mode: "cycle", speed: 0.00014 },
 
+  birdVariant: "crow",
   palette: {
     skyTop: [160, 220, 255],
     skyBot: [240, 252, 255],

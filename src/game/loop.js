@@ -4,6 +4,8 @@ import { createSetpieceManager } from "./setpieces.js";
 
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
+    const setpieces = createSetpieceManager({ game, objects, startThemeFade });
+
     function startThemeFade(toKey, dur = 70) {
         const fromKey = game.theme;
         if (fromKey === toKey) return;
@@ -17,9 +19,6 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
         }
         game.theme = toKey;
     }
-
-    // needs startThemeFade
-    const setpieces = createSetpieceManager({ game, objects, startThemeFade, audio });
 
     function step() {
         if (!game.finished) {
@@ -43,6 +42,20 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
 
             // 2) physics + collisions + scoring + timers (setzt game._effSpeed neu)
             collider.update(bg.palette?.());
+
+// vertical band (ground/mid/high) based on height above terrain
+if (!game.vertical) game.vertical = { band: "ground" };
+if (game.setpiece?.active) {
+    game.vertical.band = "high";
+} else {
+    const c = (cat.cat ?? cat);
+    const surfY = terrain.surfaceAt(c.x);
+    const above = surfY - (c.y + c.h);
+    if (above < 70) game.vertical.band = "ground";
+    else if (above < 170) game.vertical.band = "mid";
+    else game.vertical.band = "high";
+}
+
             // ambience mix: theme-driven + smoother during transitions
             if (audio?.enabled) {
                 const isFlight = !!game.setpiece?.active;

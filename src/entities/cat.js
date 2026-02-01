@@ -20,6 +20,8 @@ export function createCat(game, hud) {
     animT: 0,
     frame: 0,
     onSurface: true,
+    squashTimer: 0,
+    squashAmp: 0.18,
   };
 
   function jump(audio) {
@@ -35,6 +37,7 @@ export function createCat(game, hud) {
   }
 
   function gravityStep() {
+    if (cat.squashTimer > 0) cat.squashTimer--;
     cat.vy += BASE_GRAVITY * (game.catnipTimer > 0 ? 0.95 : 1.0);
     cat.y += cat.vy;
   }
@@ -67,7 +70,12 @@ export function createCat(game, hud) {
     return "calm";
   }
 
-  function draw(ctx) {
+  
+  function stomp() {
+    cat.squashTimer = 10;
+  }
+
+function draw(ctx) {
     const w = cat.w, h = cat.h;
     const mood = catMood();
 
@@ -76,7 +84,15 @@ export function createCat(game, hud) {
     const bob = running ? (Math.sin(cat.frame * Math.PI / 2) * 1.6) : 0;
 
     ctx.save();
-    ctx.translate(cat.x, cat.y + bob + (cat.vy < -1 ? -2 : 0));
+    const sq = (cat.squashTimer > 0) ? (cat.squashTimer / 10) : 0;
+    const sx = 1 + sq * cat.squashAmp;
+    const sy = 1 - sq * cat.squashAmp;
+    const cx = cat.x + cat.w * 0.5;
+    const cy = cat.y + bob + (cat.vy < -1 ? -2 : 0) + cat.h * 0.5;
+    ctx.translate(cx, cy);
+    ctx.scale(sx, sy);
+    ctx.translate(-cat.w * 0.5, -cat.h * 0.5);
+
 
     // tail
     const tailPhase = running ? cat.frame : 2;

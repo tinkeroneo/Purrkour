@@ -5,9 +5,8 @@ export const mountainTheme = {
   key: "mountain",
   label: "berge",
 
-  // eher später Nachmittag / Dusk
-  time: { mode: "fixed", night: 0.55 },
 
+  birdVariant: "eagle",
   palette: {
     skyTop: [150, 210, 255],
     skyBot: [235, 245, 255],

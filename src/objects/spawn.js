@@ -1,5 +1,7 @@
 import { clamp } from "../core/util.js";
 import { getTheme } from "../world/themes.js";
+import { nightFactor } from "../world/daynight.js";
+
 
 export function createSpawner(game, terrain, objects, canvas) {
   // calmer start tuning
@@ -68,13 +70,31 @@ export function createSpawner(game, terrain, objects, canvas) {
     const pFishT   = pFish   * m("fish");
     const pCatnipT = pCatnip * m("catnip");
 
+
+// vertical band multipliers (encourage "jump on birds" gameplay higher up)
+const band = game.vertical?.band ?? "ground";
+let vbFence = 1, vbDog = 1, vbBird = 1, vbYarn = 1, vbMouse = 1, vbFish = 1, vbCatnip = 1;
+if (band === "mid") {
+  vbBird = 1.6; vbFence = 0.85; vbDog = 0.75; vbYarn = 0.85;
+  vbMouse = 1.10; vbFish = 1.05; vbCatnip = 1.05;
+} else if (band === "high") {
+  vbBird = 1.35; vbFence = 0.55; vbDog = 0.45; vbYarn = 0.60;
+  vbMouse = 1.15; vbFish = 1.10; vbCatnip = 1.10;
+}
+
+const pFenceV = pFenceT * vbFence;
+const pBirdV  = pBirdT  * vbBird;
+const pDogV   = pDogT   * vbDog;
+const pYarnV  = pYarnT  * vbYarn;
+
+
     function rndType() {
       if (safeMode) return "fence";
       const r = Math.random();
-      if (r < pFenceT) return "fence";
-      if (r < pFenceT + pDogT) return "dog";
-      if (r < pFenceT + pDogT + pBirdT) return "bird";
-      if (r < pFenceT + pDogT + pBirdT + pYarnT) return "yarn";
+      if (r < pFenceV) return "fence";
+      if (r < pFenceV + pDogV) return "dog";
+      if (r < pFenceV + pDogV + pBirdV) return "bird";
+      if (r < pFenceV + pDogV + pBirdV + pYarnV) return "yarn";
       return "fence";
     }
 
@@ -116,7 +136,7 @@ export function createSpawner(game, terrain, objects, canvas) {
           const my = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.35) - h - 28) : (topY - 30);
           objects.add({ kind: "collectible", type: "mouse", x: x + w * 0.36, y: my, w: 22, h: 16, taken: false, yMode: "fixed" });
         }
-        if (Math.random() < pCatnipT * 0.55) {
+        if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
           const cy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.62) - h - 36) : (topY - 36);
           objects.add({ kind: "collectible", type: "catnip", x: x + w * 0.64, y: cy, w: 18, h: 18, taken: false, yMode: "fixed" });
         }
@@ -132,7 +152,10 @@ export function createSpawner(game, terrain, objects, canvas) {
       const w = 36, h = 20;
       const extra = (game.catnipTimer > 0) ? 18 : 0;
       const flyY = (terrain.surfaceAt(spawnX) - (150 + Math.random() * 75 + extra));
-      objects.add({ kind: "obstacle", type: "bird", x: spawnX, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed" });
+      const night = nightFactor(game.tick, game.score);
+      const themeVariant = theme.birdVariant || "crow";
+      const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
+      objects.add({ kind: "obstacle", type: "bird", variant, x: spawnX, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed" });
 
     } else if (type === "dog") {
       const w = 58, h = 36;
@@ -159,18 +182,18 @@ export function createSpawner(game, terrain, objects, canvas) {
     }
 
     // extra collectibles
-    if (Math.random() < pMouseT) {
+    if (Math.random() < (pMouseT * vbMouse)) {
       const mx = spawnX + 30 + Math.random() * 40;
       const my = (Math.random() < 0.70)
         ? (terrain.surfaceAt(mx) - 16)
         : (terrain.surfaceAt(mx) - 70 - Math.random() * 25);
       objects.add({ kind: "collectible", type: "mouse", x: mx, y: my, w: 22, h: 16, taken: false, yMode: "fixed" });
     }
-    if (Math.random() < pFishT * 0.55) {
+    if (Math.random() < (pFishT * vbFish) * 0.55) {
       const fx = spawnX + 40;
       objects.add({ kind: "collectible", type: "fish", x: fx, y: terrain.surfaceAt(fx) - 88 - Math.random() * 30, w: 18, h: 14, taken: false, yMode: "fixed" });
     }
-    if (Math.random() < pCatnipT * 0.55) {
+    if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
       const cx = spawnX + 20;
       objects.add({ kind: "collectible", type: "catnip", x: cx, y: terrain.surfaceAt(cx) - 100 - Math.random() * 40, w: 18, h: 18, taken: false, yMode: "fixed" });
     }

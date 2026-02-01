@@ -62,15 +62,18 @@ export function createBackground(getW, getH, lakes, game, hud) {
         if (!pal.grass) pal.grass = pal.ground;
         if (!pal.ocean) pal.ocean = [60, 150, 200];
 
-        // Attach day/night (0..1) for draws to use.
-        // Theme is the truth: it can fix night or run a slow cycle.
-        const timeThemeKey = (game.themeFade?.active && game.themeFade.to) ? game.themeFade.to : game.theme;
-        const timeCfg = getTheme(timeThemeKey)?.time;
-        if (timeCfg?.mode === "fixed") {
-            pal.n = clamp(timeCfg.night ?? 0.6, 0, 0.92);
-        } else {
-            pal.n = nightFactor(game.tick, game.score, timeCfg?.speed ?? 0.00014);
+        // vertical band tint (ground/mid/high)
+        const band = game.vertical?.band ?? "ground";
+        if (band === "mid") {
+            pal.skyTop = mixRGB(pal.skyTop, [235, 250, 255], 0.18);
+            pal.skyBot = mixRGB(pal.skyBot, [250, 255, 255], 0.10);
+        } else if (band === "high") {
+            pal.skyTop = mixRGB(pal.skyTop, [245, 252, 255], 0.32);
+            pal.skyBot = mixRGB(pal.skyBot, [255, 255, 255], 0.18);
         }
+
+        // Attach day/night (0..1) for draws to use
+        pal.n = nightFactor(game.tick, game.score);
         return pal;
     }
 
@@ -244,7 +247,30 @@ export function createBackground(getW, getH, lakes, game, hud) {
     }
 
     // Soft ground fog (only at night). Draw this AFTER the ground fill and BEFORE entities.
-    function drawGroundFog(ctx) {
+    
+
+function drawHighClouds(ctx, near, night) {
+    const W = getW(), H = getH();
+    const band = game.vertical?.band ?? "ground";
+    if (band === "ground") return;
+
+    const strength = (band === "high") ? 0.22 : 0.14;
+    ctx.save();
+    ctx.globalAlpha = strength * (1 - night * 0.25);
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    const baseY = (band === "high") ? H * 0.22 : H * 0.30;
+    for (let i = 0; i < 7; i++) {
+        const x = ((i * 180) - (near * 1.2)) % (W + 240) - 120;
+        const y = baseY + Math.sin((x + near) * 0.01) * 12 + i * 6;
+        ctx.beginPath();
+        ctx.ellipse(x + 40, y, 55, 18, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 85, y + 6, 70, 20, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 140, y, 55, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+function drawGroundFog(ctx) {
         const W = getW(), H = getH();
         const p = palette();
         const n = p.n ?? 0;

@@ -2,9 +2,8 @@ export const oceanTheme = {
   key: "ocean",
   label: "Ozean",
 
-  // bewusst: Ozean ist eher Nacht/Spätabend (Story Beat)
-  time: { mode: "fixed", night: 0.78 },
 
+  birdVariant: "seagull",
   palette: {
     skyTop: [140, 200, 240],
     skyBot: [210, 235, 255],

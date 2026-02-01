@@ -116,7 +116,34 @@ export function createAudio(soundBtnEl) {
     }
 
 
-    function chime(vol = 0.045) {
+    
+  // soft "thup" for stomps/landings
+  function stomp(vol = 0.05) {
+    if (!enabled || !audioCtx) return;
+    const t0 = audioCtx.currentTime;
+
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(520, t0);
+    lp.Q.setValueAtTime(0.8, t0);
+
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(160, t0);
+    o.frequency.exponentialRampToValueAtTime(90, t0 + 0.08);
+
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+
+    o.connect(g).connect(lp);
+    lp.connect(audioCtx.destination);
+
+    o.start(t0);
+    o.stop(t0 + 0.13);
+  }
+function chime(vol = 0.045) {
         tone({ freq: 660, dur: 0.08, type: "sine", vol, slideTo: 740 });
         setTimeout(() => tone({ freq: 880, dur: 0.10, type: "sine", vol: vol * 0.9, slideTo: 990 }), 70);
         setTimeout(() => tone({ freq: 740, dur: 0.12, type: "triangle", vol: vol * 0.65, slideTo: 820 }), 150);
@@ -280,6 +307,7 @@ export function createAudio(soundBtnEl) {
         jump: () => tone({ freq: 320, dur: 0.07, type: "triangle", vol: 0.055, slideTo: 280 }),
         mouse: () => tone({ freq: 760, dur: 0.06, type: "sine", vol: 0.045, slideTo: 860 }),
         combo: () => chime(0.045),
+    stomp: () => stomp(0.05),
         catnip: () => { tone({ freq: 420, dur: 0.10, type: "sine", vol: 0.045, slideTo: 520 }); setTimeout(() => tone({ freq: 620, dur: 0.10, type: "sine", vol: 0.038, slideTo: 700 }), 70); },
         fish: () => { tone({ freq: 540, dur: 0.08, type: "triangle", vol: 0.045, slideTo: 680 }); setTimeout(() => tone({ freq: 820, dur: 0.06, type: "sine", vol: 0.036, slideTo: 920 }), 80); },
         slow: () => tone({ freq: 220, dur: 0.10, type: "triangle", vol: 0.045, slideTo: 150 }),

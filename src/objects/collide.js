@@ -293,6 +293,27 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                     objects.list.splice(i, 1); i--;
                 } else if (o.type === "dog") {
                     startChase(o);
+                } else if (o.type === "bird") {
+                    // Bird is a platform ONLY when landing from above (side/below = danger)
+                    const catPrevBottom = prevY + cat.h;
+                    const catBottom = cat.y + cat.h;
+                    const birdTop = o.y + 2;
+                    const xOverlap = (cat.x + cat.w * 0.75) > o.x && (cat.x + cat.w * 0.25) < (o.x + o.w);
+
+                    const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop) && (catBottom >= birdTop);
+                    if (landing) {
+                        cat.y = birdTop - cat.h + 1;
+                        cat.vy = 0;
+                        cat.onSurface = true;
+                        cat.jumpsLeft = cat.maxJumps;
+                        // stomp feedback
+                        catApi?.stomp?.();
+                        objects.addPuff?.(cat.x + cat.w * 0.55, cat.y + cat.h - 6);
+                        if (audio?.SFX?.stomp) audio.SFX.stomp(); else if (audio?.SFX?.combo) audio.SFX.combo();
+                    } else {
+                        loseLife();
+                        objects.list.splice(i, 1); i--;
+                    }
                 } else {
                     loseLife();
                     objects.list.splice(i, 1); i--;
@@ -335,11 +356,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                 objects.toast("Checkpoint-Decke 🧺", 140);
                 objects.addBubble("purr", cat.x + cat.w * 0.55, cat.y - 8);
                 audio.SFX.magic();
-
-                // Atempause: kurz beruhigen (weniger Spawns + langsamer)
-                game.safeTimer = Math.max(game.safeTimer, 260);
-                game.slowTimer = Math.max(game.slowTimer, 160);
-                game.slowStrength = Math.min(game.slowStrength, 0.72);
             }
         }
 

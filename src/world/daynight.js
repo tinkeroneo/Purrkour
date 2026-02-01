@@ -1,9 +1,9 @@
 import { clamp } from "../core/util.js";
 
 // 0..1 where 0=day, 1=night
-export function nightFactor(tick, score, speed = 0.00014) {
-  // bewusst ruhig: score nudges nur leicht, sonst wird's zu "flippy"
-  const base = (tick * speed) + (score * 0.0004);
+export function nightFactor(tick, score) {
+  // langsamer Zyklus: ~ 55–75s je nach speed/score
+  const base = (tick * 0.00012) + (score * 0.0052);
   const phase = base % 1; // 0..1
   // S-curve + längere Dämmerung:
   // day -> dusk -> night -> dawn -> day

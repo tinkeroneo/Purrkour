@@ -19,6 +19,8 @@ import { createCollider } from "./objects/collide.js";
 const canvasEl = document.getElementById("game");
 const ctx = canvasEl.getContext("2d");
 
+const uiRoot = document.getElementById("ui");
+
 const ui = {
   score: document.getElementById("score"),
   lives: document.getElementById("lives"),
@@ -62,6 +64,28 @@ setupInput({
   onJump: () => {
     audio.ensure();
     cat.jump(audio);
+  },
+  onKey: (e) => {
+    // Dev shortcuts (non-destructive)
+    if (e.code === "KeyH") {
+      if (!uiRoot) return;
+      uiRoot.style.display = (uiRoot.style.display === "none") ? "" : "none";
+    } else if (e.code === "Digit1") {
+      // jump close to ocean/setpiece
+      window.__purrkour?.gotoOcean?.();
+    } else if (e.code === "Digit2") {
+      // trigger current setpiece immediately
+      window.__purrkour?.triggerSetpiece?.();
+    } else if (e.code === "Digit3") {
+      // cycle theme
+      const order = game.themeCycle?.order || [];
+      if (!order.length) return;
+      const i = Math.max(0, order.indexOf(game.theme));
+      game.theme = order[(i + 1) % order.length];
+    } else if (e.code === "KeyR") {
+      // soft reset via reload (fastest reliable)
+      location.reload();
+    }
   }
 });
 
