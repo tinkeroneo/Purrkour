@@ -142,6 +142,12 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
     function update(palette) {
         if (game.finished) return;
+        // Defensive: remove invalid entries (prevents "reading 'x' of undefined")
+        for (let i = objects.list.length - 1; i >= 0; i--) {
+            const o = objects.list[i];
+            if (!o || typeof o.x !== "number" || typeof o.y !== "number") objects.list.splice(i, 1);
+        }
+
 
         game.tick++;
 
@@ -168,7 +174,10 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         // --- setpiece: disable ground physics + collisions ---
         if (game.setpiece?.active) {
             cat.x = cat.baseX;
-            cat.y = terrain.surfaceAt(cat.x) - cat.h;
+            // keep cat "seated" during balloon/ocean flight (screen-space)
+            const H = window.innerHeight || 640;
+            // basket top approx: y around 34% screen height + small offset
+            cat.y = Math.floor(H * 0.34) + 18;
             cat.vy = 0;
             cat.onSurface = true;
             cat.jumpsLeft = cat.maxJumps;
@@ -200,9 +209,12 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // move objects + align ground objects
         for (const o of objects.list) {
+            if (!o || typeof o.x !== "number") continue;
             o.x -= eff;
-            applyGroundY(o);
+            // applyGroundY erwartet o.x -> also nur, wenn gültig
+            if (typeof o.y === "number") applyGroundY(o);
         }
+
 
         // platform land (top)
         for (const o of objects.list) {
@@ -340,8 +352,11 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // cleanup offscreen
         for (let i = objects.list.length - 1; i >= 0; i--) {
-            if (objects.list[i].x + objects.list[i].w < -260) objects.list.splice(i, 1);
+            const o = objects.list[i];
+            if (!o || typeof o.x !== "number" || typeof o.w !== "number") { objects.list.splice(i, 1); continue; }
+            if (o.x + o.w < -260) objects.list.splice(i, 1);
         }
+
 
         // animation frame selection
         cat.animT++;
