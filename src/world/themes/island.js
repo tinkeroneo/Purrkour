@@ -21,13 +21,25 @@ export const islandTheme = {
     grass: [120, 190, 120],
   },
 
-  ambience({ audio, night }) {
-    // a bit of surf + mild wind (warmer at night)
+  ambience({ audio, night, tau }) {
     const n = Math.max(0, Math.min(1, night ?? 0));
     audio.setAmbience?.({
-      surf: 0.22 + 0.18 * n,
-      wind: 0.10 + 0.10 * n,
-      forest: 0.03,
+      wind: 0.05 + 0.04 * n,
+      ocean: 0.18 + 0.16 * n,
+      night: 0.02 + 0.04 * n,
+      whoosh: 0.0001,
+      rumble: 0.0001,
+      tau: tau ?? 0.12,
     });
+  },
+
+  spawns: {
+    fence: 0.95,
+    dog: 0.85,
+    bird: 1.05,
+    yarn: 1.00,
+    mouse: 1.05,
+    fish: 1.10,
+    catnip: 1.05,
   },
 };

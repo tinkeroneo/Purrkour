@@ -10,7 +10,7 @@ export const forestTheme = {
     ground: [78, 155, 88],
   },
 
-  ambience({ audio, night }) {
+  ambience({ audio, night, tau }) {
     audio.setAmbience({
       wind: 0.03,
       ocean: 0.0001,
@@ -25,4 +25,15 @@ export const forestTheme = {
     bg.drawSky(ctx);
     bg.drawParallax(ctx);
   },
+
+  spawns: {
+    fence: 1.00,
+    dog: 1.00,
+    bird: 1.00,
+    yarn: 1.00,
+    mouse: 1.00,
+    fish: 1.00,
+    catnip: 1.00,
+  },
+
 };

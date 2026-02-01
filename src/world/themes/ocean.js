@@ -25,4 +25,15 @@ export const oceanTheme = {
     bg.drawParallax(ctx);
     bg.drawOcean?.(ctx); // optional hook
   },
+
+  spawns: {
+    fence: 0.95,
+    dog: 0.80,
+    bird: 1.05,
+    yarn: 0.95,
+    mouse: 0.95,
+    fish: 1.20,
+    catnip: 0.95,
+  },
+
 };

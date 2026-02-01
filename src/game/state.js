@@ -13,6 +13,7 @@ export function createGameState() {
         lives: 7,
         invulnTimer: 0,
         theme: "forest",
+  themeCycle: { order: ["island","mountain","forest"], idx: 0, nextAt: 999999, step: 140 },
         nextTheme: null,
 
         // theme crossfade helper (handled in loop)

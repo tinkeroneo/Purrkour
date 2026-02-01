@@ -70,6 +70,17 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
             // --- setpieces (ocean crossing etc.) ---
             setpieces.update();
 
+            // theme cycle after landing (island -> mountain -> forest ...)
+            if (!game.setpiece.active && game.themeCycle && !game.themeFade?.active) {
+                if (game.score >= (game.themeCycle.nextAt ?? 999999)) {
+                    const nextKey = game.themeCycle.order[game.themeCycle.idx % game.themeCycle.order.length];
+                    game.themeFade = { active: true, from: game.theme, to: nextKey, t: 0, dur: 80 };
+                    game.theme = nextKey;
+                    game.themeCycle.idx = (game.themeCycle.idx + 1) % game.themeCycle.order.length;
+                    game.themeCycle.nextAt = game.score + game.themeCycle.step;
+                }
+            }
+
             // 3) spawns (nutzt game._effSpeed)
             if (!game.setpiece.active) spawner.update(bg.palette?.());
 

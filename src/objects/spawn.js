@@ -1,4 +1,5 @@
 import { clamp } from "../core/util.js";
+import { getTheme } from "../world/themes.js";
 
 export function createSpawner(game, terrain, objects, canvas) {
   // calmer start tuning
@@ -35,6 +36,9 @@ export function createSpawner(game, terrain, objects, canvas) {
   }
 
   function spawnPack(spawnX, safeMode = false) {
+    const theme = getTheme(game.theme);
+    const sm = theme.spawns || {};
+    const m = (k) => (Number.isFinite(sm[k]) ? sm[k] : 1);
     const gapMin = minGapForScore(game.score);
     const allowClose = (Math.random() < closeGapChance(game.score));
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
@@ -54,13 +58,23 @@ export function createSpawner(game, terrain, objects, canvas) {
     const pFish   = clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.07);
     const pCatnip = (game.catnipTimer > 0) ? 0.0 : clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08);
 
+    // theme-weighted spawn probabilities
+    const pFenceT = pFence * m("fence");
+    const pBirdT  = pBird  * m("bird");
+    const pDogT   = pDog   * m("dog");
+    const pYarnT  = pYarn  * m("yarn");
+
+    const pMouseT  = pMouse  * m("mouse");
+    const pFishT   = pFish   * m("fish");
+    const pCatnipT = pCatnip * m("catnip");
+
     function rndType() {
       if (safeMode) return "fence";
       const r = Math.random();
-      if (r < pFence) return "fence";
-      if (r < pFence + pDog) return "dog";
-      if (r < pFence + pDog + pBird) return "bird";
-      if (r < pFence + pDog + pBird + pYarn) return "yarn";
+      if (r < pFenceT) return "fence";
+      if (r < pFenceT + pDogT) return "dog";
+      if (r < pFenceT + pDogT + pBirdT) return "bird";
+      if (r < pFenceT + pDogT + pBirdT + pYarnT) return "yarn";
       return "fence";
     }
 
@@ -102,11 +116,11 @@ export function createSpawner(game, terrain, objects, canvas) {
           const my = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.35) - h - 28) : (topY - 30);
           objects.add({ kind: "collectible", type: "mouse", x: x + w * 0.36, y: my, w: 22, h: 16, taken: false, yMode: "fixed" });
         }
-        if (Math.random() < pCatnip * 0.55) {
+        if (Math.random() < pCatnipT * 0.55) {
           const cy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.62) - h - 36) : (topY - 36);
           objects.add({ kind: "collectible", type: "catnip", x: x + w * 0.64, y: cy, w: 18, h: 18, taken: false, yMode: "fixed" });
         }
-        if (Math.random() < pFish * 0.45) {
+        if (Math.random() < pFishT * 0.45) {
           const fy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.16) - h - 28) : (topY - 28);
           objects.add({ kind: "collectible", type: "fish", x: x + w * 0.16, y: fy, w: 18, h: 14, taken: false, yMode: "fixed" });
         }
@@ -145,18 +159,18 @@ export function createSpawner(game, terrain, objects, canvas) {
     }
 
     // extra collectibles
-    if (Math.random() < pMouse) {
+    if (Math.random() < pMouseT) {
       const mx = spawnX + 30 + Math.random() * 40;
       const my = (Math.random() < 0.70)
         ? (terrain.surfaceAt(mx) - 16)
         : (terrain.surfaceAt(mx) - 70 - Math.random() * 25);
       objects.add({ kind: "collectible", type: "mouse", x: mx, y: my, w: 22, h: 16, taken: false, yMode: "fixed" });
     }
-    if (Math.random() < pFish * 0.55) {
+    if (Math.random() < pFishT * 0.55) {
       const fx = spawnX + 40;
       objects.add({ kind: "collectible", type: "fish", x: fx, y: terrain.surfaceAt(fx) - 88 - Math.random() * 30, w: 18, h: 14, taken: false, yMode: "fixed" });
     }
-    if (Math.random() < pCatnip * 0.55) {
+    if (Math.random() < pCatnipT * 0.55) {
       const cx = spawnX + 20;
       objects.add({ kind: "collectible", type: "catnip", x: cx, y: terrain.surfaceAt(cx) - 100 - Math.random() * 40, w: 18, h: 18, taken: false, yMode: "fixed" });
     }
