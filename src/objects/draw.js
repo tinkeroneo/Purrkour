@@ -1,115 +1,92 @@
-import { clamp, lerp, roundRect, smoothstep, tri } from "../core/util.js";
+import { clamp, roundRect, tri } from "../core/util.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
+    
     function drawBalloonSetpiece() {
-        const progress = clamp((game.setpiece?.t ?? 0) / (game.setpiece?.dur ?? 1), 0, 1);
-        const W = canvas.W;
-        const flightY = canvas.H * 0.34;
-        const bob = Math.sin(game.tick * 0.08) * 4;
-        const approachEnd = 0.25;
-        const boardEnd = 0.55;
-        const flightEnd = 0.9;
-        const landingX1 = W * 0.42;
-        const landingX2 = W * 0.72;
-        const landingY1 = terrain.surfaceAt(clamp(landingX1, 0, W)) - 44;
-        const landingY2 = terrain.surfaceAt(clamp(landingX2, 0, W)) - 44;
+        // Hot-air balloon / zeppelin crossing. During setpiece the cat rides in the basket.
+        const sp = game.setpiece;
+        if (!sp || !sp.active) return;
 
-        let baseX = landingX1;
-        let y = landingY1;
-        if (progress < approachEnd) {
-            const t = smoothstep(progress / approachEnd);
-            baseX = lerp(-80, landingX1, t);
-            y = lerp(flightY + bob, landingY1, t);
-        } else if (progress < boardEnd) {
-            baseX = landingX1;
-            y = landingY1;
-        } else if (progress < flightEnd) {
-            const t = smoothstep((progress - boardEnd) / (flightEnd - boardEnd));
-            baseX = lerp(landingX1, landingX2, t);
-            y = lerp(landingY1, flightY + bob, smoothstep(t));
-        } else {
-            const t = smoothstep((progress - flightEnd) / (1 - flightEnd));
-            baseX = lerp(landingX2, landingX2 + 40, t);
-            y = lerp(flightY + bob, landingY2, t);
-        }
+        const W = canvas.W, H = canvas.H;
 
-        if (!Number.isFinite(baseX) || !Number.isFinite(y)) return;
+        const p = clamp(sp.t / Math.max(1, sp.dur), 0, 1);
+
+        // flight path: enter from left, cross ocean, then land on the right
+        const x = (-90) + (W + 180) * p;
+
+        const flightY = H * 0.30;
+        const bob = Math.sin((game.tick + sp.t) * 0.06) * 4;
+        const landingY = terrain.surfaceAt(x) - 78; // basket sits above ground
+        const landT = clamp((p - 0.86) / 0.14, 0, 1);
+        const y = (1 - landT) * (flightY + bob) + landT * landingY;
+
+        const sway = Math.sin((game.tick + sp.t) * 0.02) * 0.06;
 
         ctx.save();
-        ctx.globalCompositeOperation = "source-over";
+        ctx.translate(x, y);
+        ctx.rotate(sway);
 
-        // balloon
-        ctx.globalAlpha = 0.95;
-        ctx.fillStyle = "rgba(240,120,160,0.9)";
-        ctx.beginPath();
-        ctx.ellipse(baseX, y, 30, 38, 0, 0, Math.PI * 2);
-        ctx.fill();
+        // balloon (only if type balloon; zeppelin later)
+        if (sp.type === "balloon") {
+            const g = ctx.createLinearGradient(-28, -46, 28, 30);
+            g.addColorStop(0, "rgba(255,170,205,0.95)");
+            g.addColorStop(1, "rgba(235,95,150,0.95)");
 
-        // stripes
-        ctx.globalAlpha = 0.35;
-        ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.fillRect(baseX - 2.5, y - 38, 5, 76);
-        ctx.globalAlpha = 1;
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // highlight
+            ctx.globalAlpha = 0.22;
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.beginPath();
+            ctx.ellipse(-10, -10, 10, 18, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // stripe
+            ctx.globalAlpha = 0.16;
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.fillRect(-2.2, -38, 4.4, 76);
+            ctx.globalAlpha = 1;
+        }
 
         // ropes
-        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.strokeStyle = "rgba(255,255,255,0.65)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(baseX - 14, y + 30); ctx.lineTo(baseX - 12, y + 62);
-        ctx.moveTo(baseX + 14, y + 30); ctx.lineTo(baseX + 12, y + 62);
+        ctx.moveTo(-14, 28); ctx.lineTo(-10, 62);
+        ctx.moveTo(14, 28);  ctx.lineTo(10, 62);
         ctx.stroke();
 
         // basket
-        ctx.fillStyle = "rgba(170,110,60,0.95)";
-        roundRect(ctx, baseX - 18, y + 62, 36, 18, 6);
-        ctx.fill();
+        ctx.fillStyle = "rgba(176,112,48,0.96)";
+        roundRect(ctx, -20, 62, 40, 18, 7); ctx.fill();
 
-        const catInBasket = progress >= boardEnd && progress < flightEnd + 0.05;
-        if (catInBasket) {
-            ctx.fillStyle = "#3b3b3b";
-            roundRect(ctx, baseX - 9, y + 54, 18, 14, 6);
-            roundRect(ctx, baseX - 6, y + 46, 12, 10, 5);
-            ctx.fill();
-            ctx.fillStyle = "#2a2a2a";
-            tri(ctx, baseX - 6, y + 46, baseX - 2, y + 40, baseX + 2, y + 46);
-            tri(ctx, baseX + 6, y + 46, baseX + 2, y + 40, baseX - 2, y + 46);
-        }
+        // basket rim
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillRect(-18, 64, 36, 3);
+        ctx.globalAlpha = 1;
+
+        // cat inside basket (simple silhouette)
+        ctx.save();
+        ctx.translate(0, 58);
+
+        ctx.fillStyle = "#3b3b3b";
+        roundRect(ctx, -9, 10, 18, 14, 6); ctx.fill();          // body
+        roundRect(ctx, -6, 2, 12, 10, 5); ctx.fill();           // head
+
+        ctx.fillStyle = "#2a2a2a";
+        tri(ctx, -6, 2, -2, -4, 2, 2);                          // ear
+        tri(ctx, 6, 2, 2, -4, -2, 2);                           // ear
 
         ctx.restore();
-
-        const drawCatAt = (x, yPos, frame) => {
-            const prev = { x: cat.x, y: cat.y, frame: cat.frame, onSurface: cat.onSurface };
-            cat.x = x;
-            cat.y = yPos;
-            cat.frame = frame;
-            cat.onSurface = true;
-            catApi.draw(ctx);
-            cat.x = prev.x;
-            cat.y = prev.y;
-            cat.frame = prev.frame;
-            cat.onSurface = prev.onSurface;
-        };
-
-        const groundWalkFrame = Math.floor(game.tick / 6) % 4;
-        const groundY1 = terrain.surfaceAt(clamp(landingX1, 0, W)) - cat.h;
-        const groundY2 = terrain.surfaceAt(clamp(landingX2, 0, W)) - cat.h;
-        if (progress >= approachEnd && progress < boardEnd) {
-            const t = smoothstep((progress - approachEnd) / (boardEnd - approachEnd));
-            const catStartX = landingX1 - 120;
-            const catEndX = landingX1 - 6;
-            const catX = lerp(catStartX, catEndX, t);
-            drawCatAt(catX, groundY1, groundWalkFrame);
-        } else if (progress >= boardEnd && progress < flightEnd) {
-            // cat is in basket
-        } else if (progress >= flightEnd) {
-            const t = smoothstep((progress - flightEnd) / (1 - flightEnd));
-            const catStartX = landingX2 - 6;
-            const catEndX = landingX2 + 120;
-            const catX = lerp(catStartX, catEndX, t);
-            drawCatAt(catX, groundY2, groundWalkFrame);
-        }
+        ctx.restore();
     }
+
 
     function drawPawprints(objects) {
         for (const p of objects.pawprints) {
@@ -338,65 +315,67 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         const palette = bg.palette();
 
         bg.drawSky(ctx);
+        bg.drawParallax(ctx);
 
+        // Setpiece mode: only sky + ocean + balloon (no ground/obstacles)
         if (game.setpiece?.active) {
-            if (typeof bg.drawOcean === "function") {
-                bg.drawOcean(ctx);
-            }
+            if (typeof bg.drawOcean === "function") bg.drawOcean(ctx);
             drawBalloonSetpiece();
-        } else {
-            bg.drawParallax(ctx);
-            terrain.drawGround(ctx, palette);
-
-            if (typeof bg.drawGroundFog === "function") {
-                bg.drawGroundFog(ctx);
-            }
-
-            drawPawprints(objects);
-
-            // objects
-            for (const o of objects.list) {
-                if (o.kind === "platform") drawFence(o);
-                else if (o.kind === "obstacle") {
-                    if (o.type === "bird") drawBird(o);
-                    else if (o.type === "dog") drawDog(o);
-                    else drawYarn(o);
-                } else if (o.kind === "collectible") {
-                    if (o.type === "mouse") drawMouse(o);
-                    else if (o.type === "catnip") drawCatnip(o);
-                    else if (o.type === "fish") drawFish(o);
-                } else if (o.kind === "checkpoint") {
-                    if (!o.used) drawBlanket(o);
-                }
-            }
-
-            // home
-            if (game.homePhase >= 1) drawHome();
-
-            // checkpoint glow
-            if (game.checkpointGlow > 0) {
-                ctx.globalAlpha = clamp(game.checkpointGlow / 120, 0, 1) * 0.16;
-                ctx.fillStyle = "rgba(255,120,170,1)";
-                ctx.fillRect(0, 0, canvas.W, canvas.H);
-                ctx.globalAlpha = 1;
-            }
-
-            // cat shadow + sprite
-            const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
-            if (blink) {
-                ctx.globalAlpha = 0.18;
-                ctx.fillStyle = "#000";
-                ctx.beginPath();
-                const surfaceY = terrain.surfaceAt(cat.x);
-                const shadowW = cat.w * (cat.onSurface ? 0.72 : 0.52);
-                const shadowH = cat.h * 0.12;
-                ctx.ellipse(cat.x + cat.w * 0.55, surfaceY - 3, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-
-            if (blink) catApi.draw(ctx);
+            drawBubbles(objects);
+            return;
         }
+
+        terrain.drawGround(ctx, palette);
+
+        if (typeof bg.drawGroundFog === "function") {
+            bg.drawGroundFog(ctx);
+        }
+
+        drawPawprints(objects);
+
+        // objects
+        for (const o of objects.list) {
+            if (o.kind === "platform") drawFence(o);
+            else if (o.kind === "obstacle") {
+                if (o.type === "bird") drawBird(o);
+                else if (o.type === "dog") drawDog(o);
+                else drawYarn(o);
+            } else if (o.kind === "collectible") {
+                if (o.type === "mouse") drawMouse(o);
+                else if (o.type === "catnip") drawCatnip(o);
+                else if (o.type === "fish") drawFish(o);
+            } else if (o.kind === "checkpoint") {
+                if (!o.used) drawBlanket(o);
+            }
+        }
+
+        // home
+        if (game.homePhase >= 1) drawHome();
+
+        // checkpoint glow
+        if (game.checkpointGlow > 0) {
+            ctx.globalAlpha = clamp(game.checkpointGlow / 120, 0, 1) * 0.16;
+            ctx.fillStyle = "rgba(255,120,170,1)";
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+            ctx.globalAlpha = 1;
+        }
+
+        // cat shadow + sprite
+        const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
+        if (blink) {
+            ctx.globalAlpha = 0.18;
+            ctx.fillStyle = "#000";
+            ctx.beginPath();
+            const surfaceY = terrain.surfaceAt(cat.x);
+            const shadowW = cat.w * (cat.onSurface ? 0.72 : 0.52);
+            const shadowH = cat.h * 0.12;
+            ctx.ellipse(cat.x + cat.w * 0.55, surfaceY - 3, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        if (blink) catApi.draw(ctx);
+        
 
         // overlays
         if (game.catnipTimer > 0) {

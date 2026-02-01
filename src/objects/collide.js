@@ -70,6 +70,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         let dog = null;
         for (const o of objects.list) {
+            if (!o) continue;
             if (o.kind === "obstacle" && o.type === "dog" && o.chasing) { dog = o; break; }
         }
         if (!dog) { game.chaseActive = false; return; }
@@ -142,12 +143,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
     function update(palette) {
         if (game.finished) return;
-        // Defensive: remove invalid entries (prevents "reading 'x' of undefined")
-        for (let i = objects.list.length - 1; i >= 0; i--) {
-            const o = objects.list[i];
-            if (!o || typeof o.x !== "number" || typeof o.y !== "number") objects.list.splice(i, 1);
-        }
-
 
         game.tick++;
 
@@ -168,22 +163,23 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         const catnipMult = (game.catnipTimer > 0) ? 0.82 : 1.0;
         const slowMult = (game.slowTimer > 0) ? game.slowStrength : 1.0;
         const eff = game.speed * catnipMult * slowMult;
-
-        game._effSpeed = eff;
-
-        // --- setpiece: disable ground physics + collisions ---
+        // --- setpiece: disable ground physics + collisions (balloon/zeppelin) ---
         if (game.setpiece?.active) {
-            cat.x = cat.baseX;
-            // keep cat "seated" during balloon/ocean flight (screen-space)
-            const H = window.innerHeight || 640;
-            // basket top approx: y around 34% screen height + small offset
-            cat.y = Math.floor(H * 0.34) + 18;
+            game._effSpeed = eff;
+
+            // keep cat stable (we render the cat inside the balloon basket)
+            const baseX = (cat.baseX ?? 110);
+            cat.x = baseX;
             cat.vy = 0;
             cat.onSurface = true;
             cat.jumpsLeft = cat.maxJumps;
+
+            // keep UI effects alive
             objects.updateBubbles();
             return;
         }
+
+        game._effSpeed = eff;
 
         // home movement / finish
         if (game.homePhase === 1) {
@@ -209,15 +205,14 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // move objects + align ground objects
         for (const o of objects.list) {
-            if (!o || typeof o.x !== "number") continue;
+            if (!o) continue;
             o.x -= eff;
-            // applyGroundY erwartet o.x -> also nur, wenn gültig
-            if (typeof o.y === "number") applyGroundY(o);
+            applyGroundY(o);
         }
-
 
         // platform land (top)
         for (const o of objects.list) {
+            if (!o) continue;
             if (o.kind !== "platform") continue;
 
             const catPrevBottom = prevY + cat.h;
@@ -234,6 +229,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // platform side collision (solid fence)
         for (const o of objects.list) {
+            if (!o) continue;
             if (o.kind === "setpiece") continue;
             if (o.kind !== "platform") continue;
 
@@ -305,6 +301,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // collectibles
         for (const o of objects.list) {
+            if (!o) continue;
             if (o.kind !== "collectible" || o.taken) continue;
             if (!aabb(catBox, o)) continue;
 
@@ -329,6 +326,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // checkpoint blanket
         for (const o of objects.list) {
+            if (!o) continue;
             if (o.kind === "checkpoint" && !o.used && aabb(catBox, o)) {
                 o.used = true;
                 game.checkpointActive = true;
@@ -341,6 +339,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // scoring when passing
         for (const o of objects.list) {
+            if (!o) continue;
             if (o._scored) continue;
             if (o.x + o.w < cat.x - 10) {
                 if (o.kind === "obstacle" || o.kind === "platform") {
@@ -352,11 +351,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
         // cleanup offscreen
         for (let i = objects.list.length - 1; i >= 0; i--) {
-            const o = objects.list[i];
-            if (!o || typeof o.x !== "number" || typeof o.w !== "number") { objects.list.splice(i, 1); continue; }
-            if (o.x + o.w < -260) objects.list.splice(i, 1);
+            if (objects.list[i].x + objects.list[i].w < -260) objects.list.splice(i, 1);
         }
-
 
         // animation frame selection
         cat.animT++;

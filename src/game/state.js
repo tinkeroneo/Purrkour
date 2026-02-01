@@ -16,12 +16,21 @@ export function createGameState() {
         // setpiece: ocean crossing
         setpiece: {
             active: false,
+            type: "balloon",     // "balloon" | "zeppelin" (later)
+            t: 0,                // frames elapsed
+            dur: 60 * 10,        // ~10s crossing
+            startScore: 120,     // trigger once when score reaches this
+            cooldown: 999999,    // counts up while inactive; prevents spam
+        },
+/*         {
+            
+            active: false,
             type: "balloon",     // "balloon" | "zeppelin" (später switchbar)
             t: 0,                // frames elapsed in setpiece
             dur: 60 * 10,        // 10s crossing
             startScore: 120,     // wann starten (Score-Schwelle)
             cooldown: 999999,    // wird nach Start gesetzt (damit es nicht dauernd kommt)
-        },
+        }, */
 
         slowTimer: 0,
         slowStrength: 0.65,

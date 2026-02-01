@@ -14,13 +14,15 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
             // 2) physics + collisions + scoring + timers (setzt game._effSpeed neu)
             collider.update(bg.palette?.());
             // --- setpiece trigger ---
-            if (!game.setpiece.active && game.score >= game.setpiece.startScore && game.setpiece.cooldown > 99999) {
+            if (game.setpiece && !game.setpiece.active && game.score >= game.setpiece.startScore && game.setpiece.cooldown > 99999) {
                 game.setpiece.active = true;
                 game.setpiece.t = 0;
                 game.setpiece.cooldown = 0;
+
+                // clear world objects so nothing collides while we fly
                 objects.list.length = 0;
                 objects.pawprints.length = 0;
-                // optional: kleine Meldung
+                // keep bubbles/toast
                 // hud.toast?.("Auf zum Ozean… 🎈", 120);
             }
             if (game.setpiece.active) {
