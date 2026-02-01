@@ -1,29 +1,83 @@
+import { clamp, lerp, smoothstep } from "../core/util.js";
 import { getTheme } from "./themes.js";
+import { nightFactor } from "./daynight.js";
 
+const fireflies = []; // {x,y,phase,r,life}
+
+function mixRGB(a, b, t) {
+    // Defensive: themes may omit some palette keys.
+    if (!a && !b) return [0, 0, 0];
+    if (!a) return [b[0] | 0, b[1] | 0, b[2] | 0];
+    if (!b) return [a[0] | 0, a[1] | 0, a[2] | 0];
+    return [
+        Math.round(lerp(a[0], b[0], t)),
+        Math.round(lerp(a[1], b[1], t)),
+        Math.round(lerp(a[2], b[2], t)),
+    ];
+}
 
 export function createBackground(getW, getH, lakes, game, hud) {
     const W = () => getW();
     const H = () => getH();
 
+    function palette() {
+        // Theme-based palette + optional crossfade
+        const t = game.themeFade;
+        const cur = getTheme(game.theme);
+        let pal = cur.palette || {};
 
+        if (t?.active && t.from && t.to && t.dur > 0) {
+            const a = getTheme(t.from).palette || {};
+            const b = getTheme(t.to).palette || {};
+            const u = clamp(t.t / t.dur, 0, 1);
+            const uu = smoothstep(u);
+            pal = {
+                key: b.key ?? t.to,
+                label: b.label ?? t.to,
+                skyTop: mixRGB(a.skyTop, b.skyTop, uu),
+                skyBot: mixRGB(a.skyBot, b.skyBot, uu),
+                far: mixRGB(a.far, b.far, uu),
+                forest: mixRGB(a.forest, b.forest, uu),
+                ground: mixRGB(a.ground, b.ground, uu),
+                // optional keys with sane fallbacks
+                grass: mixRGB(a.grass ?? a.ground, b.grass ?? b.ground, uu),
+                ocean: mixRGB(a.ocean ?? a.lake ?? [60, 150, 200], b.ocean ?? b.lake ?? [60, 150, 200], uu),
+            };
+        }
 
-function palette() {
-  // Theme-based palette (no biome logic here anymore)
-  const theme = getTheme(game.theme);
-  return theme.palette;
-}
+        // Normalize optional keys (avoid undefined accesses in draws)
+        if (!pal.skyTop) pal.skyTop = [150, 210, 255];
+        if (!pal.skyBot) pal.skyBot = [235, 245, 255];
+        if (!pal.far) pal.far = [70, 95, 135];
+        if (!pal.forest) pal.forest = [50, 135, 95];
+        if (!pal.ground) pal.ground = [95, 170, 92];
+        if (!pal.grass) pal.grass = pal.ground;
+        if (!pal.ocean) pal.ocean = [60, 150, 200];
+
+        // Attach day/night (0..1) for draws to use
+        pal.n = nightFactor(game.tick, game.score);
+        return pal;
+    }
 
 
     function drawSky(ctx) {
         const W = getW(), H = getH();
         const p = palette();
-        hud.setBiome(p.label);
+        if (hud && typeof hud.setBiome === "function") hud.setBiome(p.label);
 
         const g = ctx.createLinearGradient(0, 0, 0, H);
         g.addColorStop(0, `rgb(${p.skyTop[0]},${p.skyTop[1]},${p.skyTop[2]})`);
         g.addColorStop(1, `rgb(${p.skyBot[0]},${p.skyBot[1]},${p.skyBot[2]})`);
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, W, H);
+
+        // night veil
+        if (p.n > 0) {
+            ctx.globalAlpha = 0.45 * p.n;
+            ctx.fillStyle = "rgba(10,18,32,1)";
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalAlpha = 1;
+        }
 
         // subtle stars at night
         if (p.n > 0.55) {
@@ -71,6 +125,61 @@ function palette() {
             ctx.lineTo(x + 28, baseY);
             ctx.closePath();
             ctx.fill();
+        }
+
+        // island palms (simple silhouettes)
+        if (game.theme === "island") {
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = `rgba(${Math.max(0, p.forest[0] - 20)},${Math.max(0, p.forest[1] - 30)},${Math.max(0, p.forest[2] - 20)},0.55)`;
+            const horizon = H * 0.74;
+            for (let i = 0; i < 6; i++) {
+                const px = ((i * 180) - (near * 0.35)) % (W + 220) - 60;
+                const trunkH = 38 + (i % 3) * 10;
+                ctx.beginPath();
+                ctx.moveTo(px, horizon);
+                ctx.quadraticCurveTo(px + 10, horizon - trunkH * 0.6, px + 18, horizon - trunkH);
+                ctx.lineTo(px + 24, horizon - trunkH);
+                ctx.quadraticCurveTo(px + 14, horizon - trunkH * 0.5, px + 8, horizon);
+                ctx.closePath();
+                ctx.fill();
+
+                // leaves
+                ctx.globalAlpha = 0.40;
+                ctx.beginPath();
+                ctx.ellipse(px + 20, horizon - trunkH, 26, 10, -0.25, 0, Math.PI * 2);
+                ctx.ellipse(px + 28, horizon - trunkH + 4, 22, 8, 0.35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 0.55;
+            }
+        }
+
+        // fireflies at night (subtle)
+        if (p.n > 0.60 && (game.theme === "forest" || game.theme === "island")) {
+            if (fireflies.length < 28 && Math.random() < 0.15) {
+                fireflies.push({
+                    x: Math.random() * W,
+                    y: H * (0.30 + Math.random() * 0.45),
+                    phase: Math.random() * 6.28,
+                    r: 1.2 + Math.random() * 1.6,
+                    life: 200 + Math.floor(Math.random() * 260),
+                });
+            }
+            ctx.globalAlpha = 0.12 + 0.10 * (p.n - 0.60) / 0.32;
+            ctx.fillStyle = "rgba(220,255,170,0.9)";
+            for (let i = fireflies.length - 1; i >= 0; i--) {
+                const f = fireflies[i];
+                f.life--;
+                f.phase += 0.03;
+                f.x += Math.sin(f.phase) * 0.18;
+                f.y += Math.cos(f.phase * 0.9) * 0.12;
+                if (f.life <= 0 || f.x < -50 || f.x > W + 50) { fireflies.splice(i, 1); continue; }
+                const a = 0.55 + 0.45 * Math.sin(f.phase);
+                ctx.globalAlpha = (0.08 + 0.16 * a) * clamp((p.n - 0.60) / 0.32, 0, 1);
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
         }
 
         // Lakes are optional (currently disabled). Keep the hook so they can be
@@ -140,5 +249,9 @@ function palette() {
 }
 
 
-    return { palette, drawSky, drawParallax, drawGroundFog, drawOcean };
+    function getNight() {
+        return palette().n;
+    }
+
+    return { palette, drawSky, drawParallax, drawGroundFog, drawOcean, nightFactor: getNight };
 }

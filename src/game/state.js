@@ -13,11 +13,16 @@ export function createGameState() {
         lives: 7,
         invulnTimer: 0,
         theme: "forest",
-
-        // Theme Trigger bookkeeping
-        _lastSetpieceActive: false,
-        _pendingThemes: null,
         nextTheme: null,
+
+        // theme crossfade helper (handled in loop)
+        themeFade: {
+            active: false,
+            from: "forest",
+            to: "forest",
+            t: 0,
+            dur: 60,
+        },
 
         // setpiece: ocean crossing
         setpiece: {

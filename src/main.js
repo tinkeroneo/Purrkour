@@ -81,3 +81,15 @@ window.__purrkour = {
   bg
 };
 window.__purrkour.setTheme = (k) => game.theme = k;
+
+// quick testing shortcuts (Console)
+window.__purrkour.setScore = (s) => { game.score = Math.max(0, s | 0); };
+window.__purrkour.gotoOcean = () => {
+  game.score = game.setpiece?.startScore ?? 120;
+  if (game.setpiece) game.setpiece.cooldown = 1000000;
+};
+window.__purrkour.triggerSetpiece = () => {
+  if (!game.setpiece) return;
+  game.setpiece.cooldown = 1000000;
+  game.score = Math.max(game.score, game.setpiece.startScore);
+};
