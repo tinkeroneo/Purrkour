@@ -1,7 +1,6 @@
-import { BIOMES, biomeIndexForScore } from "./biomes.js";
-import { nightFactor } from "./daynight.js";
 import { lerp } from "../core/util.js";
 const fireflies = []; // {x,y,phase,r,life}
+import { getTheme } from "./themes.js";
 
 function mixRGB(a, b, t) {
     return [
@@ -15,28 +14,14 @@ export function createBackground(getW, getH, lakes, game, hud) {
     const W = () => getW();
     const H = () => getH();
 
-    function currentBiome() {
-        return BIOMES[biomeIndexForScore(game.score)];
-    }
 
-    function palette() {
-        const biome = currentBiome();
-        const n = nightFactor(game.tick, game.score);
-        const day = biome.day, night = biome.night;
-        const p = {
-            key: biome.key,
-            label: biome.label,
-            n,
-            skyTop: mixRGB(day.skyTop, night.skyTop, n),
-            skyBot: mixRGB(day.skyBot, night.skyBot, n),
-            far: mixRGB(day.far, night.far, n),
-            forest: mixRGB(day.forest, night.forest, n),
-            lake: mixRGB(day.lake, night.lake, n),
-            ground: mixRGB(day.ground, night.ground, n),
-            lakeChance: biome.lakeChance
-        };
-        return p;
-    }
+
+function palette() {
+  // Theme-based palette (no biome logic here anymore)
+  const theme = getTheme(game.theme);
+  return theme.palette;
+}
+
 
     function drawSky(ctx) {
         const W = getW(), H = getH();
@@ -164,6 +149,5 @@ export function createBackground(getW, getH, lakes, game, hud) {
 }
 
 
-    return { palette, drawSky, drawParallax, drawGroundFog, drawOcean, currentBiome };
+    return { palette, drawSky, drawParallax, drawGroundFog, drawOcean };
 }
-

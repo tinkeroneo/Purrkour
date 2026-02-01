@@ -80,3 +80,4 @@ window.__purrkour = {
   terrain,
   bg
 };
+window.__purrkour.setTheme = (k) => game.theme = k;

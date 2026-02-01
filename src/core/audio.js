@@ -230,7 +230,7 @@ export function createAudio(soundBtnEl) {
 
 
         ensureLayer("wind", 380, "noise");
-        ensureLayer("ocean", 140, "noise");
+        ensureLayer("ocean", 160, "noise");
         ensureLayer("night", 2600, "noise");
         ensureLayer("whoosh", 120, "whoosh");
         ensureLayer("rumble", 100, "rumble");

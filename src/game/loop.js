@@ -1,9 +1,13 @@
+import { getTheme } from "../world/themes.js";
+
+
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
     function step() {
         if (!game.finished) {
             // dx: letzter effSpeed (wird in collider.update() neu berechnet)
             const dx = collider.effSpeed();
+            const theme = getTheme(game.theme);
 
             // 1) world scroll
             terrain.update(dx);
@@ -18,14 +22,11 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
                 const isOcean = !!game.setpiece?.active;
                 const night = bg?.nightFactor ? bg.nightFactor() : 0; // falls du’s schon exposed hast
 
-                audio.setAmbience({
-                    wind: isOcean ? 0.05 : 0.03,
-                    ocean: isOcean ? 0.10 : 0.0001,
-                    night: isOcean ? 0.0001 : (0.02 + night * 0.03),
-                    // sweeteners only during flight
-                    whoosh: isOcean ? 0.012 : 0.0001,
-                    rumble: isOcean ? 0.010 : 0.0001,
+                theme.ambience?.({
+                    audio,
+                    night: bg?.nightFactor?.() ?? 0,
                 });
+
             }
 
             // --- setpiece trigger ---
