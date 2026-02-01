@@ -1,5 +1,5 @@
 // src/game/loop.js
-export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud }) {
+export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
     function step() {
         if (!game.finished) {
             // dx: letzter effSpeed (wird in collider.update() neu berechnet)
@@ -13,6 +13,18 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
 
             // 2) physics + collisions + scoring + timers (setzt game._effSpeed neu)
             collider.update(bg.palette?.());
+            // ambience mix: subtle by default
+            if (audio?.enabled) {
+                const isOcean = !!game.setpiece?.active;
+                const night = bg?.nightFactor ? bg.nightFactor() : 0; // falls du’s schon exposed hast
+
+                audio.setAmbience({
+                    wind: isOcean ? 0.05 : 0.03,
+                    ocean: isOcean ? 0.10 : 0.0001,
+                    night: isOcean ? 0.0001 : (0.02 + night * 0.03),
+                });
+            }
+
             // --- setpiece trigger ---
             if (game.setpiece && !game.setpiece.active && game.score >= game.setpiece.startScore && game.setpiece.cooldown > 99999) {
                 game.setpiece.active = true;

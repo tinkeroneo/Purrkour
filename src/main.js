@@ -69,7 +69,7 @@ setupInput({
 const loop = createLoop({
   game, cat, terrain, lakes, bg,
   objects, spawner, collider,
-  drawer, hud
+  drawer, hud, audio
 });
 loop.start();
 // DEBUG helpers
