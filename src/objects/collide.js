@@ -308,6 +308,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                         cat.jumpsLeft = cat.maxJumps;
                         // stomp feedback
                         catApi?.stomp?.();
+                        o.landedTimer = 14;
                         objects.addPuff?.(cat.x + cat.w * 0.55, cat.y + cat.h - 6);
                         if (audio?.SFX?.stomp) audio.SFX.stomp(); else if (audio?.SFX?.combo) audio.SFX.combo();
                     } else {

@@ -46,14 +46,14 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
 // vertical band (ground/mid/high) based on height above terrain
 if (!game.vertical) game.vertical = { band: "ground" };
 if (game.setpiece?.active) {
-    game.vertical.band = "high";
+    game.vertical.band = "air";
 } else {
     const c = (cat.cat ?? cat);
     const surfY = terrain.surfaceAt(c.x);
     const above = surfY - (c.y + c.h);
     if (above < 70) game.vertical.band = "ground";
     else if (above < 170) game.vertical.band = "mid";
-    else game.vertical.band = "high";
+    else game.vertical.band = "air";
 }
 
             // ambience mix: theme-driven + smoother during transitions
@@ -63,7 +63,7 @@ if (game.setpiece?.active) {
                 const tau = (game.themeFade?.active ? 0.22 : 0.12);
 
                 // base ambience from theme
-                theme.ambience?.({ audio, night: n, tau });
+                theme.ambience?.({ audio, night: n, tau, band: (game.vertical?.band || "ground") });
 
                 // extra layers during flight / ocean-crossing
                 if (isFlight) {

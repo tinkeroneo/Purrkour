@@ -13,11 +13,12 @@ export const oceanTheme = {
   },
 
   ambience({ audio }) {
+    const air = (band === "air") ? 1 : 0;
     audio.setAmbience({
-      wind: 0.05,
+      wind: (0.05 + air*0.03),
       ocean: 0.12,
       night: 0.0001,
-      whoosh: 0.018,
+      whoosh: (0.018 + air*0.08),
       rumble: 0.010,
     });
   },
@@ -26,6 +27,12 @@ export const oceanTheme = {
     bg.drawSky(ctx);
     bg.drawParallax(ctx);
     bg.drawOcean?.(ctx); // optional hook
+  },
+
+  zones: {
+    ground: { fence: 0.95, dog: 0.70, bird: 0.95, yarn: 0.95, mouse: 1.05, fish: 1.10, catnip: 1.00 },
+    mid:    { fence: 0.35, dog: 0.15, bird: 1.55, yarn: 0.35, mouse: 1.10, fish: 1.10, catnip: 1.05 },
+    air:    { fence: 0.00, dog: 0.00, bird: 0.40, yarn: 0.00, mouse: 0.95, fish: 0.95, catnip: 0.95 },
   },
 
   spawns: {

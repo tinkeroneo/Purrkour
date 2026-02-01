@@ -41,14 +41,62 @@ export function createSpawner(game, terrain, objects, canvas) {
     const theme = getTheme(game.theme);
     const sm = theme.spawns || {};
     const m = (k) => (Number.isFinite(sm[k]) ? sm[k] : 1);
+
+    const band = (game.setpiece?.active) ? "air" : (game.vertical?.band || "ground");
+    const zones = theme.zones || {};
+    const zm = zones[band] || zones.ground || {};
+    const z = (k) => (Number.isFinite(zm[k]) ? zm[k] : 1);
+
     const gapMin = minGapForScore(game.score);
+// Air band: keep it calm but not empty.
+// - No dogs/fences in air (flow break)
+// - Mostly collectibles + occasional short bird-chain (stompable from above)
+if (band === "air" && !safeMode) {
+  const night = nightFactor(game.tick, game.score);
+  const themeVariant = theme.birdVariant || "crow";
+  const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
+
+  // chance for a small bird chain
+  const chainChance = clamp(0.26 + game.score * 0.00035, 0.26, 0.40) * z("bird");
+  if (Math.random() < chainChance) {
+    const count = 1 + (Math.random() < 0.40 ? 1 : 0) + (Math.random() < 0.14 ? 1 : 0); // 1..3
+    let x = spawnX;
+    for (let i = 0; i < count; i++) {
+      const w = 36, h = 20;
+      const flyY = (terrain.surfaceAt(x) - (240 + Math.random() * 55)); // high enough to feel "air"
+      objects.add({ kind: "obstacle", type: "bird", variant, x, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed" });
+      x += 240 + Math.random() * 150; // generous spacing = flow
+    }
+  }
+
+  // light goodies in air
+  const pMouseAir = 0.16 * CALM.collectiblesScale * z("mouse");
+  const pFishAir = 0.06 * CALM.collectiblesScale * z("fish");
+  const pCatnipAir = (game.catnipTimer > 0) ? 0 : 0.06 * CALM.collectiblesScale * z("catnip");
+
+  if (Math.random() < pMouseAir) {
+    const mx = spawnX + 20 + Math.random() * 60;
+    objects.add({ kind: "collectible", type: "mouse", x: mx, y: terrain.surfaceAt(mx) - (190 + Math.random() * 40), w: 22, h: 16, taken: false, yMode: "fixed" });
+  }
+  if (Math.random() < pFishAir) {
+    const fx = spawnX + 35 + Math.random() * 45;
+    objects.add({ kind: "collectible", type: "fish", x: fx, y: terrain.surfaceAt(fx) - (210 + Math.random() * 45), w: 18, h: 14, taken: false, yMode: "fixed" });
+  }
+  if (Math.random() < pCatnipAir) {
+    const cx = spawnX + 25 + Math.random() * 55;
+    objects.add({ kind: "collectible", type: "catnip", x: cx, y: terrain.surfaceAt(cx) - (220 + Math.random() * 50), w: 18, h: 18, taken: false, yMode: "fixed" });
+  }
+
+  nextSpawnIn = gapMin + 160 + Math.floor(Math.random() * 160);
+  return;
+}
     const allowClose = (Math.random() < closeGapChance(game.score));
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
 
-    const pFence = clamp(0.24 + game.score * 0.0022, 0.22, 0.32);
-    const pBird = clamp((0.09 + game.score * 0.0018) * CALM.animalsScale, 0.07, 0.14);
+    const pFence = z("fence") *  clamp(0.24 + game.score * 0.0022, 0.22, 0.32);
+    const pBird = z("bird") *  clamp((0.09 + game.score * 0.0018) * CALM.animalsScale, 0.07, 0.14);
     const pDog  = clamp((0.10 + game.score * 0.0017) * CALM.animalsScale, 0.08, 0.16);
-    const pYarn = 0.18;
+    const pYarn = z("yarn") *  0.18;
 
     // grace window: no stressful obstacles right after big transitions
     if (safeMode) {
@@ -58,7 +106,7 @@ export function createSpawner(game, terrain, objects, canvas) {
 
     const pMouse  = 0.18 * CALM.collectiblesScale;
     const pFish   = clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.07);
-    const pCatnip = (game.catnipTimer > 0) ? 0.0 : clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08);
+    const pCatnip = z("catnip") *  (game.catnipTimer > 0) ? 0.0 : clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08);
 
     // theme-weighted spawn probabilities
     const pFenceT = pFence * m("fence");
@@ -72,12 +120,11 @@ export function createSpawner(game, terrain, objects, canvas) {
 
 
 // vertical band multipliers (encourage "jump on birds" gameplay higher up)
-const band = game.vertical?.band ?? "ground";
 let vbFence = 1, vbDog = 1, vbBird = 1, vbYarn = 1, vbMouse = 1, vbFish = 1, vbCatnip = 1;
 if (band === "mid") {
   vbBird = 1.6; vbFence = 0.85; vbDog = 0.75; vbYarn = 0.85;
   vbMouse = 1.10; vbFish = 1.05; vbCatnip = 1.05;
-} else if (band === "high") {
+} else if (band === "air") {
   vbBird = 1.35; vbFence = 0.55; vbDog = 0.45; vbYarn = 0.60;
   vbMouse = 1.15; vbFish = 1.10; vbCatnip = 1.10;
 }

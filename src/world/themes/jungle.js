@@ -13,11 +13,12 @@ export const jungleTheme = {
   },
 
   ambience({ audio, night }) {
+    const air = (band === "air") ? 1 : 0;
     audio.setAmbience({
-      wind: 0.012,
+      wind: (0.012 + air*0.03),
       ocean: 0.0001,
       night: 0.03 + night * 0.06,
-      whoosh: 0.0001,
+      whoosh: (0.0001 + air*0.08),
       rumble: 0.006,
     });
   },
@@ -25,6 +26,12 @@ export const jungleTheme = {
   drawBackground(bg, ctx) {
     bg.drawSky(ctx);
     bg.drawParallax(ctx);
+  },
+
+  zones: {
+    ground: { fence: 1.10, dog: 0.95, bird: 0.80, yarn: 1.00, mouse: 1.05, fish: 1.00, catnip: 1.05 },
+    mid:    { fence: 0.55, dog: 0.20, bird: 1.35, yarn: 0.50, mouse: 1.10, fish: 1.05, catnip: 1.10 },
+    air:    { fence: 0.00, dog: 0.00, bird: 0.35, yarn: 0.00, mouse: 0.95, fish: 0.95, catnip: 0.95 },
   },
 
   spawns: {

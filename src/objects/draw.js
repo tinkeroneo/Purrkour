@@ -69,7 +69,9 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     // ----- object draw helpers -----
     function drawBird(o) {
         o.flapT += 0.12;
-        const flap = Math.sin(o.flapT) * 2;
+        if (o.landedTimer && o.landedTimer > 0) o.landedTimer--;
+        const landBoost = (o.landedTimer && o.landedTimer > 0) ? (o.landedTimer / 14) : 0;
+        const flap = Math.sin(o.flapT) * (2 + landBoost * 5);
         const v = o.variant || "crow";
 
         ctx.save();

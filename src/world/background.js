@@ -67,7 +67,7 @@ export function createBackground(getW, getH, lakes, game, hud) {
         if (band === "mid") {
             pal.skyTop = mixRGB(pal.skyTop, [235, 250, 255], 0.18);
             pal.skyBot = mixRGB(pal.skyBot, [250, 255, 255], 0.10);
-        } else if (band === "high") {
+        } else if (band === "air") {
             pal.skyTop = mixRGB(pal.skyTop, [245, 252, 255], 0.32);
             pal.skyBot = mixRGB(pal.skyBot, [255, 255, 255], 0.18);
         }
@@ -254,11 +254,11 @@ function drawHighClouds(ctx, near, night) {
     const band = game.vertical?.band ?? "ground";
     if (band === "ground") return;
 
-    const strength = (band === "high") ? 0.22 : 0.14;
+    const strength = (band === "air") ? 0.22 : 0.14;
     ctx.save();
     ctx.globalAlpha = strength * (1 - night * 0.25);
     ctx.fillStyle = "rgba(255,255,255,0.8)";
-    const baseY = (band === "high") ? H * 0.22 : H * 0.30;
+    const baseY = (band === "air") ? H * 0.22 : H * 0.30;
     for (let i = 0; i < 7; i++) {
         const x = ((i * 180) - (near * 1.2)) % (W + 240) - 120;
         const y = baseY + Math.sin((x + near) * 0.01) * 12 + i * 6;
