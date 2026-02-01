@@ -13,12 +13,11 @@ export const desertTheme = {
   },
 
   ambience({ audio, night }) {
-    const air = (band === "air") ? 1 : 0;
     audio.setAmbience({
-      wind: (0.030 + air*0.03),
+      wind: 0.030,
       ocean: 0.0001,
       night: 0.012 + night * 0.028,
-      whoosh: (0.004 + air*0.08),
+      whoosh: 0.004,
       rumble: 0.004,
     });
   },

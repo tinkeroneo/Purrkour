@@ -13,12 +13,11 @@ export const oceanTheme = {
   },
 
   ambience({ audio }) {
-    const air = (band === "air") ? 1 : 0;
     audio.setAmbience({
-      wind: (0.05 + air*0.03),
+      wind: 0.05,
       ocean: 0.12,
       night: 0.0001,
-      whoosh: (0.018 + air*0.08),
+      whoosh: 0.018,
       rumble: 0.010,
     });
   },

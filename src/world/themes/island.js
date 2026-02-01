@@ -23,13 +23,13 @@ export const islandTheme = {
     grass: [120, 190, 120],
   },
 
-  ambience({ audio, night, tau, band }) {
+  ambience({ audio, night, tau }) {
     const n = Math.max(0, Math.min(1, night ?? 0));
     audio.setAmbience?.({
-      wind: (0.05 + air*0.03) + 0.04 * n,
+      wind: 0.05 + 0.04 * n,
       ocean: 0.18 + 0.16 * n,
       night: 0.02 + 0.04 * n,
-      whoosh: (0.0001 + air*0.08),
+      whoosh: 0.0001,
       rumble: 0.0001,
       tau: tau ?? 0.12,
     });

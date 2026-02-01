@@ -169,17 +169,48 @@ export function createBackground(getW, getH, lakes, game, hud) {
         ctx.closePath();
         ctx.fill();
 
-        ctx.globalAlpha = 0.60;
-        ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.42)`;
-        for (let x = -30; x < W + 60; x += 28) {
-            const hh = 42 + (Math.sin((x + mid) * 0.06) * 10);
-            const baseY = H * 0.70 + Math.sin((x + mid) * 0.02) * 8;
+        // theme-specific mid layer (no more forest trees everywhere)
+        const themeKey = (getTheme(game.theme)?.key) || game.theme || "forest";
+        if (themeKey === "forest" || themeKey === "jungle" || themeKey === "island") {
+            ctx.globalAlpha = 0.60;
+            ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.42)`;
+            for (let x = -30; x < W + 60; x += 28) {
+                const hh = 42 + (Math.sin((x + mid) * 0.06) * 10);
+                const baseY = H * 0.70 + Math.sin((x + mid) * 0.02) * 8;
+                ctx.beginPath();
+                ctx.moveTo(x, baseY);
+                ctx.lineTo(x + 14, baseY - hh);
+                ctx.lineTo(x + 28, baseY);
+                ctx.closePath();
+                ctx.fill();
+            }
+        } else if (themeKey === "city") {
+            // simple skyline
+            ctx.globalAlpha = 0.50;
+            ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
+            const baseY = H * 0.72;
+            for (let i = 0; i < 18; i++) {
+                const x = ((i * 78) - (mid * 0.28)) % (W + 120) - 60;
+                const bw = 36 + (i % 3) * 10;
+                const bh = 40 + ((i * 17) % 60);
+                ctx.fillRect(x, baseY - bh, bw, bh);
+            }
+        } else if (themeKey === "desert") {
+            // dunes
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = `rgba(${p.ground[0]},${p.ground[1]},${p.ground[2]},0.22)`;
             ctx.beginPath();
-            ctx.moveTo(x, baseY);
-            ctx.lineTo(x + 14, baseY - hh);
-            ctx.lineTo(x + 28, baseY);
+            ctx.moveTo(0, H * 0.72);
+            for (let x = 0; x <= W; x += 34) {
+                const y = H * 0.72 + Math.sin((x + mid) * 0.02) * 10 + Math.sin((x + mid) * 0.006) * 18;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(W, H); ctx.lineTo(0, H);
             ctx.closePath();
             ctx.fill();
+        } else {
+            // ocean/mountain/space/etc: no mid trees; keep it clean
+            ctx.globalAlpha = 1;
         }
 
         // island palms (simple silhouettes)

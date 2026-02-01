@@ -22,6 +22,8 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.globalAlpha = 1;
         }
     }
+
+    // small ambience particles (whoosh puffs etc.)
     function drawPuffs(objects) {
         for (const p of (objects.puffs || [])) {
             const a = clamp(p.life / 24, 0, 1) * 0.35;
@@ -32,8 +34,6 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.fill();
             ctx.globalAlpha = 1;
         }
-    
-
     }
 
     function drawBubbles(objects) {

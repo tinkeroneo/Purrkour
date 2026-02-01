@@ -12,13 +12,12 @@ export const forestTheme = {
     ground: [78, 155, 88],
   },
 
-  ambience({ audio, night, tau, band }) {
-    const air = (band === "air") ? 1 : 0;
+  ambience({ audio, night, tau }) {
     audio.setAmbience({
-      wind: (0.03 + air*0.03),
+      wind: 0.03,
       ocean: 0.0001,
       night: 0.02 + night * 0.03,
-      whoosh: (0.0001 + air*0.08),
+      whoosh: 0.0001,
       rumble: 0.0001,
     });
   },

@@ -42,54 +42,14 @@ export function createSpawner(game, terrain, objects, canvas) {
     const sm = theme.spawns || {};
     const m = (k) => (Number.isFinite(sm[k]) ? sm[k] : 1);
 
-    const band = (game.setpiece?.active) ? "air" : (game.vertical?.band || "ground");
+    const band = game.vertical?.band || "ground";
     const zones = theme.zones || {};
     const zm = zones[band] || zones.ground || {};
     const z = (k) => (Number.isFinite(zm[k]) ? zm[k] : 1);
 
     const gapMin = minGapForScore(game.score);
-// Air band: keep it calm but not empty.
-// - No dogs/fences in air (flow break)
-// - Mostly collectibles + occasional short bird-chain (stompable from above)
-if (band === "air" && !safeMode) {
-  const night = nightFactor(game.tick, game.score);
-  const themeVariant = theme.birdVariant || "crow";
-  const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
-
-  // chance for a small bird chain
-  const chainChance = clamp(0.26 + game.score * 0.00035, 0.26, 0.40) * z("bird");
-  if (Math.random() < chainChance) {
-    const count = 1 + (Math.random() < 0.40 ? 1 : 0) + (Math.random() < 0.14 ? 1 : 0); // 1..3
-    let x = spawnX;
-    for (let i = 0; i < count; i++) {
-      const w = 36, h = 20;
-      const flyY = (terrain.surfaceAt(x) - (240 + Math.random() * 55)); // high enough to feel "air"
-      objects.add({ kind: "obstacle", type: "bird", variant, x, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed" });
-      x += 240 + Math.random() * 150; // generous spacing = flow
-    }
-  }
-
-  // light goodies in air
-  const pMouseAir = 0.16 * CALM.collectiblesScale * z("mouse");
-  const pFishAir = 0.06 * CALM.collectiblesScale * z("fish");
-  const pCatnipAir = (game.catnipTimer > 0) ? 0 : 0.06 * CALM.collectiblesScale * z("catnip");
-
-  if (Math.random() < pMouseAir) {
-    const mx = spawnX + 20 + Math.random() * 60;
-    objects.add({ kind: "collectible", type: "mouse", x: mx, y: terrain.surfaceAt(mx) - (190 + Math.random() * 40), w: 22, h: 16, taken: false, yMode: "fixed" });
-  }
-  if (Math.random() < pFishAir) {
-    const fx = spawnX + 35 + Math.random() * 45;
-    objects.add({ kind: "collectible", type: "fish", x: fx, y: terrain.surfaceAt(fx) - (210 + Math.random() * 45), w: 18, h: 14, taken: false, yMode: "fixed" });
-  }
-  if (Math.random() < pCatnipAir) {
-    const cx = spawnX + 25 + Math.random() * 55;
-    objects.add({ kind: "collectible", type: "catnip", x: cx, y: terrain.surfaceAt(cx) - (220 + Math.random() * 50), w: 18, h: 18, taken: false, yMode: "fixed" });
-  }
-
-  nextSpawnIn = gapMin + 160 + Math.floor(Math.random() * 160);
-  return;
-}
+    // During setpieces (ocean/air vehicles) we don't spawn normal hazards/collectibles.
+    if (game.setpiece?.active) { nextSpawnIn = gapMin + 140; return; }
     const allowClose = (Math.random() < closeGapChance(game.score));
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
 
@@ -106,7 +66,48 @@ if (band === "air" && !safeMode) {
 
     const pMouse  = 0.18 * CALM.collectiblesScale;
     const pFish   = clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.07);
-    const pCatnip = z("catnip") *  (game.catnipTimer > 0) ? 0.0 : clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08);
+    const pCatnip = (game.catnipTimer > 0)
+      ? 0.0
+      : (z("catnip") * clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08));
+
+    // --- collision-safe placement helpers ---
+    function aabb(A, B) {
+      return A.x < (B.x + B.w) && (A.x + A.w) > B.x && A.y < (B.y + B.h) && (A.y + A.h) > B.y;
+    }
+    function overlapsSolid(box) {
+      for (const o of objects.list) {
+        if (o.kind === "platform") {
+          const ob = { x: o.x + 8, y: o.y + 4, w: Math.max(1, o.w - 16), h: Math.max(1, o.h - 4) };
+          if (aabb(box, ob)) return true;
+        }
+        // treat yarn/dog as solid for "don't spawn inside"
+        if (o.kind === "obstacle" && (o.type === "yarn" || o.type === "dog")) {
+          const ob = { x: o.x + 2, y: o.y + 2, w: Math.max(1, o.w - 4), h: Math.max(1, o.h - 4) };
+          if (aabb(box, ob)) return true;
+        }
+      }
+      return false;
+    }
+    function placeCollectible(x, y, w, h) {
+      // Try a few offsets so collectibles never appear *inside* fences etc.
+      const tries = [
+        { dx: 0, dy: 0 },
+        { dx: 0, dy: -18 },
+        { dx: 0, dy: -36 },
+        { dx: 18, dy: -18 },
+        { dx: -18, dy: -18 },
+        { dx: 24, dy: -36 },
+        { dx: -24, dy: -36 },
+      ];
+      for (const t of tries) {
+        const xx = x + t.dx;
+        const yy = y + t.dy;
+        const box = { x: xx, y: yy, w, h };
+        if (!overlapsSolid(box)) return { x: xx, y: yy };
+      }
+      // fallback: lift well above ground
+      return { x, y: Math.min(y, terrain.surfaceAt(x) - 110 - h) };
+    }
 
     // theme-weighted spawn probabilities
     const pFenceT = pFence * m("fence");
@@ -119,20 +120,21 @@ if (band === "air" && !safeMode) {
     const pCatnipT = pCatnip * m("catnip");
 
 
-// vertical band multipliers (encourage "jump on birds" gameplay higher up)
-let vbFence = 1, vbDog = 1, vbBird = 1, vbYarn = 1, vbMouse = 1, vbFish = 1, vbCatnip = 1;
-if (band === "mid") {
-  vbBird = 1.6; vbFence = 0.85; vbDog = 0.75; vbYarn = 0.85;
-  vbMouse = 1.10; vbFish = 1.05; vbCatnip = 1.05;
-} else if (band === "air") {
-  vbBird = 1.35; vbFence = 0.55; vbDog = 0.45; vbYarn = 0.60;
-  vbMouse = 1.15; vbFish = 1.10; vbCatnip = 1.10;
-}
+    // vertical band multipliers (encourage "jump on birds" gameplay higher up)
+    const vBand = band;
+    let vbFence = 1, vbDog = 1, vbBird = 1, vbYarn = 1, vbMouse = 1, vbFish = 1, vbCatnip = 1;
+    if (vBand === "mid") {
+      vbBird = 1.60; vbFence = 0.85; vbDog = 0.75; vbYarn = 0.85;
+      vbMouse = 1.10; vbFish = 1.05; vbCatnip = 1.05;
+    } else if (vBand === "air") {
+      vbBird = 1.35; vbFence = 0.55; vbDog = 0.45; vbYarn = 0.60;
+      vbMouse = 1.15; vbFish = 1.10; vbCatnip = 1.10;
+    }
 
-const pFenceV = pFenceT * vbFence;
-const pBirdV  = pBirdT  * vbBird;
-const pDogV   = pDogT   * vbDog;
-const pYarnV  = pYarnT  * vbYarn;
+    const pFenceV = pFenceT * vbFence;
+    const pBirdV  = pBirdT  * vbBird;
+    const pDogV   = pDogT   * vbDog;
+    const pYarnV  = pYarnT  * vbYarn;
 
 
     function rndType() {
@@ -181,15 +183,24 @@ const pYarnV  = pYarnT  * vbYarn;
         // collectibles on fences
         if (Math.random() < 0.30 * CALM.collectiblesScale) {
           const my = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.35) - h - 28) : (topY - 30);
-          objects.add({ kind: "collectible", type: "mouse", x: x + w * 0.36, y: my, w: 22, h: 16, taken: false, yMode: "fixed" });
+          {
+            const pos = placeCollectible(x + w * 0.36, my, 22, 16);
+            objects.add({ kind: "collectible", type: "mouse", x: pos.x, y: pos.y, w: 22, h: 16, taken: false, yMode: "fixed" });
+          }
         }
         if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
           const cy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.62) - h - 36) : (topY - 36);
-          objects.add({ kind: "collectible", type: "catnip", x: x + w * 0.64, y: cy, w: 18, h: 18, taken: false, yMode: "fixed" });
+          {
+            const pos = placeCollectible(x + w * 0.64, cy, 18, 18);
+            objects.add({ kind: "collectible", type: "catnip", x: pos.x, y: pos.y, w: 18, h: 18, taken: false, yMode: "fixed" });
+          }
         }
         if (Math.random() < pFishT * 0.45) {
           const fy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.16) - h - 28) : (topY - 28);
-          objects.add({ kind: "collectible", type: "fish", x: x + w * 0.16, y: fy, w: 18, h: 14, taken: false, yMode: "fixed" });
+          {
+            const pos = placeCollectible(x + w * 0.16, fy, 18, 14);
+            objects.add({ kind: "collectible", type: "fish", x: pos.x, y: pos.y, w: 18, h: 14, taken: false, yMode: "fixed" });
+          }
         }
 
         x += w + 40;
@@ -234,15 +245,26 @@ const pYarnV  = pYarnT  * vbYarn;
       const my = (Math.random() < 0.70)
         ? (terrain.surfaceAt(mx) - 16)
         : (terrain.surfaceAt(mx) - 70 - Math.random() * 25);
-      objects.add({ kind: "collectible", type: "mouse", x: mx, y: my, w: 22, h: 16, taken: false, yMode: "fixed" });
+      {
+        const pos = placeCollectible(mx, my, 22, 16);
+        objects.add({ kind: "collectible", type: "mouse", x: pos.x, y: pos.y, w: 22, h: 16, taken: false, yMode: "fixed" });
+      }
     }
     if (Math.random() < (pFishT * vbFish) * 0.55) {
       const fx = spawnX + 40;
-      objects.add({ kind: "collectible", type: "fish", x: fx, y: terrain.surfaceAt(fx) - 88 - Math.random() * 30, w: 18, h: 14, taken: false, yMode: "fixed" });
+      {
+        const fy = terrain.surfaceAt(fx) - 88 - Math.random() * 30;
+        const pos = placeCollectible(fx, fy, 18, 14);
+        objects.add({ kind: "collectible", type: "fish", x: pos.x, y: pos.y, w: 18, h: 14, taken: false, yMode: "fixed" });
+      }
     }
     if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
       const cx = spawnX + 20;
-      objects.add({ kind: "collectible", type: "catnip", x: cx, y: terrain.surfaceAt(cx) - 100 - Math.random() * 40, w: 18, h: 18, taken: false, yMode: "fixed" });
+      {
+        const cy = terrain.surfaceAt(cx) - 100 - Math.random() * 40;
+        const pos = placeCollectible(cx, cy, 18, 18);
+        objects.add({ kind: "collectible", type: "catnip", x: pos.x, y: pos.y, w: 18, h: 18, taken: false, yMode: "fixed" });
+      }
     }
 
     // close combo (fair)

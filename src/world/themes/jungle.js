@@ -13,12 +13,11 @@ export const jungleTheme = {
   },
 
   ambience({ audio, night }) {
-    const air = (band === "air") ? 1 : 0;
     audio.setAmbience({
-      wind: (0.012 + air*0.03),
+      wind: 0.012,
       ocean: 0.0001,
       night: 0.03 + night * 0.06,
-      whoosh: (0.0001 + air*0.08),
+      whoosh: 0.0001,
       rumble: 0.006,
     });
   },

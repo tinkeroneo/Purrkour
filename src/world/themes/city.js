@@ -13,12 +13,11 @@ export const cityTheme = {
   },
 
   ambience({ audio, night }) {
-    const air = (band === "air") ? 1 : 0;
     audio.setAmbience({
-      wind: (0.008 + air*0.03),
+      wind: 0.008,
       ocean: 0.0001,
       night: 0.015 + night * 0.04,
-      whoosh: (0.010 + air*0.08),
+      whoosh: 0.010,
       rumble: 0.012,
     });
   },

@@ -63,7 +63,7 @@ if (game.setpiece?.active) {
                 const tau = (game.themeFade?.active ? 0.22 : 0.12);
 
                 // base ambience from theme
-                theme.ambience?.({ audio, night: n, tau, band: (game.vertical?.band || "ground") });
+                theme.ambience?.({ audio, night: n, tau });
 
                 // extra layers during flight / ocean-crossing
                 if (isFlight) {

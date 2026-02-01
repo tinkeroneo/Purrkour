@@ -15,13 +15,13 @@ export const mountainTheme = {
     ground: [140, 170, 140],
   },
 
-  ambience({ audio, night, tau, band }) {
+  ambience({ audio, night, tau }) {
     const n = Math.max(0, Math.min(1, night ?? 0));
     audio.setAmbience?.({
-      wind: (0.06 + air*0.03) + 0.05 * n,
+      wind: 0.06 + 0.05 * n,
       ocean: 0.0001,
       night: 0.02 + 0.03 * n,
-      whoosh: (0.0001 + air*0.08),
+      whoosh: 0.0001,
       rumble: 0.0001,
       tau: tau ?? 0.12,
     });
