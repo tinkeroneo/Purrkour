@@ -4,6 +4,9 @@
 export const islandTheme = {
   key: "island",
   label: "insel",
+
+  // früher Morgen / Dawn
+  time: { mode: "fixed", night: 0.22 },
   palette: {
     // sky
     skyTop: [140, 220, 255],

@@ -4,8 +4,6 @@ import { createSetpieceManager } from "./setpieces.js";
 
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
-    const setpieces = createSetpieceManager({ game, objects, startThemeFade });
-
     function startThemeFade(toKey, dur = 70) {
         const fromKey = game.theme;
         if (fromKey === toKey) return;
@@ -19,6 +17,9 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
         }
         game.theme = toKey;
     }
+
+    // needs startThemeFade
+    const setpieces = createSetpieceManager({ game, objects, startThemeFade, audio });
 
     function step() {
         if (!game.finished) {

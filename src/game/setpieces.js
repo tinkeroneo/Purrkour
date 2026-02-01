@@ -1,74 +1,64 @@
 // src/game/setpieces.js
-// Small setpiece manager so we can add more (zeppelin, raft, city flyover) without touching the loop.
+// Story beats that temporarily change rules (ocean crossing, zeppelin ride, ...)
 
-export function createSetpieceManager({ game, objects, startThemeFade }) {
-  function clearWorldForFlight() {
+import { clamp } from "../core/util.js";
+
+export function createSetpieceManager({ game, objects, startThemeFade, audio }) {
+  const used = game.setpiece.used || (game.setpiece.used = {});
+
+  function schedule() {
+    // list of { score, type, toTheme, afterTheme, dur }
+    return game.setpiece.schedule || [];
+  }
+
+  function findNext() {
+    for (const b of schedule()) {
+      if (!used[b.type] && game.score >= b.score) return b;
+    }
+    return null;
+  }
+
+  function trigger(beat) {
+    used[beat.type] = true;
+    game.setpiece.active = true;
+    game.setpiece.type = beat.type;
+    game.setpiece.t = 0;
+    game.setpiece.dur = beat.dur ?? game.setpiece.dur;
+    game.setpiece.afterTheme = beat.afterTheme || beat.toTheme;
+
+    // clear immediate clutter for a clean cinematic
     objects.list.length = 0;
     objects.pawprints.length = 0;
-    // keep bubbles/toast alive
+
+    if (beat.toTheme) startThemeFade(beat.toTheme, 90);
+    audio?.SFX?.whoosh?.();
+    objects.toast?.(beat.type === "balloon" ? "Auf zum Ozean…" : "Hoch hinaus…", 120);
   }
 
-  function triggerOceanCrossing() {
-    if (!game.setpiece) return;
-
-    // pick a vehicle for the crossing (balloon usually, zeppelin sometimes, raft rarely)
-    // (kept deterministic for the whole setpiece — don't re-roll in update())
-    const r = Math.random();
-    game.setpiece.type = (r < 0.18) ? "zeppelin" : (r < 0.35) ? "raft" : "balloon";
-
-    game.setpiece.active = true;
-    game.setpiece.t = 0;
-    game.setpiece.cooldown = 0;
-
-    // motion state for gentle drift (updated in draw based on sp.t)
-    game.setpiece.motion = {
-      dx: 0,
-      dy: 0,
-      vx: 0,
-      vy: 0,
-      phase: Math.random() * 1000
-    };
-
-    // switch to ocean theme for crossing
-    startThemeFade("ocean", 90);
-
-    clearWorldForFlight();
-
-    // during flight: no grace (handled on landing)
-    game.safeTimer = 0;
-  }
-
-  function finishOceanCrossing() {
-    if (!game.setpiece) return;
-
+  function end() {
     game.setpiece.active = false;
-    game.setpiece.cooldown = 0;
-
-    // arrive at island
-    startThemeFade("island", 120);
-
-    // short grace: calm landing window (~3s at 60fps)
-    game.safeTimer = 180;
+    // short calm landing
+    game.safeTimer = Math.max(game.safeTimer || 0, 220);
+    game.slowTimer = Math.max(game.slowTimer || 0, 140);
+    // after theme (e.g. balloon -> island)
+    if (game.setpiece.afterTheme) startThemeFade(game.setpiece.afterTheme, 90);
+    audio?.SFX?.chime?.();
   }
 
   function update() {
-    if (!game.setpiece) return;
-
-    // trigger once when score threshold reached
-    if (!game.setpiece.active && game.score >= game.setpiece.startScore && game.setpiece.cooldown > 99999) {
-      triggerOceanCrossing();
+    if (!game.setpiece.active) {
+      const nxt = findNext();
+      if (nxt) trigger(nxt);
+      return;
     }
 
-    if (game.setpiece.active) {
-      game.setpiece.t++;
-      if (game.setpiece.t >= game.setpiece.dur) {
-        finishOceanCrossing();
-      }
-    } else {
-      // cooldown counts up while inactive
-      if (game.setpiece.cooldown < 999999) game.setpiece.cooldown++;
-    }
+    game.setpiece.t++;
+    if (game.setpiece.t >= game.setpiece.dur) end();
   }
 
-  return { update, triggerOceanCrossing, finishOceanCrossing };
+  function progress01() {
+    return clamp((game.setpiece.t || 0) / (game.setpiece.dur || 1), 0, 1);
+  }
+
+  return { update, progress01 };
 }

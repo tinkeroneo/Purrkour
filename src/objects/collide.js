@@ -335,6 +335,11 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                 objects.toast("Checkpoint-Decke 🧺", 140);
                 objects.addBubble("purr", cat.x + cat.w * 0.55, cat.y - 8);
                 audio.SFX.magic();
+
+                // Atempause: kurz beruhigen (weniger Spawns + langsamer)
+                game.safeTimer = Math.max(game.safeTimer, 260);
+                game.slowTimer = Math.max(game.slowTimer, 160);
+                game.slowStrength = Math.min(game.slowStrength, 0.72);
             }
         }
 

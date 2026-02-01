@@ -62,8 +62,15 @@ export function createBackground(getW, getH, lakes, game, hud) {
         if (!pal.grass) pal.grass = pal.ground;
         if (!pal.ocean) pal.ocean = [60, 150, 200];
 
-        // Attach day/night (0..1) for draws to use
-        pal.n = nightFactor(game.tick, game.score);
+        // Attach day/night (0..1) for draws to use.
+        // Theme is the truth: it can fix night or run a slow cycle.
+        const timeThemeKey = (game.themeFade?.active && game.themeFade.to) ? game.themeFade.to : game.theme;
+        const timeCfg = getTheme(timeThemeKey)?.time;
+        if (timeCfg?.mode === "fixed") {
+            pal.n = clamp(timeCfg.night ?? 0.6, 0, 0.92);
+        } else {
+            pal.n = nightFactor(game.tick, game.score, timeCfg?.speed ?? 0.00014);
+        }
         return pal;
     }
 
