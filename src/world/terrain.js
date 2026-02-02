@@ -66,7 +66,8 @@ export function createTerrain(getW, getH) {
 
   function drawGround(ctx, palette) {
     const W = getW(), H = getH();
-    ctx.fillStyle = `rgba(${palette.ground[0]},${palette.ground[1]},${palette.ground[2]},0.45)`;
+    const a = (palette && typeof palette.groundAlpha === "number") ? palette.groundAlpha : 0.45;
+    ctx.fillStyle = `rgba(${palette.ground[0]},${palette.ground[1]},${palette.ground[2]},${a})`;
     ctx.beginPath();
     ctx.moveTo(0, surfaceAt(0));
     for (let x = 0; x <= W; x += 12) ctx.lineTo(x, surfaceAt(x));

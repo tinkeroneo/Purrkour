@@ -1,7 +1,4 @@
 import { aabb, clamp } from "../core/util.js";
-
-const HOME_SCORE = 280;
-
 export function createCollider(game, catApi, terrain, objects, audio, hud) {
     const { cat } = catApi;
 
@@ -126,10 +123,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         game.chaseActive = false;
         game.chaseTimer = 0;
         game.barkTimer = 0;
-
-        game.homePhase = 0;
-        game.homeX = 0;
-        game.finishFade = 0;
         game.finished = false;
 
         game.checkpointActive = false;
@@ -202,17 +195,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
 
             objects.updateBubbles();
             return;
-        }
-
-
-        // home movement / finish
-        if (game.homePhase === 1) {
-            game.homeX -= eff;
-            if (game.homeX < cat.x - 40) game.homePhase = 2;
-        }
-        if (game.homePhase === 2) {
-            game.finishFade = clamp(game.finishFade + 0.010, 0, 1);
-            if (game.finishFade >= 1) game.finished = true;
         }
 
         // cat physics
@@ -347,79 +329,78 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                     }
                 }
             }
-        }
 
-        // collectibles
-        for (const o of objects.list) {
-            if (!o) continue;
-            if (o.kind !== "collectible" || o.taken) continue;
-            if (!aabb(catBox, o)) continue;
+            // collectibles
+            for (const o of objects.list) {
+                if (!o) continue;
+                if (o.kind !== "collectible" || o.taken) continue;
+                if (!aabb(catBox, o)) continue;
 
-            o.taken = true;
+                o.taken = true;
 
-            if (o.type === "mouse") {
-                game.mice++;
-                game.score += 1;
-                game.speed += 0.010; // ✅ mice = slight acceleration (soft)
-                if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
-                audio.SFX.mouse();
-            } else if (o.type === "catnip") {
-                game.catnipTimer = 320;
-                objects.addBubble("🌿", cat.x + cat.w * 0.55, cat.y - 8);
-                audio.SFX.catnip();
-            } else if (o.type === "fish") {
-                game.tripleJumpTimer = 320;
-                objects.toast("Snack! 3 Sprünge 🐟", 110);
-                audio.SFX.fish();
-            }
-        }
-
-        // checkpoint blanket
-        for (const o of objects.list) {
-            if (!o) continue;
-            if (o.kind === "checkpoint" && !o.used && aabb(catBox, o)) {
-                o.used = true;
-                game.checkpointActive = true;
-                game.checkpointGlow = 120;
-                objects.toast("Checkpoint-Decke 🧺", 140);
-                objects.addBubble("purr", cat.x + cat.w * 0.55, cat.y - 8);
-                audio.SFX.magic();
-            }
-        }
-
-        // scoring when passing
-        for (const o of objects.list) {
-            if (!o) continue;
-            if (o._scored) continue;
-            if (o.x + o.w < cat.x - 10) {
-                if (o.kind === "obstacle" || o.kind === "platform") {
-                    o._scored = true;
-                    game.score++;
+                if (o.type === "mouse") {
+                    game.mice++;
+                    game.score += 1;
+                    game.speed += 0.010; // ✅ mice = slight acceleration (soft)
+                    if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
+                    audio.SFX.mouse();
+                } else if (o.type === "catnip") {
+                    game.catnipTimer = 320;
+                    objects.addBubble("🌿", cat.x + cat.w * 0.55, cat.y - 8);
+                    audio.SFX.catnip();
+                } else if (o.type === "fish") {
+                    game.tripleJumpTimer = 320;
+                    objects.toast("Snack! 3 Sprünge 🐟", 110);
+                    audio.SFX.fish();
                 }
             }
-        }
 
-        // cleanup offscreen
-        for (let i = objects.list.length - 1; i >= 0; i--) {
-            if (objects.list[i].x + objects.list[i].w < -260) objects.list.splice(i, 1);
-        }
+            // checkpoint blanket
+            for (const o of objects.list) {
+                if (!o) continue;
+                if (o.kind === "checkpoint" && !o.used && aabb(catBox, o)) {
+                    o.used = true;
+                    game.checkpointActive = true;
+                    game.checkpointGlow = 120;
+                    objects.toast("Checkpoint-Decke 🧺", 140);
+                    objects.addBubble("purr", cat.x + cat.w * 0.55, cat.y - 8);
+                    audio.SFX.magic();
+                }
+            }
 
-        // animation frame selection
-        cat.animT++;
-        const inAir = !cat.onSurface;
-        if (inAir) catApi.setAnimFrame(4);
-        else {
-            const runRate = clamp(10 - (eff * 1.6), 4, 10);
-            catApi.setAnimFrame(Math.floor(cat.animT / runRate) % 4);
-        }
+            // scoring when passing
+            for (const o of objects.list) {
+                if (!o) continue;
+                if (o._scored) continue;
+                if (o.x + o.w < cat.x - 10) {
+                    if (o.kind === "obstacle" || o.kind === "platform") {
+                        o._scored = true;
+                        game.score++;
+                    }
+                }
+            }
 
-        objects.updateBubbles();
+            // cleanup offscreen
+            for (let i = objects.list.length - 1; i >= 0; i--) {
+                if (objects.list[i].x + objects.list[i].w < -260) objects.list.splice(i, 1);
+            }
+
+            // animation frame selection
+            cat.animT++;
+            const inAir = !cat.onSurface;
+            if (inAir) catApi.setAnimFrame(4);
+            else {
+                const runRate = clamp(10 - (eff * 1.6), 4, 10);
+                catApi.setAnimFrame(Math.floor(cat.animT / runRate) % 4);
+            }
+
+            objects.updateBubbles();
+        }
     }
-
-    return {
-        update,
-        resetAll,
-        resetCatPosition,
-        effSpeed
-    };
-}
+        return {
+            update,
+            resetAll,
+            resetCatPosition,
+            effSpeed
+        };
+    }

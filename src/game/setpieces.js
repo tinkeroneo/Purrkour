@@ -26,6 +26,10 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
     const sp = game.setpiece;
 
+    // prevent immediate re-triggering (cooldown is checked in update())
+    sp.cooldown = 0;
+    sp.finished = false;
+
     sp.type = pickVehicle();
     sp.active = true;
 
@@ -71,6 +75,11 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     sp.scroll = 1;
     sp.oceanMaskX = canvas.W;
 
+    // avoid looping the same beat at the same score
+    sp.cooldown = 0;
+    sp.startScore = Math.max(sp.startScore + 200, game.score + 200);
+    sp.finished = true;
+
     game.controlLocked = false;
 
     // short grace window (landing calm)
@@ -81,13 +90,13 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     if (!game.setpiece) return;
     const sp = game.setpiece;
 
-    // trigger once when score threshold reached
-    if (!sp.active && game.score >= sp.startScore && sp.cooldown > 99999) {
+    // trigger when score threshold reached (with small cooldown buffer)
+    if (!sp.active && game.score >= sp.startScore && (sp.cooldown ?? 0) > 180) {
       triggerOceanCrossing();
     }
 
     if (!sp.active) {
-      if (sp.cooldown < 999999) sp.cooldown++;
+      sp.cooldown = (sp.cooldown ?? 0) + 1;
       return;
     }
 

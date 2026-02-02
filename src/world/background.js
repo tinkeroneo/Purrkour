@@ -62,6 +62,10 @@ export function createBackground(getW, getH, lakes, game, hud) {
         if (!pal.grass) pal.grass = pal.ground;
         if (!pal.ocean) pal.ocean = [60, 150, 200];
 
+        // ground opacity: make ground more opaque during ocean/setpiece so water doesn't bleed through
+        const isOcean = (game.theme === "ocean") || (game.themeFade?.active && game.themeFade?.to === "ocean");
+        pal.groundAlpha = (game.setpiece?.active || isOcean) ? 0.92 : 0.45;
+
         // vertical band tint (ground/mid/high)
         const band = game.vertical?.band ?? "ground";
         if (band === "mid") {
@@ -305,40 +309,56 @@ function drawGroundFog(ctx) {
         ctx.restore();
     }
     function drawOcean(ctx) {
-  const Wv = getW();
-  const Hv = getH();
+        const Wv = getW();
+        const Hv = getH();
+        const p = palette();
 
-  // horizon
-  const horizonY = Hv * 0.62;
+        // horizon line a bit above the ground plane
+        const horizonY = Hv * 0.62;
 
-  ctx.save();
+        ctx.save();
 
-  // water gradient
-  const g = ctx.createLinearGradient(0, horizonY, 0, Hv);
-  g.addColorStop(0, "rgba(30,80,120,0.30)");
-  g.addColorStop(1, "rgba(10,30,60,0.55)");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, horizonY, Wv, Hv - horizonY);
+        // water gradient (use theme ocean color as base)
+        const top = p.ocean || [40, 120, 170];
+        const g = ctx.createLinearGradient(0, horizonY, 0, Hv);
+        g.addColorStop(0, `rgba(${top[0]},${top[1]},${top[2]},0.34)`);
+        g.addColorStop(1, `rgba(${Math.max(0, top[0] - 25)},${Math.max(0, top[1] - 55)},${Math.max(0, top[2] - 55)},0.62)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, horizonY, Wv, Hv - horizonY);
 
-  // waves
-  ctx.globalAlpha = 0.18;
-  ctx.strokeStyle = "rgba(255,255,255,0.8)";
-  ctx.lineWidth = 2;
+        // thin horizon highlight
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillRect(0, horizonY + 1, Wv, 2);
 
-  for (let k = 0; k < 10; k++) {
-    const y0 = horizonY + 20 + k * 24;
-    const phase = (game.tick * 0.04) + k * 40;
-    ctx.beginPath();
-    ctx.moveTo(0, y0);
-    for (let x = 0; x <= Wv; x += 26) {
-      const y = y0 + Math.sin((x + phase) * 0.05) * 3.2;
-      ctx.lineTo(x, y);
+        // waves (few wide lines, calmer)
+        ctx.globalAlpha = 0.16;
+        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.lineWidth = 2;
+
+        for (let k = 0; k < 8; k++) {
+            const y0 = horizonY + 22 + k * 28;
+            const phase = (game.tick * 0.038) + k * 55;
+            ctx.beginPath();
+            ctx.moveTo(0, y0);
+            for (let x = 0; x <= Wv; x += 30) {
+                const y = y0 + Math.sin((x + phase) * 0.05) * (2.6 + k * 0.08);
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        // subtle shimmer streaks
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        for (let i = 0; i < 7; i++) {
+            const rx = (i * 140 + (game.tick * 2.2)) % (Wv + 220) - 110;
+            const ry = horizonY + 36 + (i % 3) * 44;
+            ctx.fillRect(rx, ry, 40, 2);
+        }
+
+        ctx.restore();
     }
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
 
 function drawOceanMasked(ctx, maskX) {
   const W = getW(), H = getH();
@@ -349,6 +369,19 @@ function drawOceanMasked(ctx, maskX) {
   ctx.rect(mx, 0, W - mx, H);
   ctx.clip();
   drawOcean(ctx);
+
+  // soft foam / coast edge at the mask boundary
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  const edgeW = 26;
+  const g = ctx.createLinearGradient(mx, 0, mx + edgeW, 0);
+  g.addColorStop(0, "rgba(255,255,255,0.55)");
+  g.addColorStop(0.55, "rgba(255,255,255,0.10)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(mx, 0, edgeW, H);
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 

@@ -100,7 +100,6 @@ if (ui.restBtn) {
       game.pause.active = false;
       game.pause.phase = "resume";
       game.pause.t = 0;
-      cat.cat.x = cat.cat.baseX;
       // short invuln so resume feels fair
       game.invulnTimer = Math.max(game.invulnTimer, 40);
     } else {

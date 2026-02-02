@@ -6,10 +6,6 @@ export function createGameState() {
         speed: 2.15,
 
         finished: false,
-        homePhase: 0,
-        homeX: 0,
-        finishFade: 0,
-
         lives: 7,
         invulnTimer: 0,
         theme: "forest",

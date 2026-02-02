@@ -19,9 +19,6 @@ export function createSpawner(game, terrain, objects, canvas) {
   };
 
   let nextSpawnIn = 260;
-
-  const HOME_SCORE = 280;
-
   function minGapForScore(s) {
     return clamp(CALM.gapBase - s * CALM.gapSlope, CALM.gapMin, CALM.gapBase);
   }
@@ -298,9 +295,6 @@ else if (type === "dog") {
   }
 
   function update(palette) {
-    // stop when finishing fade
-    if (game.homePhase === 2) return;
-
     nextSpawnIn -= game._effSpeed;
     if (nextSpawnIn <= 0) spawnPack(canvas.W + 140, game.safeTimer > 0);
 
@@ -308,13 +302,6 @@ else if (type === "dog") {
     if (!game.checkpointActive && game.score > 0 && game.score % 50 === 0) {
       const already = objects.list.some(o => o.kind === "checkpoint" && !o.used);
       if (!already) spawnBlanket(canvas.W + 260);
-    }
-
-    // home trigger
-    if (game.score >= HOME_SCORE && game.homePhase === 0) {
-      game.homePhase = 1;
-      game.homeX = canvas.W + 220;
-      objects.toast("Heimweg… 🏡", 140);
     }
   }
 

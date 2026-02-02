@@ -3,7 +3,7 @@ import { drawVehicle } from "../game/vehicles/index.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
-    
+
     function drawSetpieceVehicle() {
         const sp = game.setpiece;
         if (!sp || !sp.active) return;
@@ -132,51 +132,51 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     }
 
 
-function drawYarn(o) {
-  // red yarn ball with visible strands
-  const r = Math.min(o.w, o.h) / 2;
-  ctx.save();
-  ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
+    function drawYarn(o) {
+        // red yarn ball with visible strands
+        const r = Math.min(o.w, o.h) / 2;
+        ctx.save();
+        ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
 
-  // base
-  const g = ctx.createRadialGradient(-r * 0.25, -r * 0.25, r * 0.2, 0, 0, r);
-  g.addColorStop(0, "rgba(255,120,120,1)");
-  g.addColorStop(1, "rgba(190,35,55,1)");
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.fill();
+        // base
+        const g = ctx.createRadialGradient(-r * 0.25, -r * 0.25, r * 0.2, 0, 0, r);
+        g.addColorStop(0, "rgba(255,120,120,1)");
+        g.addColorStop(1, "rgba(190,35,55,1)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
 
-  // strands (curved lines)
-  ctx.globalAlpha = 0.85;
-  ctx.strokeStyle = "rgba(120,0,20,0.55)";
-  ctx.lineWidth = Math.max(1.2, r * 0.10);
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 1.9 + 0.2;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * (0.55 + (i % 3) * 0.10), a, a + 1.6);
-    ctx.stroke();
-  }
+        // strands (curved lines)
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = "rgba(120,0,20,0.55)";
+        ctx.lineWidth = Math.max(1.2, r * 0.10);
+        for (let i = 0; i < 7; i++) {
+            const a = (i / 7) * Math.PI * 1.9 + 0.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * (0.55 + (i % 3) * 0.10), a, a + 1.6);
+            ctx.stroke();
+        }
 
-  // highlight ring
-  ctx.globalAlpha = 0.45;
-  ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  ctx.lineWidth = Math.max(1, r * 0.08);
-  ctx.beginPath();
-  ctx.arc(-r * 0.08, -r * 0.10, r * 0.68, 0.2, 2.6);
-  ctx.stroke();
+        // highlight ring
+        ctx.globalAlpha = 0.45;
+        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.lineWidth = Math.max(1, r * 0.08);
+        ctx.beginPath();
+        ctx.arc(-r * 0.08, -r * 0.10, r * 0.68, 0.2, 2.6);
+        ctx.stroke();
 
-  // loose thread tail
-  ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = "rgba(255,220,220,0.8)";
-  ctx.lineWidth = Math.max(1, r * 0.06);
-  ctx.beginPath();
-  ctx.moveTo(r * 0.55, r * 0.35);
-  ctx.quadraticCurveTo(r * 0.95, r * 0.55, r * 1.25, r * 0.25);
-  ctx.stroke();
+        // loose thread tail
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = "rgba(255,220,220,0.8)";
+        ctx.lineWidth = Math.max(1, r * 0.06);
+        ctx.beginPath();
+        ctx.moveTo(r * 0.55, r * 0.35);
+        ctx.quadraticCurveTo(r * 0.95, r * 0.55, r * 1.25, r * 0.25);
+        ctx.stroke();
 
-  ctx.restore();
-}
+        ctx.restore();
+    }
 
     function drawFence(o) {
         const topY = o.y;
@@ -216,52 +216,52 @@ function drawYarn(o) {
             const rx = o.x + o.w - 20, rGround = terrain.surfaceAt(rx);
             roundRect(ctx, rx, postTop, postW, (rGround - postTop) + 6, 4); ctx.fill();
         }
+        ctx.restore();
+    }
+    function drawCar(o) {
+        // car platform (safe to land on)
+        const x = o.x, y = o.y, w = o.w, h = o.h;
+        ctx.save();
 
-function drawCar(o) {
-  // car platform (safe to land on)
-  const x = o.x, y = o.y, w = o.w, h = o.h;
-  ctx.save();
+        // shadow
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.ellipse(x + w * 0.52, (y + h) + 6, w * 0.38, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
 
-  // shadow
-  ctx.globalAlpha = 0.16;
-  ctx.fillStyle = "#000";
-  ctx.beginPath();
-  ctx.ellipse(x + w * 0.52, (y + h) + 6, w * 0.38, 8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
+        // body
+        ctx.fillStyle = "rgba(70,150,230,0.95)";
+        roundRect(ctx, x, y + h * 0.30, w, h * 0.55, 12); ctx.fill();
 
-  // body
-  ctx.fillStyle = "rgba(70,150,230,0.95)";
-  roundRect(ctx, x, y + h * 0.30, w, h * 0.55, 12); ctx.fill();
+        // cabin
+        ctx.fillStyle = "rgba(40,110,190,0.95)";
+        roundRect(ctx, x + w * 0.18, y + h * 0.08, w * 0.52, h * 0.40, 12); ctx.fill();
 
-  // cabin
-  ctx.fillStyle = "rgba(40,110,190,0.95)";
-  roundRect(ctx, x + w * 0.18, y + h * 0.08, w * 0.52, h * 0.40, 12); ctx.fill();
+        // windows
+        ctx.fillStyle = "rgba(220,245,255,0.55)";
+        roundRect(ctx, x + w * 0.24, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+        roundRect(ctx, x + w * 0.46, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
 
-  // windows
-  ctx.fillStyle = "rgba(220,245,255,0.55)";
-  roundRect(ctx, x + w * 0.24, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
-  roundRect(ctx, x + w * 0.46, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+        // wheels
+        const wy = y + h * 0.78;
+        ctx.fillStyle = "rgba(20,20,25,0.95)";
+        ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
 
-  // wheels
-  const wy = y + h * 0.78;
-  ctx.fillStyle = "rgba(20,20,25,0.95)";
-  ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
-
-  // rims
-  ctx.globalAlpha = 0.35;
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 1;
-
-  ctx.restore();
-}
-
+        // rims
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
 
         ctx.restore();
     }
+
+
+
 
     function drawDog(o) {
         o.anim += o.chasing ? 0.22 : 0.10;
@@ -351,28 +351,6 @@ function drawCar(o) {
         ctx.restore();
     }
 
-    function drawHome() {
-        ctx.save();
-        ctx.translate(game.homeX, terrain.surfaceAt(game.homeX) - 52);
-
-        ctx.fillStyle = "rgba(0,0,0,0.15)";
-        ctx.fillRect(-10, 48, 150, 6);
-
-        ctx.fillStyle = "#f5e6c8";
-        roundRect(ctx, 0, 10, 92, 52, 10); ctx.fill();
-
-        ctx.fillStyle = "#b55a3c";
-        ctx.beginPath(); ctx.moveTo(-6, 12); ctx.lineTo(46, -22); ctx.lineTo(98, 12); ctx.closePath(); ctx.fill();
-
-        ctx.fillStyle = "#8b5a2b";
-        roundRect(ctx, 38, 34, 18, 28, 6); ctx.fill();
-
-        ctx.fillStyle = "rgba(255,247,204,0.65)";
-        roundRect(ctx, 12, 28, 18, 14, 4); ctx.fill();
-
-        ctx.restore();
-    }
-
     // Small hut used for HUD "rest" pause
     function drawRestHut(x, y) {
         ctx.save();
@@ -417,7 +395,7 @@ function drawCar(o) {
             return;
         }
 
-terrain.drawGround(ctx, palette);
+        terrain.drawGround(ctx, palette);
 
         if (typeof bg.drawGroundFog === "function") {
             bg.drawGroundFog(ctx);
@@ -445,9 +423,6 @@ terrain.drawGround(ctx, palette);
 
         // setpiece vehicle overlay (approach/board/arrive/travel)
         if (game.setpiece?.active) drawSetpieceVehicle();
-        // home
-        if (game.homePhase >= 1) drawHome();
-
         // rest hut (pause)
         if (game.pause?.active) {
             const hx = game.pause.hutX ?? 240;
@@ -495,7 +470,7 @@ terrain.drawGround(ctx, palette);
         } else if (!inVehicle && blink) {
             catApi.draw(ctx);
         }
-        
+
 
         // overlays
         if (game.catnipTimer > 0) {
@@ -510,20 +485,6 @@ terrain.drawGround(ctx, palette);
             ctx.globalAlpha = pulse;
             ctx.fillStyle = "rgba(255,80,80,0.30)";
             ctx.fillRect(0, 0, canvas.W, canvas.H);
-            ctx.globalAlpha = 1;
-        }
-
-        // finish fade
-        if (game.homePhase === 2) {
-            ctx.globalAlpha = game.finishFade;
-            ctx.fillStyle = "rgba(0,0,0,0.55)";
-            ctx.fillRect(0, 0, canvas.W, canvas.H);
-            ctx.fillStyle = "#fff";
-            ctx.textAlign = "center";
-            ctx.font = "22px system-ui, sans-serif";
-            ctx.fillText("Zuhause 🏡😺", canvas.W / 2, canvas.H / 2 - 6);
-            ctx.font = "14px system-ui, sans-serif";
-            ctx.fillText("gracias fürs Spielen", canvas.W / 2, canvas.H / 2 + 18);
             ctx.globalAlpha = 1;
         }
 
