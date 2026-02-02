@@ -27,3 +27,5 @@ Thumbs.db
 savegames/
 debug/
 *.sav
+# Archives
+*.zip

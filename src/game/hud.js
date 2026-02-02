@@ -10,7 +10,9 @@ export function createHUD(ui) {
     if (ui.score) ui.score.textContent = String(game.score);
     if (ui.lives) ui.lives.textContent = "❤️".repeat(Math.max(0, game.lives));
     if (ui.miceDisplay) ui.miceDisplay.textContent = `🐭 × ${game.mice}`;
-    if (ui.catnip) ui.catnip.textContent = (game.catnipTimer > 0) ? "an" : "aus";
+
+    // Debug/info slot (was catnip status): show current theme key
+    if (ui.catnip) ui.catnip.textContent = String(game?.theme || game?.progression?.current?.theme || "unknown");
 
     // Rest/Pause button (optional)
     if (ui.restBtn) {

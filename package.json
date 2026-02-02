@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "export:src": "git archive --format=zip --output=purrkour-src.zip HEAD src"
   },
   "lint-staged": {
     "*.{js,mjs,cjs}": "eslint --fix"

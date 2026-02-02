@@ -2,30 +2,26 @@ export const desertTheme = {
   key: "desert",
   label: "Wüste",
 
-
   birdVariant: "hawk",
+
   palette: {
     skyTop: [255, 205, 150],
-    skyBot: [255, 245, 220],
-    far: [150, 130, 120],
-    forest: [170, 145, 110], // dunes
-    ground: [190, 165, 115],
+    skyBot: [255, 245, 225],
+    far: [165, 135, 120],
+    forest: [185, 150, 110], // dunes
+    grass: [210, 180, 130],
+    ground: [198, 170, 118],
+    groundAlpha: 0.44,
   },
 
   ambience({ audio, night }) {
     audio.setAmbience({
-      wind: 0.030,
+      wind: 0.03,
       ocean: 0.0001,
       night: 0.012 + night * 0.028,
       whoosh: 0.004,
       rumble: 0.004,
     });
-  },
-
-  drawBackground(bg, ctx) {
-    bg.drawSky(ctx);
-    bg.drawParallax(ctx);
-    bg.drawHeatHaze?.(ctx);
   },
 
   zones: {

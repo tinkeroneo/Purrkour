@@ -8,6 +8,7 @@ import { createLoop } from "./game/loop.js";
 
 import { createTerrain } from "./world/terrain.js";
 import { createBackground } from "./world/background.js";
+import { THEMES } from "./world/themes.js";
 
 import { createCat } from "./entities/cat.js";
 
@@ -30,9 +31,76 @@ const ui = {
   soundBtn: document.getElementById("soundBtn"),
 };
 
+
+function setupMobileThemeToggle() {
+  // Lightweight on-screen toggles for touch devices (Handy).
+  const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+  if (!isTouch) return;
+  if (!uiRoot) return;
+
+  const wrap = document.createElement("div");
+  wrap.style.position = "fixed";
+  wrap.style.right = "10px";
+  wrap.style.bottom = "10px";
+  wrap.style.display = "flex";
+  wrap.style.gap = "8px";
+  wrap.style.zIndex = "9999";
+
+  const mkBtn = (label) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.style.padding = "10px 12px";
+    b.style.borderRadius = "12px";
+    b.style.border = "1px solid rgba(255,255,255,0.25)";
+    b.style.background = "rgba(0,0,0,0.35)";
+    b.style.color = "#fff";
+    b.style.font = "600 14px system-ui, sans-serif";
+    b.style.backdropFilter = "blur(6px)";
+    b.style.webkitBackdropFilter = "blur(6px)";
+    b.style.touchAction = "manipulation";
+    b.style.userSelect = "none";
+    return b;
+  };
+
+  const themeBtn = mkBtn("Theme");
+  const bandBtn = mkBtn("Band");
+
+  const themeKeys = Object.keys(THEMES);
+  themeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const prev = game.theme;
+    const i = Math.max(0, themeKeys.indexOf(prev));
+    const next = themeKeys[(i + 1) % themeKeys.length];
+    game.theme = next;
+    // small fade helper (optional)
+    if (game.themeFade) {
+      game.themeFade.active = true;
+      game.themeFade.from = prev;
+      game.themeFade.to = next;
+      game.themeFade.t = 0;
+      game.themeFade.dur = 40;
+    }
+  }, { passive: false });
+
+  const bands = ["ground", "mid", "air"];
+  bandBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    game.vertical = game.vertical || {};
+    const cur = game.vertical.band || "ground";
+    const i = Math.max(0, bands.indexOf(cur));
+    game.vertical.band = bands[(i + 1) % bands.length];
+  }, { passive: false });
+
+  wrap.appendChild(themeBtn);
+  wrap.appendChild(bandBtn);
+  document.body.appendChild(wrap);
+}
+
 const canvas = makeCanvas(canvasEl, ctx);
 const game = createGameState();
 const hud = createHUD(ui);
+setupMobileThemeToggle();
 
 const audio = createAudio(ui.soundBtn);
 const terrain = createTerrain(() => canvas.W, () => canvas.H);
@@ -78,6 +146,12 @@ setupInput({
     } else if (e.code === "Digit2") {
       // trigger current setpiece immediately
       window.__purrkour?.triggerSetpiece?.();
+    } else if (e.code === "KeyO") {
+      // force ocean beat (progression)
+      window.__purrkour?.enterBeat?.("OCEAN_JOURNEY");
+    } else if (e.code === "KeyM") {
+      // force rocket -> mars
+      window.__purrkour?.enterBeat?.("ROCKET_FLIGHT");
     } else if (e.code === "Digit3") {
       // cycle theme
       const order = game.themeCycle?.order || [];
@@ -132,11 +206,24 @@ window.__purrkour.setTheme = (k) => game.theme = k;
 // quick testing shortcuts (Console)
 window.__purrkour.setScore = (s) => { game.score = Math.max(0, s | 0); };
 window.__purrkour.gotoOcean = () => {
+  // Prefer progression if present
+  if (game.progressionApi?.enterBeatById) {
+    game.progressionApi.enterBeatById("OCEAN_JOURNEY", "dev");
+    return;
+  }
   game.score = game.setpiece?.startScore ?? 120;
   if (game.setpiece) game.setpiece.cooldown = 1000000;
 };
+
 window.__purrkour.triggerSetpiece = () => {
   if (!game.setpiece) return;
+  // Explicit request works with Progression + legacy
+  game.setpiece.requestedMode = game.setpiece.mode || "ocean";
   game.setpiece.cooldown = 1000000;
   game.score = Math.max(game.score, game.setpiece.startScore);
+};
+
+window.__purrkour.enterBeat = (id) => {
+  const api = game.progressionApi;
+  if (api?.enterBeatById) api.enterBeatById(id, "dev");
 };

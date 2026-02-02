@@ -69,8 +69,19 @@ const BEATS = [
   { id: "FOREST_INTRO", theme: "forest", lenScore: 55, night: false, safeOnEnter: 0 },
   // Breath is usually triggered by checkpoint pickup; we keep a fallback scheduled beat too.
   { id: "CHECKPOINT_BREATH", theme: "forest", lenScore: 25, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
-  { id: "OCEAN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: true },
+
+  // Story setpiece: ocean crossing (zeppelin/balloon/raft)
+  { id: "OCEAN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean" },
+
+  // Land & breathe
   { id: "ISLAND_REST", theme: "island", lenScore: 45, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+
+  // Rocket cutscene to Mars
+  { id: "ROCKET_FLIGHT", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket" },
+
+  // Actual Mars gameplay segment
+  { id: "MARS_RUN", theme: "mars", lenScore: 80, night: false, safeOnEnter: 0 },
+
   { id: "MOUNTAIN_FOCUS", theme: "mountain", lenScore: 90, night: false, safeOnEnter: 0 },
   { id: "NIGHT_PASSAGE", theme: "mountain", lenScore: 70, night: true, safeOnEnter: 0 },
 ];
@@ -123,26 +134,30 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     // Beat-owned night
     game.progression.nightTarget = beat.night ? 1 : 0;
 
-    // Optional setpiece
+    // Optional setpiece (requested; setpieces.js owns timeline + finish flag)
     if (beat.setpiece) {
-      // deterministic-ish vehicle roll (but per-journey)
-      const r = Math.random();
-      game.setpiece.type = (r < 0.18) ? "zeppelin" : (r < 0.35) ? "raft" : "balloon";
-      game.setpiece.active = true;
-      game.setpiece.t = 0;
-      game.setpiece.cooldown = 0;
-      game.setpiece.motion = {
-        dx: 0,
-        dy: 0,
-        vx: 0,
-        vy: 0,
-        phase: Math.random() * 1000,
-      };
-      clearWorld(objects);
-      // during flight: no safe mode (landing sets it via next beat)
-      game.safeTimer = 0;
+      if (game.setpiece) {
+        game.setpiece.finished = false;
+        game.setpiece.requestedMode = beat.setpiece; // "ocean" | "rocket"
+        game.setpiece.t = 0;
+        game.setpiece.phaseT = 0;
+        game.setpiece.phase = "approach";
+        game.setpiece.cooldown = 0;
+        // clear the world for scripted beats
+        clearWorld(objects);
+        // during flight: no safe mode (landing/next beat sets it)
+        game.safeTimer = 0;
+      }
     }
   }
+
+  function enterBeatById(id, reason = "") {
+    const idx = BEATS.findIndex((b) => b.id === id);
+    if (idx < 0) return false;
+    enterBeat(idx, reason || "by-id");
+    return true;
+  }
+
 
   function maybeCheckpointBreath() {
     // checkpointActive is set in collider when blanket is collected.
@@ -161,8 +176,17 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
 
   function advanceIfNeeded() {
     const beat = currentBeat();
-    if (beat.setpiece) return; // setpiece controls its own end
 
+    // Setpiece beats end when setpieces.js marks them finished.
+    if (beat.setpiece) {
+      const sp = game.setpiece;
+      if (!sp || !sp.finished) return;
+      // clear the flag so it won't re-trigger
+      sp.finished = false;
+      const nextIdx = (game.progression.beatIdx + 1) % BEATS.length;
+      enterBeat(nextIdx, "setpiece-finished");
+      return;
+    }
     const u = scoreU(game, game.progression.beatStartScore, beat.lenScore);
     if (u < 1) return;
 
@@ -180,26 +204,13 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
   }
 
   function updateSetpiece() {
-    const beat = currentBeat();
-    if (!beat.setpiece) return;
-
-    // Run the flight timeline; landing transitions to ISLAND_REST.
-    if (game.setpiece?.active) {
-      game.setpiece.t++;
-      if (game.setpiece.t >= game.setpiece.dur) {
-        game.setpiece.active = false;
-        game.setpiece.cooldown = 0;
-        // Land into island rest
-        enterBeat(3, "landing");
-      }
-    } else {
-      // If something turned it off unexpectedly, still land cleanly.
-      enterBeat(3, "landing");
-    }
+    // No-op: setpieces.js owns the scripted timelines.
+    // Progression only reacts to sp.finished in advanceIfNeeded().
   }
 
   function applyOutputs() {
     const beat = currentBeat();
+    if (beat.theme) game.theme = beat.theme;
 
     // speed curve (score-based for non-setpiece, time-based for setpiece)
     const u = beat.setpiece
@@ -243,5 +254,5 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     enterBeat(0, "boot");
   }
 
-  return { update, enterBeat, currentBeat };
+  return { update, enterBeat, enterBeatById, currentBeat };
 }

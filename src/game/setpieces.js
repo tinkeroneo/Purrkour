@@ -174,6 +174,17 @@ function update() {
       sp.cooldown = (sp.cooldown ?? 0) + 1;
       sp.rocketCooldown = (sp.rocketCooldown ?? 0) + 1;
 
+      // Explicit request from Progression/Debug (bypasses score scheduling)
+      if (sp.requestedMode) {
+        const mode = sp.requestedMode;
+        sp.requestedMode = null;
+        if (mode === "rocket") { triggerRocketFlight(); return; }
+        if (mode === "ocean")  { triggerOceanCrossing(); return; }
+      // If Progression owns the story beats, do not auto-trigger via score.
+      if (game.progression?.controlsSpeed) return;
+
+      }
+
       // Rocket has priority once scheduled (fun intermezzo)
       if (game.score >= (sp.nextRocketAt ?? 999999) && (sp.rocketCooldown ?? 0) > 240) {
         triggerRocketFlight();
@@ -306,6 +317,10 @@ function update() {
     if (!game.setpiece) return;
     const sp = game.setpiece;
 
+    sp.finished = false;
+    sp.mode = "rocket";
+
+
     sp.rocketCooldown = 0;
 
     sp.mode = "rocket";
@@ -339,6 +354,10 @@ function update() {
     const sp = game.setpiece;
 
     sp.active = false;
+
+    sp.finished = true;
+
+    sp.active = false;
     sp.phase = "none";
     sp.phaseT = 0;
     sp.t = 0;
@@ -356,5 +375,5 @@ function update() {
     audio?.SFX?.combo?.();
   }
 
-return { update, triggerOceanCrossing, finishOceanCrossing };
+return { update, triggerOceanCrossing, finishOceanCrossing, triggerRocketFlight, finishRocketFlight };
 }

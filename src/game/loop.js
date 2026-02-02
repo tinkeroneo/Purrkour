@@ -1,5 +1,6 @@
 import { getTheme } from "../world/themes.js";
 import { createSetpieceManager } from "./setpieces.js";
+import { createProgression } from "./progression.js";
 
 
 // src/game/loop.js
@@ -20,7 +21,11 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
         game.theme = toKey;
     }
 
-    function step() {
+    
+    const progression = createProgression({ game, objects, startThemeFade, audio });
+    // Expose for dev shortcuts
+    game.progressionApi = progression;
+function step() {
         if (!game.finished) {
             // dx: letzter effSpeed (wird in collider.update() neu berechnet)
             const dx = collider.effSpeed();
@@ -31,6 +36,9 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
                     game.themeFade.active = false;
                 }
             }
+
+            // central dramaturgy (beats -> speed/theme/night/setpieces)
+            progression.update();
 
             const theme = getTheme(game.theme);
 
@@ -137,8 +145,8 @@ if (game.setpiece?.active) {
             // --- setpieces (ocean crossing etc.) ---
             setpieces.update();
 
-            // theme cycle after landing (island -> mountain -> forest ...)
-            if (!game.setpiece.active && game.themeCycle && !game.themeFade?.active) {
+            // theme cycle after landing (disabled when progression owns themes)
+            if (!game.progression?.controlsSpeed && !game.setpiece.active && game.themeCycle && !game.themeFade?.active) {
                 if (game.score >= (game.themeCycle.nextAt ?? 999999)) {
                     const nextKey = game.themeCycle.order[game.themeCycle.idx % game.themeCycle.order.length];
                     game.themeFade = { active: true, from: game.theme, to: nextKey, t: 0, dur: 80 };

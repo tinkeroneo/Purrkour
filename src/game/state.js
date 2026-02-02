@@ -12,7 +12,7 @@ export function createGameState() {
         heartWave: { active: false, startTick: 0, dur: 90 },
         invulnTimer: 0,
         theme: "forest",
-        themeCycle: { order: ["island", "mountain", "forest", "jungle", "city", "desert"], idx: 0, nextAt: 999999, step: 140 },
+        themeCycle: { order: ["island", "mountain", "forest", "jungle", "cliff", "city", "desert", "ocean", "mars"], idx: 0, nextAt: 999999, step: 140 },
         nextTheme: null,
 
         vertical: { band: "ground" },

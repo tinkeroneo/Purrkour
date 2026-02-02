@@ -2,46 +2,41 @@ export const oceanTheme = {
   key: "ocean",
   label: "Ozean",
 
-
   birdVariant: "seagull",
+
   palette: {
-    skyTop: [140, 200, 240],
-    skyBot: [210, 235, 255],
-    far: [70, 110, 160],
-    forest: [90, 130, 140], // cliffs / coast
-    ground: [160, 190, 200], // Küste
+    skyTop: [110, 205, 255],
+    skyBot: [235, 252, 255],
+    far: [55, 120, 170],
+    forest: [40, 150, 170],
+    ocean: [25, 140, 200],
+    ground: [70, 135, 160],
+    groundAlpha: 0.40,
   },
 
-  ambience({ audio }) {
+  ambience({ audio, night }) {
     audio.setAmbience({
-      wind: 0.05,
-      ocean: 0.12,
-      night: 0.0001,
-      whoosh: 0.018,
-      rumble: 0.010,
+      wind: 0.03,
+      ocean: 0.10,
+      night: 0.01 + night * 0.02,
+      whoosh: 0.003,
+      rumble: 0.0001,
     });
   },
 
-  drawBackground(bg, ctx) {
-    bg.drawSky(ctx);
-    bg.drawParallax(ctx);
-    bg.drawOcean?.(ctx); // optional hook
-  },
-
   zones: {
-    ground: { fence: 0.95, dog: 0.70, bird: 0.95, yarn: 0.95, mouse: 1.05, fish: 1.10, catnip: 1.00 },
-    mid:    { fence: 0.35, dog: 0.15, bird: 1.55, yarn: 0.35, mouse: 1.10, fish: 1.10, catnip: 1.05 },
-    air:    { fence: 0.00, dog: 0.00, bird: 0.40, yarn: 0.00, mouse: 0.95, fish: 0.95, catnip: 0.95 },
+    ground: { fence: 0.35, dog: 0.00, bird: 0.85, yarn: 0.65, mouse: 0.95, fish: 1.25, catnip: 0.85 },
+    mid:    { fence: 0.15, dog: 0.00, bird: 1.25, yarn: 0.35, mouse: 1.00, fish: 1.35, catnip: 0.90 },
+    air:    { fence: 0.00, dog: 0.00, bird: 0.45, yarn: 0.00, mouse: 0.85, fish: 1.15, catnip: 0.80 },
   },
 
   spawns: {
-    fence: 0.95,
-    dog: 0.80,
-    bird: 1.05,
-    yarn: 0.95,
-    mouse: 0.95,
-    fish: 1.20,
-    catnip: 0.95,
+    fence: 0.30,
+    dog: 0.00,
+    bird: 1.15,
+    yarn: 0.70,
+    mouse: 0.90,
+    fish: 1.30,
+    catnip: 0.85,
   },
-
 };

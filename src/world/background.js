@@ -42,6 +42,33 @@ function drawSpaceSky(ctx, W, H, sp, tick, themeKey) {
         ctx.fillStyle = hz;
         ctx.fillRect(0, 0, W, H);
 
+        // landing pad markings (subtle, near the horizon)
+        ctx.globalAlpha = 0.14;
+        ctx.fillStyle = "rgba(20,10,12,0.9)";
+        const padY = H * 0.78;
+        ctx.fillRect(W * 0.12, padY, W * 0.76, H * 0.18);
+
+        ctx.globalAlpha = 0.22;
+        ctx.strokeStyle = "rgba(255,220,210,0.45)";
+        ctx.lineWidth = 2;
+        // center line
+        ctx.beginPath();
+        ctx.moveTo(W * 0.50, padY + 8);
+        ctx.lineTo(W * 0.50, H - 10);
+        ctx.stroke();
+        // H marker
+        ctx.globalAlpha = 0.25;
+        ctx.lineWidth = 3;
+        const hx = W * 0.50, hy = padY + 36;
+        ctx.beginPath();
+        ctx.moveTo(hx - 22, hy);
+        ctx.lineTo(hx + 22, hy);
+        ctx.moveTo(hx - 18, hy - 18);
+        ctx.lineTo(hx - 18, hy + 18);
+        ctx.moveTo(hx + 18, hy - 18);
+        ctx.lineTo(hx + 18, hy + 18);
+        ctx.stroke();
+
         // sparse dust motes
         ctx.globalAlpha = 0.10;
         ctx.fillStyle = "rgba(255,255,255,0.8)";

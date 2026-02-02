@@ -2,50 +2,49 @@ export const marsTheme = {
   key: "mars",
   label: "Mars",
 
-  // Use existing bird sprite as a "drone" vibe for now
   birdVariant: "drone",
 
+  // Mars as a landing zone: muted sky, dark pad silhouettes, dusty ground.
   palette: {
-    // warm dusty sky
-    skyTop: [235, 140, 110],
-    skyBot: [92, 34, 48],
+    skyTop: [185, 118, 110],
+    skyBot: [70, 26, 44],
 
-    // silhouettes / mid layer tint
-    far: [135, 70, 78],
-    forest: [170, 92, 72],
+    // far silhouettes / horizon
+    far: [95, 52, 64],
+    forest: [120, 70, 66],
 
-    // ground tint (used by terrain draw)
-    ground: [196, 98, 62],
+    // little accent for markings / rocks
+    grass: [165, 120, 110],
+
+    // landing pad / regolith mix
+    ground: [122, 96, 92],
+    groundAlpha: 0.52,
   },
 
   ambience({ audio, night }) {
-    // dry wind + subtle night shimmer
     audio.setAmbience({
       wind: 0.05,
       ocean: 0.0001,
       night: 0.02 + night * 0.04,
       whoosh: 0.0001,
+      rumble: 0.002,
     });
   },
 
-  // Spawn weights: fewer animals, more "terrain" + yarn + collectibles
-  // (Values are multipliers; spawn.js combines them with baseline probabilities.)
+  zones: {
+    // fewer dogs, more controlled “platform” birds
+    ground: { fence: 1.05, dog: 0.00, bird: 0.70, yarn: 1.10, mouse: 0.75, fish: 0.60, catnip: 0.70 },
+    mid:    { fence: 0.55, dog: 0.00, bird: 1.10, yarn: 0.55, mouse: 0.80, fish: 0.70, catnip: 0.75 },
+    air:    { fence: 0.00, dog: 0.00, bird: 0.50, yarn: 0.00, mouse: 0.65, fish: 0.55, catnip: 0.60 },
+  },
+
   spawns: {
     fence: 0.95,
     dog: 0.00,
-    bird: 0.55,
-    yarn: 1.05,
-    mouse: 0.65,
-    fish: 0.55,
-    catnip: 0.60,
-    heart: 0.70,
-    car: 0.00,
-  },
-
-  // Vertical band modifiers (optional – keep gentle)
-  band: {
-    ground: { fence: 1.00, dog: 0.00, bird: 0.55, yarn: 1.10, mouse: 0.70, fish: 0.60, catnip: 0.65, heart: 0.70, car: 0.00 },
-    mid:    { fence: 0.55, dog: 0.00, bird: 0.95, yarn: 0.45, mouse: 0.70, fish: 0.65, catnip: 0.70, heart: 0.70, car: 0.00 },
-    air:    { fence: 0.00, dog: 0.00, bird: 0.40, yarn: 0.00, mouse: 0.55, fish: 0.50, catnip: 0.55, heart: 0.60, car: 0.00 },
+    bird: 0.85,
+    yarn: 1.10,
+    mouse: 0.75,
+    fish: 0.60,
+    catnip: 0.70,
   },
 };

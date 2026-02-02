@@ -1,53 +1,43 @@
-// src/world/themes/island.js
-// Warm island / lagoon vibe (works with day-night overlay)
-
 export const islandTheme = {
   key: "island",
-  label: "insel",
+  label: "Insel",
 
   birdVariant: "seagull",
+
   palette: {
-    // sky
-    skyTop: [140, 220, 255],
+    skyTop: [135, 220, 255],
     skyBot: [245, 252, 255],
-
-    // parallax silhouettes
-    far: [70, 120, 150],
-    forest: [40, 150, 120],
-
-    // water (used by ocean setpiece)
-    ocean: [40, 160, 210],
-
-    // ground
-    ground: [220, 205, 155],
-    grass: [120, 190, 120],
+    far: [70, 130, 165],
+    forest: [35, 150, 110], // palms
+    grass: [70, 185, 140],
+    ocean: [25, 145, 190],
+    ground: [190, 175, 130], // sand
+    groundAlpha: 0.44,
   },
 
-  ambience({ audio, night, tau }) {
-    const n = Math.max(0, Math.min(1, night ?? 0));
-    audio.setAmbience?.({
-      wind: 0.05 + 0.04 * n,
-      ocean: 0.18 + 0.16 * n,
-      night: 0.02 + 0.04 * n,
-      whoosh: 0.0001,
+  ambience({ audio, night }) {
+    audio.setAmbience({
+      wind: 0.02,
+      ocean: 0.06,
+      night: 0.01 + night * 0.02,
+      whoosh: 0.002,
       rumble: 0.0001,
-      tau: tau ?? 0.12,
     });
   },
 
   zones: {
-    ground: { fence: 1.00, dog: 0.80, bird: 0.95, yarn: 0.95, mouse: 1.05, fish: 1.05, catnip: 1.00 },
-    mid:    { fence: 0.40, dog: 0.15, bird: 1.45, yarn: 0.40, mouse: 1.10, fish: 1.10, catnip: 1.05 },
-    air:    { fence: 0.00, dog: 0.00, bird: 0.40, yarn: 0.00, mouse: 0.95, fish: 0.95, catnip: 0.95 },
+    ground: { fence: 0.95, dog: 0.85, bird: 0.85, yarn: 1.05, mouse: 1.00, fish: 1.10, catnip: 1.05 },
+    mid:    { fence: 0.50, dog: 0.15, bird: 1.30, yarn: 0.55, mouse: 1.05, fish: 1.15, catnip: 1.10 },
+    air:    { fence: 0.00, dog: 0.00, bird: 0.40, yarn: 0.00, mouse: 0.90, fish: 1.05, catnip: 0.95 },
   },
 
   spawns: {
-    fence: 0.95,
-    dog: 0.85,
-    bird: 1.05,
+    fence: 0.90,
+    dog: 0.75,
+    bird: 1.10,
     yarn: 1.00,
-    mouse: 1.05,
-    fish: 1.10,
+    mouse: 1.00,
+    fish: 1.20,
     catnip: 1.05,
   },
 };

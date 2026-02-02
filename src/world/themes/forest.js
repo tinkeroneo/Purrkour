@@ -2,17 +2,19 @@ export const forestTheme = {
   key: "forest",
   label: "Wald",
 
-
   birdVariant: "crow",
+
   palette: {
-    skyTop: [160, 220, 255],
+    skyTop: [155, 220, 255],
     skyBot: [240, 252, 255],
-    far: [55, 85, 125],
-    forest: [35, 120, 80],
-    ground: [78, 155, 88],
+    far: [48, 78, 118],      // distant hills
+    forest: [28, 112, 74],   // mid trees
+    grass: [62, 152, 86],    // small accents
+    ground: [72, 145, 84],
+    groundAlpha: 0.46,
   },
 
-  ambience({ audio, night, tau }) {
+  ambience({ audio, night }) {
     audio.setAmbience({
       wind: 0.03,
       ocean: 0.0001,
@@ -20,12 +22,6 @@ export const forestTheme = {
       whoosh: 0.0001,
       rumble: 0.0001,
     });
-  },
-
-  // draw hooks (optional)
-  drawBackground(bg, ctx) {
-    bg.drawSky(ctx);
-    bg.drawParallax(ctx);
   },
 
   zones: {
@@ -43,5 +39,4 @@ export const forestTheme = {
     fish: 1.00,
     catnip: 1.00,
   },
-
 };

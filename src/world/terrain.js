@@ -107,6 +107,37 @@ if (palette?.key === "mars") {
     const y = (H - 170) + ((i * 19) % 120);
     ctx.fillRect(x, y, 2, 1);
   }
+
+  // landing pad (static) — makes Mars feel like a touchdown zone
+  ctx.globalAlpha = 0.22;
+  const padW = W * 0.66;
+  const padH = 64;
+  const padX = (W - padW) * 0.5;
+  const padY = H - 110;
+  ctx.fillStyle = "rgba(30,20,20,0.9)";
+  ctx.fillRect(padX, padY, padW, padH);
+
+  // pad markings
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = "rgba(255,235,220,0.85)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(padX + 10, padY + 10, padW - 20, padH - 20);
+
+  ctx.globalAlpha = 0.14;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(W * 0.5, padY + padH * 0.5, Math.min(padW, padH) * 0.22, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // center line
+  ctx.globalAlpha = 0.10;
+  ctx.beginPath();
+  ctx.moveTo(W * 0.5, padY + 12);
+  ctx.lineTo(W * 0.5, padY + padH - 12);
+  ctx.stroke();
+
+  // reset alpha for remaining draws
+  ctx.globalAlpha = 0.10;
 } else {
   // grass highlights (subtle, static)
   ctx.globalAlpha = 0.06;

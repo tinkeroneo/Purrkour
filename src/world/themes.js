@@ -6,8 +6,9 @@ import { mountainTheme } from "./themes/mountain.js";
 import { jungleTheme } from "./themes/jungle.js";
 import { cityTheme } from "./themes/city.js";
 import { desertTheme } from "./themes/desert.js";
-
 import { marsTheme } from "./themes/mars.js";
+import { cliffTheme } from "./themes/cliff.js";
+
 export const THEMES = {
   forest: forestTheme,
   ocean: oceanTheme,
@@ -17,6 +18,7 @@ export const THEMES = {
   city: cityTheme,
   desert: desertTheme,
   mars: marsTheme,
+  cliff: cliffTheme,
 };
 
 export function getTheme(key) {
