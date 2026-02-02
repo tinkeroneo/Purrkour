@@ -1,0 +1,29 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Builds
+dist/
+build/
+
+# Cache / Lint
+.eslintcache
+.cache/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Game local data
+savegames/
+debug/
+*.sav
