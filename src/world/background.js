@@ -139,146 +139,129 @@ export function createBackground(getW, getH, lakes, game, hud) {
     }
 
     function drawParallax(ctx) {
-        const W = getW(), H = getH();
-        const p = palette();
+  const Wv = getW(), Hv = getH();
+  const p = palette();
+  const themeKey = getTheme(game.theme)?.key || game.theme || "forest";
 
-        const tick = game.tick;
+  const tick = game.tick || 0;
+  const far = (game.score * 6 + tick) * 0.10;
+  const mid = (game.score * 9 + tick) * 0.18;
+  const near = (game.score * 13 + tick) * 0.26;
 
-        // small per-theme offset + interpolated offset during fade
-        const tf = game.themeFade;
-        const seedA = themeSeed(tf?.from ?? game.theme);
-        const seedB = themeSeed(tf?.to ?? game.theme);
-        const u = (tf?.active && tf.dur > 0) ? smoothstep(clamp(tf.t / tf.dur, 0, 1)) : 1;
-        const seed = lerp(seedA, seedB, u);
-        const off = seed * 1200;
-
-        // depth scroll with a tiny "delay" so layers feel separated
-        const far = (game.score * 6 + tick) * 0.095 + off * 0.22;
-        const mid = (game.score * 9 + tick) * 0.170 + off * 0.35;
-        const near = (game.score * 13 + tick) * 0.245 + off * 0.55;
-
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.55)`;
-        ctx.beginPath();
-        ctx.moveTo(0, H * 0.58);
-        for (let x = 0; x <= W; x += 40) {
-            const y = H * 0.58 + Math.sin((x + far) * 0.025) * 18 + Math.sin((x + far) * 0.012) * 26;
-            ctx.lineTo(x, y);
-        }
-        ctx.lineTo(W, H); ctx.lineTo(0, H);
-        ctx.closePath();
-        ctx.fill();
-
-        // theme-specific mid layer (no more forest trees everywhere)
-        const themeKey = (getTheme(game.theme)?.key) || game.theme || "forest";
-        if (themeKey === "forest" || themeKey === "jungle" || themeKey === "island") {
-            ctx.globalAlpha = 0.60;
-            ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.42)`;
-            for (let x = -30; x < W + 60; x += 28) {
-                const hh = 42 + (Math.sin((x + mid) * 0.06) * 10);
-                const baseY = H * 0.70 + Math.sin((x + mid) * 0.02) * 8;
-                ctx.beginPath();
-                ctx.moveTo(x, baseY);
-                ctx.lineTo(x + 14, baseY - hh);
-                ctx.lineTo(x + 28, baseY);
-                ctx.closePath();
-                ctx.fill();
-            }
-        } else if (themeKey === "city") {
-            // simple skyline
-            ctx.globalAlpha = 0.50;
-            ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
-            const baseY = H * 0.72;
-            for (let i = 0; i < 18; i++) {
-                const x = ((i * 78) - (mid * 0.28)) % (W + 120) - 60;
-                const bw = 36 + (i % 3) * 10;
-                const bh = 40 + ((i * 17) % 60);
-                ctx.fillRect(x, baseY - bh, bw, bh);
-            }
-        } else if (themeKey === "desert") {
-            // dunes
-            ctx.globalAlpha = 0.35;
-            ctx.fillStyle = `rgba(${p.ground[0]},${p.ground[1]},${p.ground[2]},0.22)`;
-            ctx.beginPath();
-            ctx.moveTo(0, H * 0.72);
-            for (let x = 0; x <= W; x += 34) {
-                const y = H * 0.72 + Math.sin((x + mid) * 0.02) * 10 + Math.sin((x + mid) * 0.006) * 18;
-                ctx.lineTo(x, y);
-            }
-            ctx.lineTo(W, H); ctx.lineTo(0, H);
-            ctx.closePath();
-            ctx.fill();
-        } else {
-            // ocean/mountain/space/etc: no mid trees; keep it clean
-            ctx.globalAlpha = 1;
-        }
-
-        // island palms (simple silhouettes)
-        if (game.theme === "island") {
-            ctx.globalAlpha = 0.55;
-            ctx.fillStyle = `rgba(${Math.max(0, p.forest[0] - 20)},${Math.max(0, p.forest[1] - 30)},${Math.max(0, p.forest[2] - 20)},0.55)`;
-            const horizon = H * 0.74;
-            for (let i = 0; i < 6; i++) {
-                const px = ((i * 180) - (near * 0.35)) % (W + 220) - 60;
-                const trunkH = 38 + (i % 3) * 10;
-                ctx.beginPath();
-                ctx.moveTo(px, horizon);
-                ctx.quadraticCurveTo(px + 10, horizon - trunkH * 0.6, px + 18, horizon - trunkH);
-                ctx.lineTo(px + 24, horizon - trunkH);
-                ctx.quadraticCurveTo(px + 14, horizon - trunkH * 0.5, px + 8, horizon);
-                ctx.closePath();
-                ctx.fill();
-
-                // leaves
-                ctx.globalAlpha = 0.40;
-                ctx.beginPath();
-                ctx.ellipse(px + 20, horizon - trunkH, 26, 10, -0.25, 0, Math.PI * 2);
-                ctx.ellipse(px + 28, horizon - trunkH + 4, 22, 8, 0.35, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 0.55;
-            }
-        }
-
-        // fireflies at night (subtle)
-        if (p.n > 0.60 && (game.theme === "forest" || game.theme === "island")) {
-            if (fireflies.length < 28 && Math.random() < 0.15) {
-                fireflies.push({
-                    x: Math.random() * W,
-                    y: H * (0.30 + Math.random() * 0.45),
-                    phase: Math.random() * 6.28,
-                    r: 1.2 + Math.random() * 1.6,
-                    life: 200 + Math.floor(Math.random() * 260),
-                });
-            }
-            ctx.globalAlpha = 0.12 + 0.10 * (p.n - 0.60) / 0.32;
-            ctx.fillStyle = "rgba(220,255,170,0.9)";
-            for (let i = fireflies.length - 1; i >= 0; i--) {
-                const f = fireflies[i];
-                f.life--;
-                f.phase += 0.03;
-                f.x += Math.sin(f.phase) * 0.18;
-                f.y += Math.cos(f.phase * 0.9) * 0.12;
-                if (f.life <= 0 || f.x < -50 || f.x > W + 50) { fireflies.splice(i, 1); continue; }
-                const a = 0.55 + 0.45 * Math.sin(f.phase);
-                ctx.globalAlpha = (0.08 + 0.16 * a) * clamp((p.n - 0.60) / 0.32, 0, 1);
-                ctx.beginPath();
-                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1;
-        }
-
-        // Lakes are optional (currently disabled). Keep the hook so they can be
-        // re-enabled later without touching the renderer.
-        if (lakes && typeof lakes.draw === "function") {
-            ctx.globalAlpha = 1;
-            lakes.draw(ctx, near, p, H);
-            ctx.globalAlpha = 1;
-        }
+  // ---- FAR LAYER ----
+  if (themeKey !== "city") {
+    // soft mountains / silhouettes
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.55)`;
+    ctx.beginPath();
+    ctx.moveTo(0, Hv * 0.58);
+    for (let x = 0; x <= Wv; x += 40) {
+      const y = Hv * 0.58
+        + Math.sin((x + far) * 0.025) * 18
+        + Math.sin((x + far) * 0.012) * 26;
+      ctx.lineTo(x, y);
     }
+    ctx.lineTo(Wv, Hv); ctx.lineTo(0, Hv);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  } else {
+    // city: flatter haze, no mountains
+    ctx.globalAlpha = 0.32;
+    ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.28)`;
+    ctx.fillRect(0, Hv * 0.52, Wv, Hv * 0.14);
+    ctx.globalAlpha = 1;
+  }
 
-    // Soft ground fog (only at night). Draw this AFTER the ground fill and BEFORE entities.
-    
+  // ---- MID LAYER ----
+  if (themeKey === "forest" || themeKey === "jungle") {
+    // forest triangles
+    ctx.globalAlpha = 0.60;
+    ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.42)`;
+    for (let x = -30; x < Wv + 60; x += 28) {
+      const hh = 42 + (Math.sin((x + mid) * 0.06) * 10);
+      const baseY = Hv * 0.70 + Math.sin((x + mid) * 0.02) * 8;
+      ctx.beginPath();
+      ctx.moveTo(x, baseY);
+      ctx.lineTo(x + 14, baseY - hh);
+      ctx.lineTo(x + 28, baseY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (themeKey === "island") {
+    // palms only (no forest trees)
+    ctx.globalAlpha = 0.52;
+    ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.35)`;
+    const baseY = Hv * 0.71;
+    for (let i = 0; i < 12; i++) {
+      const x = ((i * 86) - (mid * 0.22)) % (Wv + 140) - 70;
+      const h = 44 + ((i * 19) % 26);
+      // trunk
+      ctx.fillRect(x + 10, baseY - h, 6, h);
+      // leaves
+      ctx.beginPath();
+      ctx.moveTo(x + 13, baseY - h);
+      ctx.quadraticCurveTo(x - 4, baseY - h - 6, x - 14, baseY - h + 6);
+      ctx.quadraticCurveTo(x + 2, baseY - h + 2, x + 13, baseY - h);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + 13, baseY - h);
+      ctx.quadraticCurveTo(x + 30, baseY - h - 8, x + 44, baseY - h + 8);
+      ctx.quadraticCurveTo(x + 26, baseY - h + 4, x + 13, baseY - h);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (themeKey === "city") {
+    // skyline with subtle windows
+    if (typeof drawCitySkyline === "function") {
+      drawCitySkyline(ctx, mid, p);
+    } else {
+      const baseY = Hv * 0.72;
+      ctx.globalAlpha = 0.50;
+      ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
+      for (let i = 0; i < 18; i++) {
+        const x = ((i * 78) - (mid * 0.28)) % (Wv + 120) - 60;
+        const bw = 36 + (i % 3) * 10;
+        const bh = 40 + ((i * 17) % 60);
+        const y0 = baseY - bh;
+        ctx.fillRect(x, y0, bw, bh);
+
+        // windows
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = "rgba(255,247,204,0.9)";
+        for (let wy = y0 + 10; wy < baseY - 10; wy += 12) {
+          for (let wx = x + 8; wx < x + bw - 8; wx += 10) {
+            if (((wx + wy + (mid|0)) % 23) < 10) ctx.fillRect(wx, wy, 4, 6);
+          }
+        }
+        ctx.globalAlpha = 0.50;
+        ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
+      }
+      ctx.globalAlpha = 1;
+    }
+  } else if (themeKey === "desert") {
+    // dunes
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = `rgba(${p.ground[0]},${p.ground[1]},${p.ground[2]},0.22)`;
+    ctx.beginPath();
+    ctx.moveTo(0, Hv * 0.72);
+    for (let x = 0; x <= Wv; x += 34) {
+      const y = Hv * 0.72 + Math.sin((x + mid) * 0.02) * 10 + Math.sin((x + mid) * 0.006) * 18;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(Wv, Hv); ctx.lineTo(0, Hv);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- OCEAN SPECIAL ----
+  if (themeKey === "ocean" || game?.setpiece?.active) {
+    const maskX = game?.setpiece?.oceanMaskX ?? 0;
+    if (typeof drawOceanMasked === "function") drawOceanMasked(ctx, maskX);
+  }
+}
 
 function drawHighClouds(ctx, near, night) {
     const W = getW(), H = getH();
@@ -356,6 +339,19 @@ function drawGroundFog(ctx) {
 
   ctx.restore();
 }
+
+function drawOceanMasked(ctx, maskX) {
+  const W = getW(), H = getH();
+  const mx = clamp(maskX ?? 0, 0, W);
+  if (mx >= W) return; // fully masked (no ocean)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(mx, 0, W - mx, H);
+  ctx.clip();
+  drawOcean(ctx);
+  ctx.restore();
+}
+
 
 
     function getNight() {

@@ -215,21 +215,35 @@ export function createSpawner(game, terrain, objects, canvas) {
       const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
       objects.add({ kind: "obstacle", type: "bird", variant, x: spawnX, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed" });
 
-    } else if (type === "dog") {
-      const w = 58, h = 36;
-      objects.add({
-        kind: "obstacle", type: "dog",
-        x: spawnX,
-        y: terrain.surfaceAt(spawnX) - h,
-        w, h,
-        asleep: (Math.random() < 0.55),
-        chasing: false,
-        chaseSpeedBoost: 1.45 + Math.random() * 0.22,
-        anim: Math.random() * 100,
-        yMode: "ground", yOffset: -h
-      });
+    } 
+else if (type === "dog") {
+  const themeKey = (game.theme && game.theme.key) ? game.theme.key : (game.theme || "forest");
 
-    } else { // yarn slow
+  if (themeKey === "city") {
+    // city: cars as harmless setpieces/platforms (no chase)
+    const w = 110, h = 44;
+    objects.add({
+      kind: "platform", type: "car",
+      x: spawnX,
+      y: terrain.surfaceAt(spawnX) - h,
+      w, h,
+      yMode: "ground", yOffset: -h
+    });
+  } else {
+    const w = 58, h = 36;
+    objects.add({
+      kind: "obstacle", type: "dog",
+      x: spawnX,
+      y: terrain.surfaceAt(spawnX) - h,
+      w, h,
+      asleep: (Math.random() < 0.55),
+      chasing: false,
+      chaseSpeedBoost: 1.45 + Math.random() * 0.22,
+      anim: Math.random() * 100,
+      yMode: "ground", yOffset: -h
+    });
+  }
+} else { // yarn slow
       const size = 28;
       objects.add({
         kind: "obstacle", type: "yarn",

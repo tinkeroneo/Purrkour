@@ -38,6 +38,17 @@ export function createGameState() {
         },
 
 
+        // input lock for scripted beats
+        controlLocked: false,
+        // short safety window after landings / pauses
+        safeTimer: 0,
+        // Rest at a hut (HUD button). When active, gameplay pauses.
+        pause: {
+            active: false,
+            phase: "none", // walk -> sleep -> resume
+            t: 0,
+        },
+
         slowTimer: 0,
         slowStrength: 0.65,
 

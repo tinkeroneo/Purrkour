@@ -26,6 +26,7 @@ const ui = {
   lives: document.getElementById("lives"),
   miceDisplay: document.getElementById("miceDisplay"),
   catnip: document.getElementById("catnip"),
+  restBtn: document.getElementById("restBtn"),
   soundBtn: document.getElementById("soundBtn"),
 };
 
@@ -44,7 +45,7 @@ const cat = createCat(game, hud);
 const objects = createObjects();
 const drawer = createDrawer(ctx, canvas, game, cat, terrain, lakes, bg);
 const spawner = createSpawner(game, terrain, objects, canvas);
-const collider = createCollider(game, cat, terrain, objects, audio, hud);
+const collider = createCollider(game, cat, terrain, objects, audio, hud, canvas);
 
 // resize init
 function hardResize() {
@@ -62,6 +63,7 @@ window.addEventListener("resize", hardResize, { passive: true });
 // input
 setupInput({
   onJump: () => {
+    if (game.pause?.active) return;
     audio.ensure();
     cat.jump(audio);
   },
@@ -89,11 +91,33 @@ setupInput({
   }
 });
 
+// HUD: rest / pause at the hut
+if (ui.restBtn) {
+  ui.restBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    // Toggle pause via hut.
+    if (game.pause?.active) {
+      game.pause.active = false;
+      game.pause.phase = "resume";
+      game.pause.t = 0;
+      cat.cat.x = cat.cat.baseX;
+      // short invuln so resume feels fair
+      game.invulnTimer = Math.max(game.invulnTimer, 40);
+    } else {
+      if (game.setpiece?.active) return; // don't interrupt setpiece
+      game.pause = game.pause || {};
+      game.pause.active = true;
+      game.pause.phase = "walk";
+      game.pause.t = 0;
+    }
+  }, { passive: false });
+}
+
 // game loop
 const loop = createLoop({
   game, cat, terrain, lakes, bg,
   objects, spawner, collider,
-  drawer, hud, audio
+  drawer, hud, audio, canvas
 });
 loop.start();
 // DEBUG helpers

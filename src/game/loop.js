@@ -3,8 +3,8 @@ import { createSetpieceManager } from "./setpieces.js";
 
 
 // src/game/loop.js
-export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio }) {
-    const setpieces = createSetpieceManager({ game, objects, startThemeFade });
+export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio, canvas }) {
+    const setpieces = createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio });
 
     function startThemeFade(toKey, dur = 70) {
         const fromKey = game.theme;
@@ -33,6 +33,59 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
             }
 
             const theme = getTheme(game.theme);
+
+            // -----------------------------------------------------
+            // Rest / Pause at hut (HUD button)
+            // -----------------------------------------------------
+            if (game.pause?.active) {
+                const c = (cat.cat ?? cat);
+                game.pause.t = (game.pause.t || 0) + 1;
+
+                // Target hut stays on-screen (within cat clamp window)
+                // (cat.clampX keeps max ~45% of screen width)
+                const baseX = (c.baseX ?? 110);
+                const hutX = Math.min(baseX + 140, 260);
+                game.pause.hutX = hutX;
+                game.pause.hutY = terrain.surfaceAt(hutX) - 52;
+
+                // simple phase machine
+                if (game.pause.phase === "walk") {
+                    // walk towards hut
+                    const dir = Math.sign(hutX - c.x);
+                    c.x += dir * 2.2;
+                    // keep cat grounded
+                    c.vy = 0;
+                    c.y = terrain.surfaceAt(c.x) - c.h;
+                    c.onSurface = true;
+                    // arrived?
+                    if (Math.abs(hutX - c.x) < 10) {
+                        game.pause.phase = "sleep";
+                        game.pause.t = 0;
+                        hud.toast?.("Schnurr… 😺💤", 140);
+                        audio?.SFX?.combo?.();
+                    }
+                } else if (game.pause.phase === "sleep") {
+                    // keep still, purr bubbles via objects helper
+                    if (game.pause.t % 90 === 0) objects.addBubble?.("purr", c.x + 10, c.y - 6);
+                    if (game.pause.t > 60 * 6) {
+                        // stay sleeping until user toggles; nothing to do
+                    }
+                } else if (game.pause.phase === "resume") {
+                    // tiny settle period, then fully unpause
+                    if (game.pause.t > 18) {
+                        game.pause.active = false;
+                        game.pause.phase = "none";
+                        game.pause.t = 0;
+                    }
+                }
+
+                // still tick a bit for overlays
+                objects.updateBubbles?.();
+                hud.sync(game, c);
+                drawer.draw(objects);
+                requestAnimationFrame(step);
+                return;
+            }
 
             // 1) world scroll
             terrain.update(dx);

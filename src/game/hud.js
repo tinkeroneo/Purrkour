@@ -12,6 +12,13 @@ export function createHUD(ui) {
     if (ui.miceDisplay) ui.miceDisplay.textContent = `🐭 × ${game.mice}`;
     if (ui.catnip) ui.catnip.textContent = (game.catnipTimer > 0) ? "an" : "aus";
 
+    // Rest/Pause button (optional)
+    if (ui.restBtn) {
+      const paused = !!game.pause?.active;
+      ui.restBtn.textContent = paused ? "▶" : "🏠";
+      ui.restBtn.title = paused ? "Weiterspielen" : "Zur Hütte (Pause)";
+    }
+
     // Optional (can be removed from index.html without breaking)
     if (ui.jumpsMax) ui.jumpsMax.textContent = String(cat.maxJumps);
     if (ui.jumps) ui.jumps.textContent = String(cat.jumpsLeft);

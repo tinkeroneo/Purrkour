@@ -165,22 +165,45 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         const slowMult = (game.slowTimer > 0) ? game.slowStrength : 1.0;
         const eff = game.speed * catnipMult * slowMult;
         // --- setpiece: disable ground physics + collisions (balloon/zeppelin) ---
-        if (game.setpiece?.active) {
-            game._effSpeed = eff;
+        // effective speed (used by loop / terrain.update) — also supports scripted setpieces
+        const sp = game.setpiece;
+        const scroll = (sp?.active) ? (sp.scroll ?? 1) : 1;
+        game._effSpeed = eff * scroll;
 
-            // keep cat stable (we render the cat inside the balloon basket)
-            const baseX = (cat.baseX ?? 110);
-            cat.x = baseX;
+        // --- setpiece: scripted beat (approach/board/travel/arrive) ---
+        if (sp?.active) {
+            const phase = sp.phase || "travel";
+            const vx = sp.vehicle?.x ?? (canvas ? canvas.W * 0.76 : (cat.baseX + 260));
+            const targetX = vx - 70;
+
+            // During approach/board/arrive: keep cat on land and guide it into position.
+            if (phase === "approach" || phase === "board" || phase === "arrive") {
+                if (!sp.catInVehicle) {
+                    cat.x += (targetX - cat.x) * 0.10;
+                } else {
+                    cat.x = cat.baseX;
+                }
+                cat.vy = 0;
+                cat.onSurface = true;
+
+                const ground = terrain.surfaceAt(cat.x);
+                cat.y = ground - cat.h;
+
+                cat.jumpsLeft = cat.maxJumps;
+                objects.updateBubbles();
+                return;
+            }
+
+            // Travel: disable ground physics/collisions; cat is inside the vehicle (draw.js hides sprite)
+            cat.x = cat.baseX;
             cat.vy = 0;
             cat.onSurface = true;
             cat.jumpsLeft = cat.maxJumps;
 
-            // keep UI effects alive
             objects.updateBubbles();
             return;
         }
 
-        game._effSpeed = eff;
 
         // home movement / finish
         if (game.homePhase === 1) {
@@ -293,31 +316,35 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                     objects.list.splice(i, 1); i--;
                 } else if (o.type === "dog") {
                     startChase(o);
+
                 } else if (o.type === "bird") {
                     // Bird is a platform ONLY when landing from above (side/below = danger)
                     const catPrevBottom = prevY + cat.h;
                     const catBottom = cat.y + cat.h;
-                    const birdTop = o.y + 2;
-                    const xOverlap = (cat.x + cat.w * 0.75) > o.x && (cat.x + cat.w * 0.25) < (o.x + o.w);
+                    const birdTop = o.y; // use actual top for robustness
+                    const xOverlap = (cat.x + cat.w * 0.78) > o.x && (cat.x + cat.w * 0.22) < (o.x + o.w);
 
-                    const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop) && (catBottom >= birdTop);
+                    // landing window (a little forgiving)
+                    const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop + 8) && (catBottom >= birdTop + 2);
+
                     if (landing) {
                         cat.y = birdTop - cat.h + 1;
                         cat.vy = 0;
                         cat.onSurface = true;
                         cat.jumpsLeft = cat.maxJumps;
+
                         // stomp feedback
                         catApi?.stomp?.();
                         o.landedTimer = 14;
                         objects.addPuff?.(cat.x + cat.w * 0.55, cat.y + cat.h - 6);
-                        if (audio?.SFX?.stomp) audio.SFX.stomp(); else if (audio?.SFX?.combo) audio.SFX.combo();
+                        if (audio?.SFX?.stomp) audio.SFX.stomp();
+                        else if (audio?.SFX?.combo) audio.SFX.combo();
+
+                        continue; // IMPORTANT: don't treat as damage this frame
                     } else {
                         loseLife();
                         objects.list.splice(i, 1); i--;
                     }
-                } else {
-                    loseLife();
-                    objects.list.splice(i, 1); i--;
                 }
             }
         }

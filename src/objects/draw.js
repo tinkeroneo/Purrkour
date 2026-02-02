@@ -131,16 +131,52 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.restore();
     }
 
+
 function drawYarn(o) {
-        ctx.save();
-        ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
-        ctx.fillStyle = "#b07a4a";
-        ctx.beginPath(); ctx.arc(0, 0, Math.min(o.w, o.h) / 2, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.45)";
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(0, 0, Math.min(o.w, o.h) / 2 - 3, 0.3, 2.8); ctx.stroke();
-        ctx.restore();
-    }
+  // red yarn ball with visible strands
+  const r = Math.min(o.w, o.h) / 2;
+  ctx.save();
+  ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
+
+  // base
+  const g = ctx.createRadialGradient(-r * 0.25, -r * 0.25, r * 0.2, 0, 0, r);
+  g.addColorStop(0, "rgba(255,120,120,1)");
+  g.addColorStop(1, "rgba(190,35,55,1)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // strands (curved lines)
+  ctx.globalAlpha = 0.85;
+  ctx.strokeStyle = "rgba(120,0,20,0.55)";
+  ctx.lineWidth = Math.max(1.2, r * 0.10);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 1.9 + 0.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (0.55 + (i % 3) * 0.10), a, a + 1.6);
+    ctx.stroke();
+  }
+
+  // highlight ring
+  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = Math.max(1, r * 0.08);
+  ctx.beginPath();
+  ctx.arc(-r * 0.08, -r * 0.10, r * 0.68, 0.2, 2.6);
+  ctx.stroke();
+
+  // loose thread tail
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = "rgba(255,220,220,0.8)";
+  ctx.lineWidth = Math.max(1, r * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(r * 0.55, r * 0.35);
+  ctx.quadraticCurveTo(r * 0.95, r * 0.55, r * 1.25, r * 0.25);
+  ctx.stroke();
+
+  ctx.restore();
+}
 
     function drawFence(o) {
         const topY = o.y;
@@ -180,6 +216,49 @@ function drawYarn(o) {
             const rx = o.x + o.w - 20, rGround = terrain.surfaceAt(rx);
             roundRect(ctx, rx, postTop, postW, (rGround - postTop) + 6, 4); ctx.fill();
         }
+
+function drawCar(o) {
+  // car platform (safe to land on)
+  const x = o.x, y = o.y, w = o.w, h = o.h;
+  ctx.save();
+
+  // shadow
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.ellipse(x + w * 0.52, (y + h) + 6, w * 0.38, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // body
+  ctx.fillStyle = "rgba(70,150,230,0.95)";
+  roundRect(ctx, x, y + h * 0.30, w, h * 0.55, 12); ctx.fill();
+
+  // cabin
+  ctx.fillStyle = "rgba(40,110,190,0.95)";
+  roundRect(ctx, x + w * 0.18, y + h * 0.08, w * 0.52, h * 0.40, 12); ctx.fill();
+
+  // windows
+  ctx.fillStyle = "rgba(220,245,255,0.55)";
+  roundRect(ctx, x + w * 0.24, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+  roundRect(ctx, x + w * 0.46, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+
+  // wheels
+  const wy = y + h * 0.78;
+  ctx.fillStyle = "rgba(20,20,25,0.95)";
+  ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
+
+  // rims
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
 
         ctx.restore();
     }
@@ -294,21 +373,51 @@ function drawYarn(o) {
         ctx.restore();
     }
 
+    // Small hut used for HUD "rest" pause
+    function drawRestHut(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.fillRect(-10, 48, 140, 6);
+
+        ctx.fillStyle = "#f2dfbf";
+        roundRect(ctx, 0, 10, 86, 50, 10); ctx.fill();
+
+        ctx.fillStyle = "#b85c3c";
+        ctx.beginPath(); ctx.moveTo(-6, 12); ctx.lineTo(43, -20); ctx.lineTo(92, 12); ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = "#7b4c22";
+        roundRect(ctx, 34, 32, 18, 26, 6); ctx.fill();
+
+        ctx.fillStyle = "rgba(255,247,204,0.70)";
+        roundRect(ctx, 12, 28, 18, 14, 4); ctx.fill();
+
+        // tiny sleeping mat
+        ctx.fillStyle = "rgba(255,120,170,0.85)";
+        roundRect(ctx, 8, 50, 52, 10, 6); ctx.fill();
+
+        ctx.restore();
+    }
+
     function draw(objects) {
         const palette = bg.palette();
 
         bg.drawSky(ctx);
         bg.drawParallax(ctx);
 
-        // Setpiece mode: only sky + ocean + balloon (no ground/obstacles)
-        if (game.setpiece?.active) {
-            if (typeof bg.drawOcean === "function") bg.drawOcean(ctx);
+        // Setpiece mode: scripted beats (ocean crossing etc.)
+        // Phase-aware:
+        // - approach/board/arrive: draw normal land + masked ocean behind vehicle
+        // - travel: ocean-only
+        if (game.setpiece?.active && game.setpiece.phase === "travel") {
+            // ocean-only travel shot
             drawSetpieceVehicle();
             drawBubbles(objects);
             return;
         }
 
-        terrain.drawGround(ctx, palette);
+terrain.drawGround(ctx, palette);
 
         if (typeof bg.drawGroundFog === "function") {
             bg.drawGroundFog(ctx);
@@ -320,7 +429,7 @@ function drawYarn(o) {
 
         // objects
         for (const o of objects.list) {
-            if (o.kind === "platform") drawFence(o);
+            if (o.kind === "platform") { if (o.type === "car") drawCar(o); else drawFence(o); }
             else if (o.kind === "obstacle") {
                 if (o.type === "bird") drawBird(o);
                 else if (o.type === "dog") drawDog(o);
@@ -334,8 +443,17 @@ function drawYarn(o) {
             }
         }
 
+        // setpiece vehicle overlay (approach/board/arrive/travel)
+        if (game.setpiece?.active) drawSetpieceVehicle();
         // home
         if (game.homePhase >= 1) drawHome();
+
+        // rest hut (pause)
+        if (game.pause?.active) {
+            const hx = game.pause.hutX ?? 240;
+            const hy = terrain.surfaceAt(hx) - 52;
+            drawRestHut(hx, hy);
+        }
 
         // checkpoint glow
         if (game.checkpointGlow > 0) {
@@ -347,7 +465,10 @@ function drawYarn(o) {
 
         // cat shadow + sprite
         const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
-        if (blink) {
+        const inVehicle = !!(game.setpiece?.active && game.setpiece.catInVehicle);
+        if (game.pause?.active) {
+            // no shadow while sleeping
+        } else if (!inVehicle && blink) {
             ctx.globalAlpha = 0.18;
             ctx.fillStyle = "#000";
             ctx.beginPath();
@@ -359,7 +480,21 @@ function drawYarn(o) {
             ctx.globalAlpha = 1;
         }
 
-        if (blink) catApi.draw(ctx);
+        if (game.pause?.active) {
+            // sleeping bubble
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            const bx = cat.x + cat.w * 0.55;
+            const by = cat.y - 10;
+            roundRect(ctx, bx - 26, by - 18, 52, 22, 10); ctx.fill();
+            ctx.fillStyle = "rgba(20,20,20,0.9)";
+            ctx.font = "12px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("purr…", bx, by - 3);
+            ctx.globalAlpha = 1;
+        } else if (!inVehicle && blink) {
+            catApi.draw(ctx);
+        }
         
 
         // overlays
