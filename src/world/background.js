@@ -308,6 +308,62 @@ function drawGroundFog(ctx) {
 
         ctx.restore();
     }
+function drawSeaBirds(ctx, horizonY) {
+    // subtle distant birds during ocean beat
+    if (!game?.setpiece?.active) return;
+    const sp = game.setpiece;
+    if (sp.phase !== "travel" && sp.phase !== "arrive") return;
+
+    const Wv = getW();
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 2;
+
+    const t = game.tick * 0.03;
+    const count = 6;
+    for (let i = 0; i < count; i++) {
+        const x = ((i * 220) - (t * 38)) % (Wv + 260) - 130;
+        const y = horizonY - 28 - (i % 3) * 10 + Math.sin((t + i) * 0.8) * 4;
+        const s = 10 + (i % 3) * 3;
+        ctx.beginPath();
+        ctx.moveTo(x - s, y);
+        ctx.quadraticCurveTo(x, y - s * 0.55, x + s, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawHorizonIslands(ctx, horizonY) {
+    if (!game?.setpiece?.active) return;
+    const sp = game.setpiece;
+    if (sp.phase !== "travel" && sp.phase !== "arrive") return;
+
+    const Wv = getW();
+    const p = palette();
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 20)},${Math.max(0, p.far[1] - 25)},${Math.max(0, p.far[2] - 25)},0.55)`;
+
+    // a few soft blobs on the horizon (far islands)
+    for (let i = 0; i < 4; i++) {
+        const x = ((i * 340) - (game.tick * 0.22)) % (Wv + 420) - 210;
+        const y = horizonY - 6;
+        const w = 140 + (i % 2) * 60;
+        const h = 26 + (i % 3) * 10;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + w * 0.25, y - h, x + w * 0.5, y - h * 0.65);
+        ctx.quadraticCurveTo(x + w * 0.75, y - h * 0.85, x + w, y);
+        ctx.lineTo(x + w, y + 10);
+        ctx.lineTo(x, y + 10);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
     function drawOcean(ctx) {
         const Wv = getW();
         const Hv = getH();
@@ -315,6 +371,9 @@ function drawGroundFog(ctx) {
 
         // horizon line a bit above the ground plane
         const horizonY = Hv * 0.62;
+
+        drawHorizonIslands(ctx, horizonY);
+        drawSeaBirds(ctx, horizonY);
 
         ctx.save();
 
@@ -370,6 +429,47 @@ function drawOceanMasked(ctx, maskX) {
   ctx.clip();
   drawOcean(ctx);
 
+  // cinematic overlays during ocean beat
+  if (game?.setpiece?.active) {
+    // subtle blue grade
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = "rgba(80,140,210,1)";
+    ctx.fillRect(mx, 0, W - mx, H);
+    ctx.restore();
+
+    // wind streaks / cloud trails (top half)
+    const tt = game.tick * 0.55;
+    ctx.save();
+    ctx.globalAlpha = 0.10;
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 14; i++) {
+      const y0 = H * (0.10 + i * 0.04) + Math.sin((i * 40 + tt) * 0.03) * 6;
+      const x0 = mx + ((i * 160 + tt * 4) % 520) - 220;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0 + 220, y0 - 18);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // occasional gust “whoosh” lines (mid)
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 6; i++) {
+      const px = mx + ((i * 210 + tt * 6) % (W - mx + 260)) - 120;
+      const py = H * (0.30 + i * 0.07) + Math.sin((px + tt) * 0.01) * 10;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.quadraticCurveTo(px + 90, py - 10, px + 180, py - 26);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // soft foam / coast edge at the mask boundary
   ctx.restore();
   ctx.save();
@@ -381,6 +481,22 @@ function drawOceanMasked(ctx, maskX) {
   g.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = g;
   ctx.fillRect(mx, 0, edgeW, H);
+
+// animated foam dots
+const t = game.tick * 0.25;
+ctx.save();
+ctx.globalAlpha = 0.18;
+ctx.fillStyle = "rgba(255,255,255,0.9)";
+const step = 36;
+for (let y = getH() * 0.55; y < H; y += step) {
+  const yy = y + Math.sin((y * 0.06) + (t * 0.12)) * 6;
+  const r = 3 + (Math.sin((y + t) * 0.08) + 1) * 1.2;
+  const xx = mx + 4 + Math.sin((yy + t) * 0.05) * 6;
+  ctx.beginPath();
+  ctx.arc(xx, yy, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+ctx.restore();
   ctx.globalAlpha = 1;
   ctx.restore();
 }

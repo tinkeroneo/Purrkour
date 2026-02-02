@@ -29,9 +29,9 @@ export function createSpawner(game, terrain, objects, canvas) {
 
   function reset() { nextSpawnIn = 260; }
 
-  function spawnBlanket(spawnX) {
+  function spawnLife(spawnX) {
     const surf = terrain.surfaceAt(spawnX);
-    objects.add({ kind: "checkpoint", type: "blanket", x: spawnX, y: surf - 16, w: 62, h: 16, used: false, yMode: "ground", yOffset: -16 });
+    objects.add({ kind: "collectible", type: "life", x: spawnX, y: surf - 90, w: 20, h: 20, taken: false, yMode: "fixed" });
   }
 
   function spawnPack(spawnX, safeMode = false) {
@@ -298,10 +298,10 @@ else if (type === "dog") {
     nextSpawnIn -= game._effSpeed;
     if (nextSpawnIn <= 0) spawnPack(canvas.W + 140, game.safeTimer > 0);
 
-    // checkpoint every 50
-    if (!game.checkpointActive && game.score > 0 && game.score % 50 === 0) {
-      const already = objects.list.some(o => o.kind === "checkpoint" && !o.used);
-      if (!already) spawnBlanket(canvas.W + 260);
+    // bonus life every 60 score (only if not full)
+    if (game.lives < (game.maxLives ?? 7) && game.score > 0 && game.score % 60 === 0) {
+      const already = objects.list.some(o => o.kind === "collectible" && o.type === "life" && !o.taken);
+      if (!already) spawnLife(canvas.W + 260);
     }
   }
 

@@ -7,6 +7,7 @@ export function createGameState() {
 
         finished: false,
         lives: 7,
+        maxLives: 7,
         invulnTimer: 0,
         theme: "forest",
   themeCycle: { order: ["island","mountain","forest","jungle","city","desert"], idx: 0, nextAt: 999999, step: 140 },
@@ -60,9 +61,6 @@ export function createGameState() {
 
         calmTimer: 0,
         comboGlow: 0,
-
-        // grace window after big transitions (no stress spawns)
-        safeTimer: 0,
 
         lastHitTick: -99999
     };

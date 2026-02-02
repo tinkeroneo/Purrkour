@@ -216,8 +216,10 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             const rx = o.x + o.w - 20, rGround = terrain.surfaceAt(rx);
             roundRect(ctx, rx, postTop, postW, (rGround - postTop) + 6, 4); ctx.fill();
         }
+
         ctx.restore();
     }
+
     function drawCar(o) {
         // car platform (safe to land on)
         const x = o.x, y = o.y, w = o.w, h = o.h;
@@ -337,6 +339,30 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.restore();
     }
 
+
+    function drawLife(o) {
+        if (o.taken) return;
+        ctx.save();
+        ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
+        const s = Math.min(o.w, o.h) / 2;
+        const pulse = 0.75 + 0.25 * Math.sin(game.tick * 0.10);
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = `rgba(255,90,120,${0.75 + pulse * 0.20})`;
+        ctx.beginPath();
+        // simple heart
+        ctx.moveTo(0, s * 0.9);
+        ctx.bezierCurveTo(s * 1.2, s * 0.2, s * 0.6, -s * 0.8, 0, -s * 0.15);
+        ctx.bezierCurveTo(-s * 0.6, -s * 0.8, -s * 1.2, s * 0.2, 0, s * 0.9);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+
     function drawBlanket(o) {
         const pulse = 0.5 + 0.5 * Math.sin(game.tick * 0.10);
         ctx.save(); ctx.translate(o.x, o.y);
@@ -416,6 +442,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
                 if (o.type === "mouse") drawMouse(o);
                 else if (o.type === "catnip") drawCatnip(o);
                 else if (o.type === "fish") drawFish(o);
+                else if (o.type === "life") drawLife(o);
             } else if (o.kind === "checkpoint") {
                 if (!o.used) drawBlanket(o);
             }

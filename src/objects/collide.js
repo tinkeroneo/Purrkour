@@ -286,7 +286,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         if (game.invulnTimer === 0) {
             for (let i = 0; i < objects.list.length; i++) {
                 const o = objects.list[i];
-                if (o.kind !== "obstacle") continue;
+                if (!o || o.kind !== "obstacle") continue;
 
                 const obsBox = { x: o.x + 4, y: o.y + 4, w: o.w - 8, h: o.h - 8 };
                 if (!aabb(catBox, obsBox)) continue;
@@ -296,17 +296,22 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                     objects.addBubble("slow…", cat.x + cat.w * 0.55, cat.y - 8);
                     audio.SFX.slow();
                     objects.list.splice(i, 1); i--;
-                } else if (o.type === "dog") {
-                    startChase(o);
+                    continue;
+                }
 
-                } else if (o.type === "bird") {
+                if (o.type === "dog") {
+                    startChase(o);
+                    continue;
+                }
+
+                if (o.type === "bird") {
                     // Bird is a platform ONLY when landing from above (side/below = danger)
                     const catPrevBottom = prevY + cat.h;
                     const catBottom = cat.y + cat.h;
-                    const birdTop = o.y; // use actual top for robustness
+                    const birdTop = o.y;
                     const xOverlap = (cat.x + cat.w * 0.78) > o.x && (cat.x + cat.w * 0.22) < (o.x + o.w);
 
-                    // landing window (a little forgiving)
+                    // landing window (forgiving)
                     const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop + 8) && (catBottom >= birdTop + 2);
 
                     if (landing) {
@@ -316,91 +321,89 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
                         cat.jumpsLeft = cat.maxJumps;
 
                         // stomp feedback
-                        catApi?.stomp?.();
                         o.landedTimer = 14;
-                        objects.addPuff?.(cat.x + cat.w * 0.55, cat.y + cat.h - 6);
                         if (audio?.SFX?.stomp) audio.SFX.stomp();
                         else if (audio?.SFX?.combo) audio.SFX.combo();
 
-                        continue; // IMPORTANT: don't treat as damage this frame
-                    } else {
-                        loseLife();
-                        objects.list.splice(i, 1); i--;
+                        continue; // IMPORTANT: don't treat as damage
                     }
+
+                    // side/below hit -> damage
+                    loseLife();
+                    objects.list.splice(i, 1); i--;
+                    continue;
                 }
+
+                // unknown obstacle
+                loseLife();
+                objects.list.splice(i, 1); i--;
             }
-
-            // collectibles
-            for (const o of objects.list) {
-                if (!o) continue;
-                if (o.kind !== "collectible" || o.taken) continue;
-                if (!aabb(catBox, o)) continue;
-
-                o.taken = true;
-
-                if (o.type === "mouse") {
-                    game.mice++;
-                    game.score += 1;
-                    game.speed += 0.010; // ✅ mice = slight acceleration (soft)
-                    if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
-                    audio.SFX.mouse();
-                } else if (o.type === "catnip") {
-                    game.catnipTimer = 320;
-                    objects.addBubble("🌿", cat.x + cat.w * 0.55, cat.y - 8);
-                    audio.SFX.catnip();
-                } else if (o.type === "fish") {
-                    game.tripleJumpTimer = 320;
-                    objects.toast("Snack! 3 Sprünge 🐟", 110);
-                    audio.SFX.fish();
-                }
-            }
-
-            // checkpoint blanket
-            for (const o of objects.list) {
-                if (!o) continue;
-                if (o.kind === "checkpoint" && !o.used && aabb(catBox, o)) {
-                    o.used = true;
-                    game.checkpointActive = true;
-                    game.checkpointGlow = 120;
-                    objects.toast("Checkpoint-Decke 🧺", 140);
-                    objects.addBubble("purr", cat.x + cat.w * 0.55, cat.y - 8);
-                    audio.SFX.magic();
-                }
-            }
-
-            // scoring when passing
-            for (const o of objects.list) {
-                if (!o) continue;
-                if (o._scored) continue;
-                if (o.x + o.w < cat.x - 10) {
-                    if (o.kind === "obstacle" || o.kind === "platform") {
-                        o._scored = true;
-                        game.score++;
-                    }
-                }
-            }
-
-            // cleanup offscreen
-            for (let i = objects.list.length - 1; i >= 0; i--) {
-                if (objects.list[i].x + objects.list[i].w < -260) objects.list.splice(i, 1);
-            }
-
-            // animation frame selection
-            cat.animT++;
-            const inAir = !cat.onSurface;
-            if (inAir) catApi.setAnimFrame(4);
-            else {
-                const runRate = clamp(10 - (eff * 1.6), 4, 10);
-                catApi.setAnimFrame(Math.floor(cat.animT / runRate) % 4);
-            }
-
-            objects.updateBubbles();
         }
+
+        // collectibles
+        for (const o of objects.list) {
+            if (!o) continue;
+            if (o.kind !== "collectible" || o.taken) continue;
+            if (!aabb(catBox, o)) continue;
+
+            o.taken = true;
+
+            if (o.type === "mouse") {
+                game.mice++;
+                game.score += 1;
+                game.speed += 0.010; // mice = slight acceleration
+                if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
+                audio.SFX.mouse();
+            } else if (o.type === "catnip") {
+                game.catnipTimer = 320;
+                objects.addBubble("🌿", cat.x + cat.w * 0.55, cat.y - 8);
+                audio.SFX.catnip();
+            } else if (o.type === "fish") {
+                game.tripleJumpTimer = 320;
+                objects.toast("Snack! 3 Sprünge 🐟", 110);
+                audio.SFX.fish();
+            } else if (o.type === "life") {
+                game.lives = Math.min((game.maxLives ?? 7), game.lives + 1);
+                game.invulnTimer = Math.max(game.invulnTimer, 45);
+                objects.addBubble("❤️", cat.x + cat.w * 0.55, cat.y - 8);
+                objects.toast("Extra Leben! ❤️", 110);
+                audio.SFX.combo?.();
+            }
+        }
+
+        // scoring when passing
+        for (const o of objects.list) {
+            if (!o) continue;
+            if (o._scored) continue;
+            if (o.x + o.w < cat.x - 10) {
+                if (o.kind === "obstacle" || o.kind === "platform") {
+                    o._scored = true;
+                    game.score++;
+                }
+            }
+        }
+
+        // cleanup offscreen
+        for (let i = objects.list.length - 1; i >= 0; i--) {
+            if (objects.list[i].x + objects.list[i].w < -260) objects.list.splice(i, 1);
+        }
+
+        // animation frame selection
+        cat.animT++;
+        const inAir = !cat.onSurface;
+        if (inAir) catApi.setAnimFrame(4);
+        else {
+            const runRate = clamp(10 - (eff * 1.6), 4, 10);
+            catApi.setAnimFrame(Math.floor(cat.animT / runRate) % 4);
+        }
+
+        objects.updateBubbles();
     }
-        return {
-            update,
-            resetAll,
-            resetCatPosition,
-            effSpeed
-        };
-    }
+
+    return {
+        update,
+        resetAll,
+        resetCatPosition,
+        effSpeed
+    };
+}
