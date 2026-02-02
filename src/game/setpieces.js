@@ -2,13 +2,19 @@
 // Scripted setpieces (story beats) like the Ocean Crossing.
 // Goal: flow over stress — visible prep, slow-down, boarding, then travel + landing.
 
-import { clamp, smoothstep } from "../core/util.js";
+import { clamp, smoothstep, lerp } from "../core/util.js";
 
 export function createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio }) {
   const APPROACH_DUR = 240; // ~4s
   const BOARD_DUR    = 90;  // ~1.5s
   const TRAVEL_DUR   = 420; // ~7s
   const ARRIVE_DUR   = 180; // ~3s
+
+  // Rocket intermezzo (Mars hop)
+  const R_APPROACH_DUR = 180; // ~3s
+  const R_BOARD_DUR    = 80;  // ~1.3s
+  const R_TRAVEL_DUR   = 420; // ~7s
+  const R_ARRIVE_DUR   = 160; // ~2.7s
 
   function clearWorldForBeat() {
     objects.list.length = 0;
@@ -31,6 +37,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     sp.finished = false;
 
     sp.type = pickVehicle();
+    sp.mode = "ocean";
     sp.active = true;
 
     // script state
@@ -86,23 +93,108 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     game.safeTimer = 180;
   }
 
-  function update() {
+
+  function updateRocket(sp) {
+    const vx = sp.vehicle?.x ?? (canvas.W * 0.76);
+    const surf = terrain.surfaceAt(vx);
+
+    if (sp.phase === "approach") {
+      // rocket rolls in on a tiny pad, cat walks up, world slows
+      sp.vehicle.x = canvas.W * 0.76;
+      sp.vehicle.y = surf - 80;
+
+      const u = clamp(sp.phaseT / R_APPROACH_DUR, 0, 1);
+      sp.scroll = 1 - smoothstep(u); // 1 -> 0
+
+      if (sp.phaseT >= R_APPROACH_DUR) {
+        sp.phase = "board";
+        sp.phaseT = 0;
+      }
+      return;
+    }
+
+    if (sp.phase === "board") {
+      sp.scroll = 0;
+
+      // small pre-launch shake + flame cue
+      const shake = Math.sin(sp.phaseT * 0.4) * 2;
+      sp.vehicle.y = (surf - 80) + shake;
+
+      // lock cat into capsule near the end of boarding
+      const u = clamp(sp.phaseT / R_BOARD_DUR, 0, 1);
+      sp.catInVehicle = u > 0.45;
+
+      if (sp.phaseT >= R_BOARD_DUR) {
+        sp.phase = "travel";
+        sp.phaseT = 0;
+        sp.oceanMaskX = canvas.W; // ensure no ocean mask used
+      }
+      return;
+    }
+
+    if (sp.phase === "travel") {
+      // fly through space: gentle forward drift + bob
+      sp.scroll = 0.18;
+      sp.vehicle.x = canvas.W * 0.58 + Math.sin(game.tick * 0.02) * 6;
+      sp.vehicle.y = canvas.H * 0.32 + Math.sin(game.tick * 0.06) * 4;
+
+      if (sp.phaseT >= R_TRAVEL_DUR) {
+        sp.phase = "arrive";
+        sp.phaseT = 0;
+
+      // fade into Mars on approach
+      startThemeFade("mars", 140);
+      }
+      return;
+    }
+
+    if (sp.phase === "arrive") {
+      // descend back to land; world gradually resumes
+      const u = clamp(sp.phaseT / R_ARRIVE_DUR, 0, 1);
+      sp.scroll = smoothstep(u); // 0 -> 1
+      sp.vehicle.x = canvas.W * 0.70;
+      sp.vehicle.y = lerp(canvas.H * 0.32, surf - 80, smoothstep(u));
+
+      // once we're mostly down, release cat
+      if (u > 0.55) sp.catInVehicle = false;
+
+      if (sp.phaseT >= R_ARRIVE_DUR) {
+        finishRocketFlight();
+      }
+      return;
+    }
+  }
+
+function update() {
     if (!game.setpiece) return;
     const sp = game.setpiece;
 
-    // trigger when score threshold reached (with small cooldown buffer)
-    if (!sp.active && game.score >= sp.startScore && (sp.cooldown ?? 0) > 180) {
-      triggerOceanCrossing();
-    }
-
+    // triggers (scripted beats)
     if (!sp.active) {
       sp.cooldown = (sp.cooldown ?? 0) + 1;
+      sp.rocketCooldown = (sp.rocketCooldown ?? 0) + 1;
+
+      // Rocket has priority once scheduled (fun intermezzo)
+      if (game.score >= (sp.nextRocketAt ?? 999999) && (sp.rocketCooldown ?? 0) > 240) {
+        triggerRocketFlight();
+        return;
+      }
+
+      // Ocean crossing at baseline milestone
+      if (game.score >= sp.startScore && (sp.cooldown ?? 0) > 180) {
+        triggerOceanCrossing();
+      }
       return;
     }
 
     // active scripted beat
     sp.t++;
     sp.phaseT++;
+
+    if (sp.mode === "rocket") {
+      updateRocket(sp);
+      return;
+    }
 
     // Keep vehicle y anchored to terrain (unless travel)
     const vx = sp.vehicle?.x ?? (canvas.W * 0.76);
@@ -208,5 +300,61 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     }
   }
 
-  return { update, triggerOceanCrossing, finishOceanCrossing };
+
+
+  function triggerRocketFlight() {
+    if (!game.setpiece) return;
+    const sp = game.setpiece;
+
+    sp.rocketCooldown = 0;
+
+    sp.mode = "rocket";
+    sp.type = "rocket";
+    sp.active = true;
+
+    sp.phase = "approach";  // approach -> board -> travel -> arrive
+    sp.phaseT = 0;
+    sp.t = 0;
+
+    sp.scroll = 1;
+    sp.catInVehicle = false;
+
+    // place rocket to the right, then move to cat
+    sp.vehicle = {
+      x: canvas.W + 160,
+      y: terrain.surfaceAt(canvas.W * 0.75) - 80,
+      w: 44,
+      h: 92
+    };
+
+    game.controlLocked = false;
+    game.safeTimer = 120;
+
+    // little cue (soft whoosh / dash)
+    audio?.SFX?.dash?.();
+  }
+
+  function finishRocketFlight() {
+    if (!game.setpiece) return;
+    const sp = game.setpiece;
+
+    sp.active = false;
+    sp.phase = "none";
+    sp.phaseT = 0;
+    sp.t = 0;
+
+    sp.scroll = 1;
+    sp.catInVehicle = false;
+
+    sp.rocketCooldown = 0;
+    sp.nextRocketAt = Math.max(game.score + 220 + Math.floor(Math.random() * 160), (sp.nextRocketAt || 0) + 220);
+
+    game.controlLocked = false;
+    game.safeTimer = 200;
+
+    // tiny celebratory chime
+    audio?.SFX?.combo?.();
+  }
+
+return { update, triggerOceanCrossing, finishOceanCrossing };
 }

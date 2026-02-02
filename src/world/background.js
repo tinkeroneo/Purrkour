@@ -16,6 +16,76 @@ function mixRGB(a, b, t) {
     ];
 }
 
+function drawSpaceSky(ctx, W, H, sp, tick, themeKey) {
+    // Deep space gradient
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "rgb(5,10,20)");
+    g.addColorStop(1, "rgb(20,10,30)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // Mars theme: add warm sun + dusty haze
+    if (themeKey === "mars") {
+        ctx.save();
+        // small sun
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = "rgba(255,220,180,0.95)";
+        ctx.beginPath();
+        ctx.arc(W * 0.78, H * 0.22, 26, 0, Math.PI * 2);
+        ctx.fill();
+
+        // haze
+        ctx.globalAlpha = 0.18;
+        const hz = ctx.createLinearGradient(0, H * 0.25, 0, H * 0.70);
+        hz.addColorStop(0, "rgba(255,170,120,0.0)");
+        hz.addColorStop(1, "rgba(255,170,120,0.55)");
+        ctx.fillStyle = hz;
+        ctx.fillRect(0, 0, W, H);
+
+        // sparse dust motes
+        ctx.globalAlpha = 0.10;
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        for (let i = 0; i < 26; i++) {
+            const x = (i * 91 + (tick * 0.35)) % W;
+            const y = (i * 57) % Math.floor(H * 0.60);
+            ctx.fillRect(x, y, 2, 1);
+        }
+        ctx.restore();
+    }
+
+    // stars (deterministic-ish)
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    const seed = (sp?.t ?? 0) + (sp?.phaseT ?? 0) * 0.5 + tick * 0.01;
+    for (let i = 0; i < 90; i++) {
+        const x = (Math.sin((i + 1) * 999 + seed) * 0.5 + 0.5) * W;
+        const y = (Math.sin((i + 1) * 777 + seed * 1.3) * 0.5 + 0.5) * H;
+        const r = 0.6 + ((i % 7) * 0.12);
+        ctx.globalAlpha = 0.25 + ((i % 11) / 20);
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // planet during travel/arrive
+    if (sp?.phase === "travel" || sp?.phase === "arrive") {
+        const p = Math.min(1, (sp?.phaseT ?? 0) / 260);
+        const px = W * (0.82 - p * 0.12);
+        const py = H * (0.30 - p * 0.03);
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = (themeKey === "mars") ? "rgba(210,110,70,0.95)" : "rgba(160,120,255,0.95)";
+        ctx.beginPath();
+        ctx.arc(px, py, 42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.beginPath();
+        ctx.arc(px - 14, py - 10, 10, 0, Math.PI * 2);
+        ctx.arc(px + 10, py + 8, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
 export function createBackground(getW, getH, lakes, game, hud) {
     const W = () => getW();
     const H = () => getH();
@@ -82,10 +152,17 @@ export function createBackground(getW, getH, lakes, game, hud) {
     }
 
 
-    function drawSky(ctx) {
+  function drawSky(ctx) {
+
         const W = getW(), H = getH();
         const p = palette();
         if (hud && typeof hud.setBiome === "function") hud.setBiome(p.label);
+
+        // Rocket beat overrides sky with space / stars
+        if (game.setpiece?.active && game.setpiece?.mode === "rocket") {
+            drawSpaceSky(ctx, W, H, game.setpiece, game.tick, p.key);
+            return;
+        }
 
         const g = ctx.createLinearGradient(0, 0, 0, H);
         g.addColorStop(0, `rgb(${p.skyTop[0]},${p.skyTop[1]},${p.skyTop[2]})`);
@@ -153,7 +230,23 @@ export function createBackground(getW, getH, lakes, game, hud) {
   const near = (game.score * 13 + tick) * 0.26;
 
   // ---- FAR LAYER ----
-  if (themeKey !== "city") {
+  if (themeKey === "mars") {
+    // Mars: flatter dune ridge instead of mountains
+    ctx.globalAlpha = 0.50;
+    ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.42)`;
+    ctx.beginPath();
+    ctx.moveTo(0, Hv * 0.62);
+    for (let x = 0; x <= Wv; x += 44) {
+      const y = Hv * 0.62
+        + Math.sin((x + far) * 0.018) * 10
+        + Math.sin((x + far) * 0.006) * 14;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(Wv, Hv); ctx.lineTo(0, Hv);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  } else if (themeKey !== "city") {
     // soft mountains / silhouettes
     ctx.globalAlpha = 0.55;
     ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.55)`;
@@ -176,7 +269,6 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.fillRect(0, Hv * 0.52, Wv, Hv * 0.14);
     ctx.globalAlpha = 1;
   }
-
   // ---- MID LAYER ----
   if (themeKey === "forest" || themeKey === "jungle") {
     // forest triangles

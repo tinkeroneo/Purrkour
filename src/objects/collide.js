@@ -213,6 +213,17 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         for (const o of objects.list) {
             if (!o) continue;
             o.x -= eff;
+            // bird drop physics (von oben)
+            if (o.kind === "obstacle" && o.type === "bird" && o.drop) {
+                const targetY = (o.restY ?? (terrain.surfaceAt(o.x) - 150));
+                o.vy = (o.vy ?? 0) + 0.28;
+                o.y += o.vy;
+                if (o.y >= targetY) {
+                    o.y = targetY;
+                    o.vy = 0;
+                    o.drop = false;
+                }
+            }
             applyGroundY(o);
         }
 
@@ -365,6 +376,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
             } else if (o.type === "life") {
                 game.lives = Math.min((game.maxLives ?? 7), game.lives + 1);
                 game.invulnTimer = Math.max(game.invulnTimer, 45);
+                if (game.heartWave) { game.heartWave.active = true; game.heartWave.startTick = game.tick; }
                 objects.addBubble("❤️", cat.x + cat.w * 0.55, cat.y - 8);
                 objects.toast("Extra Leben! ❤️", 110);
                 audio.SFX.combo?.();

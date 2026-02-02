@@ -7,7 +7,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     function drawSetpieceVehicle() {
         const sp = game.setpiece;
         if (!sp || !sp.active) return;
-        drawVehicle(ctx, { canvas, terrain, game, setpiece: sp });
+        drawVehicle(ctx, { canvas, terrain, game, setpiece: sp, palette: bg.palette?.() });
     }
 
 
@@ -86,6 +86,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         if (v === "seagull") { body = "rgba(245,245,245,0.95)"; wing = "rgba(0,0,0,0.35)"; eye = "#111"; beak = "rgba(255,190,70,0.95)"; }
         else if (v === "pigeon") { body = "rgba(120,130,145,0.95)"; wing = "rgba(255,255,255,0.45)"; eye = "#fff"; beak = "rgba(230,180,120,0.9)"; }
         else if (v === "parrot") { body = "rgba(80,200,120,0.95)"; wing = "rgba(255,255,255,0.55)"; eye = "#fff"; beak = "rgba(255,120,60,0.95)"; }
+        else if (v === "drone") { body = "rgba(110,120,135,0.95)"; wing = "rgba(255,255,255,0.25)"; eye = "rgba(140,220,255,0.95)"; beak = "rgba(200,200,220,0.90)"; }
         else if (v === "eagle") { body = "rgba(150,95,55,0.95)"; wing = "rgba(255,255,255,0.40)"; eye = "#fff"; beak = "rgba(255,210,90,0.95)"; }
         else if (v === "hawk") { body = "rgba(170,120,70,0.95)"; wing = "rgba(255,255,255,0.40)"; eye = "#fff"; beak = "rgba(255,210,90,0.95)"; }
         else if (v === "bat") { body = "rgba(35,35,45,0.95)"; wing = "rgba(255,255,255,0.25)"; eye = "rgba(255,255,255,0.85)"; beak = "rgba(0,0,0,0)"; }
@@ -130,7 +131,6 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
 
         ctx.restore();
     }
-
 
     function drawYarn(o) {
         // red yarn ball with visible strands
@@ -404,6 +404,42 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.restore();
     }
 
+    function drawHeartWave() {
+        const hw = game.heartWave;
+        if (!hw || !hw.active) return;
+
+        const dt = (game.tick - (hw.startTick || 0));
+        const dur = hw.dur || 90;
+        const t = clamp(dt / dur, 0, 1);
+        if (t >= 1) { hw.active = false; return; }
+
+        const cx = canvas.W * 0.5;
+        const cy = canvas.H * 0.42;
+
+        // expand from medium to huge (screen-filling), then fade out
+        const maxR = Math.hypot(canvas.W, canvas.H) * 0.65;
+        const r = 60 + (maxR - 60) * (t * t);
+
+        ctx.save();
+        ctx.globalAlpha = 0.22 * (1 - t);
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "rgba(255,150,190,1)";
+        ctx.shadowColor = "rgba(255,150,190,0.6)";
+        ctx.shadowBlur = 18;
+
+        // heart outline path, scaled by r
+        const s = r / 100;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 28 * s);
+        ctx.bezierCurveTo(cx - 55 * s, cy - 10 * s, cx - 40 * s, cy - 58 * s, cx, cy - 30 * s);
+        ctx.bezierCurveTo(cx + 40 * s, cy - 58 * s, cx + 55 * s, cy - 10 * s, cx, cy + 28 * s);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+
     function draw(objects) {
         const palette = bg.palette();
 
@@ -417,6 +453,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         if (game.setpiece?.active && game.setpiece.phase === "travel") {
             // ocean-only travel shot
             drawSetpieceVehicle();
+            drawHeartWave();
             drawBubbles(objects);
             return;
         }
@@ -515,8 +552,12 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.globalAlpha = 1;
         }
 
+        drawHeartWave();
         drawBubbles(objects);
-    }
 
+
+
+    }
     return { draw };
+
 }

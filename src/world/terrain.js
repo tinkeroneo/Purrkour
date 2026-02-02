@@ -76,17 +76,48 @@ export function createTerrain(getW, getH) {
     ctx.closePath();
     ctx.fill();
 
-    // --- grass highlights (subtle, static) ---
-    // NOTE: intentionally static (no tick dependency) so it can't break rendering
-    // if you later refactor game-state boundaries.
-    ctx.save();
-    ctx.globalAlpha = 0.06;
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    for (let x = 0; x < W; x += 18) {
-      const y = surfaceAt(x) + Math.sin(x * 0.08) * 3;
-      ctx.fillRect(x, y + 2, 10, 1);
+    // --- surface highlights ---
+// NOTE: intentionally static (no tick dependency) so it can't break rendering
+// if you later refactor game-state boundaries.
+ctx.save();
+
+if (palette?.key === "mars") {
+  // dunes + dust (Mars)
+  ctx.globalAlpha = 0.10;
+  ctx.strokeStyle = "rgba(255,255,255,0.65)";
+  ctx.lineWidth = 1.2;
+
+  // a few gentle dune contour lines
+  for (let k = 0; k < 4; k++) {
+    const yBase = H - 120 + k * 16;
+    ctx.beginPath();
+    ctx.moveTo(0, yBase);
+    for (let x = 0; x <= W; x += 26) {
+      const yy = yBase + Math.sin(x * 0.020 + k * 1.7) * (6 - k) + Math.sin(x * 0.06) * 1.2;
+      ctx.lineTo(x, yy);
     }
-    ctx.restore();
+    ctx.stroke();
+  }
+
+  // dust specks
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  for (let i = 0; i < 40; i++) {
+    const x = (i * 37) % W;
+    const y = (H - 170) + ((i * 19) % 120);
+    ctx.fillRect(x, y, 2, 1);
+  }
+} else {
+  // grass highlights (subtle, static)
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  for (let x = 0; x < W; x += 18) {
+    const y = surfaceAt(x) + Math.sin(x * 0.08) * 3;
+    ctx.fillRect(x, y + 2, 10, 1);
+  }
+}
+
+ctx.restore();
 
     ctx.strokeStyle = "rgba(0,0,0,0.14)";
     ctx.lineWidth = 2;

@@ -50,10 +50,10 @@ export function createSpawner(game, terrain, objects, canvas) {
     const allowClose = (Math.random() < closeGapChance(game.score));
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
 
-    const pFence = z("fence") *  clamp(0.24 + game.score * 0.0022, 0.22, 0.32);
-    const pBird = z("bird") *  clamp((0.09 + game.score * 0.0018) * CALM.animalsScale, 0.07, 0.14);
-    const pDog  = clamp((0.10 + game.score * 0.0017) * CALM.animalsScale, 0.08, 0.16);
-    const pYarn = z("yarn") *  0.18;
+    const pFence = z("fence") * clamp(0.24 + game.score * 0.0022, 0.22, 0.32);
+    const pBird = z("bird") * clamp((0.09 + game.score * 0.0018) * CALM.animalsScale, 0.07, 0.14);
+    const pDog = clamp((0.10 + game.score * 0.0017) * CALM.animalsScale, 0.08, 0.16);
+    const pYarn = z("yarn") * 0.18;
 
     // grace window: no stressful obstacles right after big transitions
     if (safeMode) {
@@ -61,8 +61,8 @@ export function createSpawner(game, terrain, objects, canvas) {
     }
 
 
-    const pMouse  = 0.18 * CALM.collectiblesScale;
-    const pFish   = clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.07);
+    const pMouse = 0.18 * CALM.collectiblesScale;
+    const pFish = clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.07);
     const pCatnip = (game.catnipTimer > 0)
       ? 0.0
       : (z("catnip") * clamp((0.05 + game.score * 0.0008) * CALM.collectiblesScale, 0.04, 0.08));
@@ -106,14 +106,26 @@ export function createSpawner(game, terrain, objects, canvas) {
       return { x, y: Math.min(y, terrain.surfaceAt(x) - 110 - h) };
     }
 
+    function placeGroundObstacle(x, w, h, pad = 18) {
+      // Try a few x nudges so ground obstacles don't spawn inside platforms/fences.
+      for (let k = 0; k < 7; k++) {
+        const dx = (k === 0) ? 0 : (k % 2 ? 1 : -1) * (20 * Math.ceil(k / 2));
+        const xx = x + dx;
+        const yy = terrain.surfaceAt(xx) - h;
+        const box = { x: xx - pad, y: yy - pad, w: w + pad * 2, h: h + pad * 2 };
+        if (!overlapsSolid(box)) return { x: xx, y: yy };
+      }
+      return { x, y: terrain.surfaceAt(x) - h };
+    }
+
     // theme-weighted spawn probabilities
     const pFenceT = pFence * m("fence");
-    const pBirdT  = pBird  * m("bird");
-    const pDogT   = pDog   * m("dog");
-    const pYarnT  = pYarn  * m("yarn");
+    const pBirdT = pBird * m("bird");
+    const pDogT = pDog * m("dog");
+    const pYarnT = pYarn * m("yarn");
 
-    const pMouseT  = pMouse  * m("mouse");
-    const pFishT   = pFish   * m("fish");
+    const pMouseT = pMouse * m("mouse");
+    const pFishT = pFish * m("fish");
     const pCatnipT = pCatnip * m("catnip");
 
 
@@ -129,9 +141,9 @@ export function createSpawner(game, terrain, objects, canvas) {
     }
 
     const pFenceV = pFenceT * vbFence;
-    const pBirdV  = pBirdT  * vbBird;
-    const pDogV   = pDogT   * vbDog;
-    const pYarnV  = pYarnT  * vbYarn;
+    const pBirdV = pBirdT * vbBird;
+    const pDogV = pDogT * vbDog;
+    const pYarnV = pYarnT * vbYarn;
 
 
     function rndType() {
@@ -174,8 +186,34 @@ export function createSpawner(game, terrain, objects, canvas) {
         } else {
           topY = terrain.surfaceAt(x) - h;
         }
-
         objects.add({ kind: "platform", type: "fence", x, y: topY, w: ww, h: hh, yMode, yOffset });
+        // avoid overlapping existing solids/platforms
+        {
+          const marginX = 8;
+          const marginY = 2;
+
+          const box = {
+            x: x + marginX,
+            y: topY + marginY,
+            w: ww - marginX * 2,
+            h: hh - marginY
+          };
+
+          let tries = 0;
+          while (overlapsSolid(box) && tries < 10) {
+            x += ww + 34;
+            box.x = x + marginX;
+
+            if (yMode === "ground") {
+              topY = terrain.surfaceAt(x) - hh;
+            }
+            box.y = topY + marginY;
+
+            tries++;
+          }
+        }
+
+
 
         // collectibles on fences
         if (Math.random() < 0.30 * CALM.collectiblesScale) {
@@ -206,45 +244,51 @@ export function createSpawner(game, terrain, objects, canvas) {
     } else if (type === "bird") {
       const w = 36, h = 20;
       const extra = (game.catnipTimer > 0) ? 18 : 0;
-      const flyY = (terrain.surfaceAt(spawnX) - (150 + Math.random() * 75 + extra));
+      const ground = terrain.surfaceAt(spawnX);
+      const drop = Math.random() < 0.22; // bird "von oben"
+      const flyY = drop ? (-80 - Math.random() * 140) : (ground - (150 + Math.random() * 75 + extra));
       const night = nightFactor(game.tick, game.score);
       const themeVariant = theme.birdVariant || "crow";
       const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
-      objects.add({ kind: "obstacle", type: "bird", variant, x: spawnX, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed" });
+      const restY = ground - (150 + Math.random() * 60 + extra);
+      objects.add({ kind: "obstacle", type: "bird", variant, x: spawnX, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed", drop, vy: drop ? (0.2 + Math.random() * 0.6) : 0, restY });
 
-    } 
-else if (type === "dog") {
-  const themeKey = (game.theme && game.theme.key) ? game.theme.key : (game.theme || "forest");
+    }
+    else if (type === "dog") {
+      const themeKey = (game.theme && game.theme.key) ? game.theme.key : (game.theme || "forest");
 
-  if (themeKey === "city") {
-    // city: cars as harmless setpieces/platforms (no chase)
-    const w = 110, h = 44;
-    objects.add({
-      kind: "platform", type: "car",
-      x: spawnX,
-      y: terrain.surfaceAt(spawnX) - h,
-      w, h,
-      yMode: "ground", yOffset: -h
-    });
-  } else {
-    const w = 58, h = 36;
-    objects.add({
-      kind: "obstacle", type: "dog",
-      x: spawnX,
-      y: terrain.surfaceAt(spawnX) - h,
-      w, h,
-      asleep: (Math.random() < 0.55),
-      chasing: false,
-      chaseSpeedBoost: 1.45 + Math.random() * 0.22,
-      anim: Math.random() * 100,
-      yMode: "ground", yOffset: -h
-    });
-  }
-} else { // yarn slow
+      if (themeKey === "city") {
+        // city: cars as harmless setpieces/platforms (no chase)
+        const w = 110, h = 44;
+        const posCar = placeGroundObstacle(spawnX, w, h, 26);
+        objects.add({
+          kind: "platform", type: "car",
+          x: posCar.x,
+          y: posCar.y,
+          w, h,
+          yMode: "ground", yOffset: -h
+        });
+      } else {
+        const w = 58, h = 36;
+        const posDog = placeGroundObstacle(spawnX, w, h, 26);
+        objects.add({
+          kind: "obstacle", type: "dog",
+          x: posDog.x,
+          y: posDog.y,
+          w, h,
+          asleep: (Math.random() < 0.55),
+          chasing: false,
+          chaseSpeedBoost: 1.45 + Math.random() * 0.22,
+          anim: Math.random() * 100,
+          yMode: "ground", yOffset: -h
+        });
+      }
+    } else { // yarn slow
       const size = 28;
+      const posYarn = placeGroundObstacle(spawnX, size, size, 18);
       objects.add({
         kind: "obstacle", type: "yarn",
-        x: spawnX, y: terrain.surfaceAt(spawnX) - size,
+        x: posYarn.x, y: posYarn.y,
         w: size, h: size,
         yMode: "ground", yOffset: -size
       });
@@ -283,7 +327,8 @@ else if (type === "dog") {
       const x2 = spawnX + closeGap;
       if (Math.random() < 0.55) {
         const size = 26;
-        objects.add({ kind: "obstacle", type: "yarn", x: x2, y: terrain.surfaceAt(x2) - size, w: size, h: size, yMode: "ground", yOffset: -size });
+        const pos2 = placeGroundObstacle(x2, size, size, 18);
+        objects.add({ kind: "obstacle", type: "yarn", x: pos2.x, y: pos2.y, w: size, h: size, yMode: "ground", yOffset: -size });
       } else {
         const w = 34, h = 18;
         objects.add({ kind: "obstacle", type: "bird", x: x2, y: terrain.surfaceAt(x2) - (160 + Math.random() * 40), w, h, flapT: Math.random() * 1000, yMode: "fixed" });

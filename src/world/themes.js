@@ -7,6 +7,7 @@ import { jungleTheme } from "./themes/jungle.js";
 import { cityTheme } from "./themes/city.js";
 import { desertTheme } from "./themes/desert.js";
 
+import { marsTheme } from "./themes/mars.js";
 export const THEMES = {
   forest: forestTheme,
   ocean: oceanTheme,
@@ -15,6 +16,7 @@ export const THEMES = {
   jungle: jungleTheme,
   city: cityTheme,
   desert: desertTheme,
+  mars: marsTheme,
 };
 
 export function getTheme(key) {

@@ -116,7 +116,7 @@ export function createAudio(soundBtnEl) {
     }
 
 
-    
+
   // soft "thup" for stomps/landings
   function stomp(vol = 0.05) {
     if (!enabled || !audioCtx) return;

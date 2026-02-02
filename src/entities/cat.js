@@ -70,7 +70,7 @@ export function createCat(game, hud) {
     return "calm";
   }
 
-  
+
   function stomp() {
     cat.squashTimer = 10;
   }
