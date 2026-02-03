@@ -132,7 +132,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         objects.toast("Purrkour 🐾", 160);
     }
 
-    function effSpeed() { return game._effSpeed || 2.15; }
+    function effSpeed() { return game._effSpeed || 5.15; }
 
     function update(palette) {
         if (game.finished) return;
