@@ -111,7 +111,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud) {
         game.tick = 0;
         game.score = 0;
         game.mice = 0;
-        game.speed = 2.15;
+        game.speed = 5.35;
 
         game.lives = 7;
         game.invulnTimer = 0;

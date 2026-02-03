@@ -3,7 +3,7 @@ export function createGameState() {
         tick: 0,
         score: 0,
         mice: 0,
-        speed: 52.15,
+        speed: 5.35,
 
         finished: false,
         lives: 7,
@@ -39,7 +39,7 @@ export function createGameState() {
             dur: 60 * 10,
 
             // ocean beat scheduling
-            startScore: 50,
+            startScore: 100,
             cooldown: 999999,
 
             // rocket beat scheduling (fun intermezzo)

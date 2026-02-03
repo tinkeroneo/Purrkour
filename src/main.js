@@ -304,3 +304,6 @@ window.__purrkour.enterBeat = (id) => {
   const api = game.progressionApi;
   if (api?.enterBeatById) api.enterBeatById(id, "dev");
 };
+
+window.speedUp = () => game.baseSpeed += 0.05;
+window.speedDown = () => game.baseSpeed -= 0.05;
