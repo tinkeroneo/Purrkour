@@ -9,6 +9,8 @@ import { desertTheme } from "./themes/desert.js";
 import { marsTheme } from "./themes/mars.js";
 import { cliffTheme } from "./themes/cliff.js";
 
+export const THEME_ORDER = ["forest","jungle","ocean","island","cliff","mountain","city","desert","mars"];
+
 export const THEMES = {
   forest: forestTheme,
   ocean: oceanTheme,
@@ -20,6 +22,9 @@ export const THEMES = {
   mars: marsTheme,
   cliff: cliffTheme,
 };
+
+// stable theme order for UI
+THEMES.__order = THEME_ORDER;
 
 export function getTheme(key) {
   return THEMES[key] ?? forestTheme;

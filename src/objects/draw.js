@@ -183,6 +183,69 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         const groundYAtLeft = terrain.surfaceAt(o.x + 6);
         const groundYAtRight = terrain.surfaceAt(o.x + o.w - 6);
 
+
+const themeKey = game.theme || (game.progression?.current?.theme) || "forest";
+if (themeKey === "mars") {
+    // Mars: rocks / landing-zone obstacles
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(o.x + o.w * 0.52, Math.max(groundYAtLeft, groundYAtRight) - 2, o.w * 0.34, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#7b5a4a";
+    roundRect(ctx, o.x, topY + 6, o.w, o.h - 2, 12); ctx.fill();
+    ctx.fillStyle = "rgba(94,68,56,0.8)";
+    for (let s = 0; s < 4; s++) ctx.fillRect(o.x + 6 + s * 18, topY + 16 + (s % 2) * 6, 10, 4);
+    ctx.restore();
+    return;
+}
+if (themeKey === "island" || themeKey === "ocean") {
+    // Beach: huts / palms (use fence slot)
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(o.x + o.w * 0.52, Math.max(groundYAtLeft, groundYAtRight) - 2, o.w * 0.34, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // hut base
+    ctx.fillStyle = "#c7a46a";
+    roundRect(ctx, o.x, topY + 10, o.w, o.h - 10, 10); ctx.fill();
+    // roof
+    ctx.fillStyle = "#8a5a2b";
+    ctx.beginPath();
+    ctx.moveTo(o.x - 6, topY + 16);
+    ctx.lineTo(o.x + o.w * 0.5, topY - 2);
+    ctx.lineTo(o.x + o.w + 6, topY + 16);
+    ctx.closePath(); ctx.fill();
+    // palm leaf accent
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = "#2fa86f";
+    ctx.beginPath();
+    ctx.arc(o.x + o.w - 10, topY + 10, 10, -0.6, 2.5);
+    ctx.fill();
+    ctx.restore();
+    return;
+}
+if (themeKey === "mountain" || themeKey === "cliff") {
+    // Mountains/Cliffs: boulders
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(o.x + o.w * 0.52, Math.max(groundYAtLeft, groundYAtRight) - 2, o.w * 0.34, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#6b6b6b";
+    roundRect(ctx, o.x, topY + 8, o.w, o.h - 6, 14); ctx.fill();
+    ctx.fillStyle = "rgba(85,85,85,0.9)";
+    ctx.fillRect(o.x + 10, topY + 16, o.w - 20, 6);
+    ctx.restore();
+    return;
+}
+
         ctx.save();
         ctx.globalAlpha = 0.14;
         ctx.fillStyle = "#000";
@@ -267,12 +330,29 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
 
     function drawDog(o) {
         o.anim += o.chasing ? 0.22 : 0.10;
+        const themeKey = game.theme || (game.progression?.current?.theme) || "forest";
+        const asGoat = (themeKey === "mountain" || themeKey === "cliff");
+        const asMonkey = (themeKey === "island" || themeKey === "jungle");
         const bounce = o.chasing ? Math.sin(o.anim) * 2.2 : Math.sin(o.anim) * 0.8;
 
         ctx.save(); ctx.translate(o.x, o.y + bounce);
 
-        ctx.fillStyle = o.chasing ? "#8b4b2a" : "#7a4a2b";
+        ctx.fillStyle = asGoat ? (o.chasing ? "#8a8a8a" : "#7a7a7a") : asMonkey ? (o.chasing ? "#6b4a2a" : "#5a3e24") : (o.chasing ? "#8b4b2a" : "#7a4a2b");
         roundRect(ctx, 0, 8, o.w, o.h - 8, 12); ctx.fill();
+
+        // theme accents
+        if (asGoat) {
+            ctx.fillStyle = "#d7d7d7";
+            ctx.beginPath();
+            ctx.arc(o.w * 0.18, 6, 5, Math.PI, Math.PI * 2);
+            ctx.arc(o.w * 0.30, 6, 5, Math.PI, Math.PI * 2);
+            ctx.fill();
+        } else if (asMonkey) {
+            ctx.fillStyle = "#d9b58a";
+            ctx.beginPath();
+            ctx.arc(o.w * 0.22, 14, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.fillStyle = "#5a341f";
         roundRect(ctx, o.w * 0.62, 0, o.w * 0.38, o.h * 0.78, 12); ctx.fill();

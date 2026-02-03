@@ -12,7 +12,7 @@ export function createHUD(ui) {
     if (ui.miceDisplay) ui.miceDisplay.textContent = `🐭 × ${game.mice}`;
 
     // Debug/info slot (was catnip status): show current theme key
-    if (ui.catnip) ui.catnip.textContent = String(game?.theme || game?.progression?.current?.theme || "unknown");
+    if (ui.catnip) ui.catnip.textContent = String(game.theme || "");
 
     // Rest/Pause button (optional)
     if (ui.restBtn) {

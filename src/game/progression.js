@@ -108,6 +108,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       // checkpoint-triggered breath
       _lastCheckpointActive: false,
       _forcedBreath: false,
+      _resumeIdx: null,
     };
   }
 
@@ -168,6 +169,8 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     if (!was && now) {
       // force breath beat immediately (unless we are in a setpiece)
       if (!game.setpiece?.active) {
+        // remember where to resume in the main script
+        game.progression._resumeIdx = (game.progression.beatIdx + 1) % BEATS.length;
         // jump to CHECKPOINT_BREATH (index 1)
         enterBeat(1, "checkpoint");
       }
@@ -193,8 +196,9 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     // If this breath beat was forced by checkpoint, we do NOT want it to "eat" the scripted beat order.
     // We simply return to the next beat in the main script based on where we came from.
     if (beat.id === "CHECKPOINT_BREATH" && game.progression._forcedBreath) {
-      // continue with OCEAN_JOURNEY once player has had the breather
-      enterBeat(2, "resume");
+      const resumeIdx = (game.progression._resumeIdx ?? ((game.progression.beatIdx + 1) % BEATS.length));
+      game.progression._resumeIdx = null;
+      enterBeat(resumeIdx, "resume");
       return;
     }
 
@@ -210,7 +214,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
 
   function applyOutputs() {
     const beat = currentBeat();
-    if (beat.theme) game.theme = beat.theme;
+    if (beat.theme && !game.userTheme) game.theme = beat.theme;
 
     // speed curve (score-based for non-setpiece, time-based for setpiece)
     const u = beat.setpiece

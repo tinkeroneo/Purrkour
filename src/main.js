@@ -63,43 +63,120 @@ function setupMobileThemeToggle() {
     return b;
   };
 
-  const themeBtn = mkBtn("Theme");
-  const bandBtn = mkBtn("Band");
+  const themePrevBtn = mkBtn("◀");
+const themeLabelBtn = mkBtn("theme");
+const themeNextBtn = mkBtn("▶");
+const bandBtn = mkBtn("Band");
 
-  const themeKeys = Object.keys(THEMES);
-  themeBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const prev = game.theme;
-    const i = Math.max(0, themeKeys.indexOf(prev));
-    const next = themeKeys[(i + 1) % themeKeys.length];
-    game.theme = next;
-    // small fade helper (optional)
-    if (game.themeFade) {
-      game.themeFade.active = true;
-      game.themeFade.from = prev;
-      game.themeFade.to = next;
-      game.themeFade.t = 0;
-      game.themeFade.dur = 40;
-    }
-  }, { passive: false });
+// Theme keys in a stable order (defined in themes.js). Fallback to object keys.
+const themeKeys = Array.isArray(THEMES.__order) ? THEMES.__order.slice() : Object.keys(THEMES);
 
-  const bands = ["ground", "mid", "air"];
-  bandBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    game.vertical = game.vertical || {};
-    const cur = game.vertical.band || "ground";
-    const i = Math.max(0, bands.indexOf(cur));
-    game.vertical.band = bands[(i + 1) % bands.length];
-  }, { passive: false });
+function setTheme(next) {
+  const prev = game.theme;
+  game.theme = next;
+  themeLabelBtn.textContent = next;
+  // small fade helper (optional)
+  if (game.themeFade) {
+    game.themeFade.active = true;
+    game.themeFade.from = prev;
+    game.themeFade.to = next;
+    game.themeFade.t = 0;
+    game.themeFade.dur = 45;
+  }
+}
 
-  wrap.appendChild(themeBtn);
-  wrap.appendChild(bandBtn);
+function stepTheme(dir) {
+  const cur = game.theme;
+  let i = themeKeys.indexOf(cur);
+  if (i < 0) i = 0;
+  const next = themeKeys[(i + dir + themeKeys.length) % themeKeys.length];
+  setTheme(next);
+}
+
+themePrevBtn.addEventListener("click", (e) => { e.preventDefault(); stepTheme(-1); });
+themeNextBtn.addEventListener("click", (e) => { e.preventDefault(); stepTheme(+1); });
+
+// Initialize label
+themeLabelBtn.textContent = game.theme || themeKeys[0] || "theme";
+
+const bands = ["ground", "mid", "air"];
+bandBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  game.vertical = game.vertical || {};
+  const cur = game.vertical.band || "ground";
+  const i = Math.max(0, bands.indexOf(cur));
+  const next = bands[(i + 1) % bands.length];
+  game.vertical.band = next;
+  bandBtn.textContent = `Band:${next}`;
+});
+
+wrap.appendChild(themePrevBtn);
+wrap.appendChild(themeLabelBtn);
+wrap.appendChild(themeNextBtn);
+wrap.appendChild(bandBtn);
   document.body.appendChild(wrap);
 }
 
 const canvas = makeCanvas(canvasEl, ctx);
 const game = createGameState();
 const hud = createHUD(ui);
+
+setupThemeHudToggle(game, ui.catnip);
+
+function setupThemeHudToggle(game, el) {
+  if (!el) return;
+  const order = Array.isArray(THEMES.__order) ? THEMES.__order.slice() : Object.keys(THEMES).filter(k => k !== "__order");
+  if (!order.length) return;
+
+  el.style.cursor = "pointer";
+  el.title = "Tap: next theme • Long-press: auto";
+
+  let downAt = 0;
+  let longPressTimer = null;
+
+  function nextTheme() {
+    const cur = game.userTheme || game.theme || order[0];
+    const idx = Math.max(0, order.indexOf(cur));
+    const next = order[(idx + 1) % order.length];
+    const from = game.theme || cur;
+
+    game.userTheme = next;
+    game.theme = next;
+
+    // smooth fade if supported by background
+    game.themeFade = { from, to: next, t: 0, dur: 350 };
+  }
+
+  function clearOverride() {
+    game.userTheme = null;
+    // let progression reclaim theme next tick
+  }
+
+  el.addEventListener("pointerdown", (e) => {
+    downAt = performance.now();
+    try { el.setPointerCapture(e.pointerId); } catch {}
+    longPressTimer = setTimeout(() => {
+      clearOverride();
+      longPressTimer = null;
+    }, 450);
+  }, { passive: true });
+
+  el.addEventListener("pointerup", () => {
+    const held = performance.now() - downAt;
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+      // short tap
+      if (held < 450) nextTheme();
+    }
+  }, { passive: true });
+
+  el.addEventListener("pointercancel", () => {
+    if (longPressTimer) clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }, { passive: true });
+}
+
 setupMobileThemeToggle();
 
 const audio = createAudio(ui.soundBtn);

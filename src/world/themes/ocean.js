@@ -8,7 +8,7 @@ export const oceanTheme = {
     skyTop: [110, 205, 255],
     skyBot: [235, 252, 255],
     far: [55, 120, 170],
-    forest: [40, 150, 170],
+    forest: [20, 85, 95],
     ocean: [25, 140, 200],
     ground: [70, 135, 160],
     groundAlpha: 0.40,

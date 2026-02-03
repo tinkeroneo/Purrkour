@@ -183,10 +183,11 @@ export function createBackground(getW, getH, lakes, game, hud) {
 
         const W = getW(), H = getH();
         const p = palette();
+        const themeKey = getTheme(game.theme)?.key || game.theme || "forest";
         if (hud && typeof hud.setBiome === "function") hud.setBiome(p.label);
 
-        // Rocket beat overrides sky with space / stars
-        if (game.setpiece?.active && game.setpiece?.mode === "rocket") {
+        // Space sky: rocket beat OR mars theme
+        if ((game.setpiece?.active && game.setpiece?.mode === "rocket") || themeKey === "mars") {
             drawSpaceSky(ctx, W, H, game.setpiece, game.tick, p.key);
             return;
         }
@@ -273,6 +274,12 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (themeKey === "ocean" || themeKey === "island") {
+    // Ocean/Island: flat horizon band (no mountains)
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.22)`;
+    ctx.fillRect(0, Hv * 0.52, Wv, Hv * 0.12);
+    ctx.globalAlpha = 1;
   } else if (themeKey !== "city") {
     // soft mountains / silhouettes
     ctx.globalAlpha = 0.55;
@@ -314,6 +321,11 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.globalAlpha = 1;
   } else if (themeKey === "island") {
     // palms only (no forest trees)
+    // add sea line for beach feel
+    const seaY = Hv * 0.78;
+    ctx.globalAlpha = 0.60;
+    ctx.fillStyle = `rgba(${p.ocean[0]},${p.ocean[1]},${p.ocean[2]},0.42)`;
+    ctx.fillRect(0, seaY, Wv, Hv - seaY);
     ctx.globalAlpha = 0.52;
     ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.35)`;
     const baseY = Hv * 0.71;
@@ -333,6 +345,25 @@ export function createBackground(getW, getH, lakes, game, hud) {
       ctx.quadraticCurveTo(x + 30, baseY - h - 8, x + 44, baseY - h + 8);
       ctx.quadraticCurveTo(x + 26, baseY - h + 4, x + 13, baseY - h);
       ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (themeKey === "ocean") {
+    // ocean: visible sea with gentle waves
+    const seaY = Hv * 0.72;
+    ctx.globalAlpha = 0.70;
+    ctx.fillStyle = `rgba(${p.ocean[0]},${p.ocean[1]},${p.ocean[2]},0.55)`;
+    ctx.fillRect(0, seaY, Wv, Hv - seaY);
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 5; k++) {
+      const y = seaY + 18 + k * 22;
+      ctx.beginPath();
+      for (let x = 0; x <= Wv; x += 24) {
+        const yy = y + Math.sin((x + mid) * 0.04 + k) * 3;
+        if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
     }
     ctx.globalAlpha = 1;
   } else if (themeKey === "city") {
@@ -410,6 +441,7 @@ function drawHighClouds(ctx, near, night) {
 function drawGroundFog(ctx) {
         const W = getW(), H = getH();
         const p = palette();
+        const themeKey = getTheme(game.theme)?.key || game.theme || "forest";
         const n = p.n ?? 0;
         if (n < 0.35) return;
 
@@ -487,6 +519,7 @@ function drawHorizonIslands(ctx, horizonY) {
         const Wv = getW();
         const Hv = getH();
         const p = palette();
+        const themeKey = getTheme(game.theme)?.key || game.theme || "forest";
 
         // horizon line a bit above the ground plane
         const horizonY = Hv * 0.62;
