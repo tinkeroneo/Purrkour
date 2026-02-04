@@ -3,6 +3,7 @@ import { createDog } from "../entities/dog.js";
 import { createMonkey } from "../entities/monkey.js";
 import { createBird } from "../entities/bird.js";
 import { createGoat } from "../entities/goat.js";
+import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
 
@@ -291,6 +292,11 @@ export function createSpawner(game, terrain, objects, canvas) {
         const w = 58, h = 48;
         const posGoat = placeGroundObstacle(spawnX, w, h, 26);
         objects.add(createGoat(posGoat.x, posGoat.y, { w, h }));
+      } else if (themeKey === "desert") {
+        const w = 58, h = 48;
+        const posGoat = placeGroundObstacle(spawnX, w, h, 26);
+        objects.add(createScorpion(posGoat.x, posGoat.y, { w, h }));
+  
       } else {
         const w = 58, h = 36;
         const posDog = placeGroundObstacle(spawnX, w, h, 26);

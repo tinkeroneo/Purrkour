@@ -444,6 +444,9 @@ if (themeKey === "mountain" || themeKey === "cliff") {
                     if (o.draw) o.draw(ctx, game);
                     else drawDog(ctx, o, game);
                 }
+                else if (o.type === "scorpion") {
+                    if (o.draw) o.draw(ctx, game);
+                }
                 else drawYarn(o);
             } else if (o.kind === "collectible") {
                 if (o.type === "mouse") drawMouse(o);

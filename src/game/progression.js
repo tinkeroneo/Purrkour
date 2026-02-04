@@ -66,24 +66,35 @@ function ambienceForBeat(beatId, night) {
 
 // Beat table (score lengths are intentionally simple; tweak freely)
 const BEATS = [
-  { id: "FOREST_INTRO", theme: "forest", lenScore: 55, night: false, safeOnEnter: 0 },
+  { id: "FOREST_INTRO", theme: "forest", lenScore: 120, night: false, safeOnEnter: 0 },
   // Breath is usually triggered by checkpoint pickup; we keep a fallback scheduled beat too.
-  { id: "CHECKPOINT_BREATH", theme: "forest", lenScore: 25, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "CHECKPOINT_BREATH", theme: "forest", lenScore: 20, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Story setpiece: ocean crossing (zeppelin/balloon/raft)
-  { id: "OCEAN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean" },
+  { id: "OCEAN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "island" },
 
   // Land & breathe
-  { id: "ISLAND_REST", theme: "island", lenScore: 45, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "ISLAND_REST", theme: "island", lenScore: 130, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Rocket cutscene to Mars
-  { id: "ROCKET_FLIGHT", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket" },
+  { id: "ROCKET_FLIGHT", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mars" },
 
   // Actual Mars gameplay segment
-  { id: "MARS_RUN", theme: "mars", lenScore: 80, night: false, safeOnEnter: 0 },
+  { id: "MARS_RUN", theme: "mars", lenScore: 130, night: false, safeOnEnter: 0 },
 
-  { id: "MOUNTAIN_FOCUS", theme: "mountain", lenScore: 90, night: false, safeOnEnter: 0 },
-  { id: "NIGHT_PASSAGE", theme: "mountain", lenScore: 70, night: true, safeOnEnter: 0 },
+  // Rocket cutscene back from Mars
+  { id: "ROCKET_RETURN", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mountain" },
+
+  { id: "MOUNTAIN_FOCUS", theme: "mountain", lenScore: 70, night: false, safeOnEnter: 0 },
+  { id: "NIGHT_PASSAGE", theme: "mountain", lenScore: 60, night: true, safeOnEnter: 0 },
+
+  { id: "JUNGLE_RUN", theme: "jungle", lenScore: 130, night: false, safeOnEnter: 0 },
+  { id: "CLIFF_RUN", theme: "cliff", lenScore: 130, night: false, safeOnEnter: 0 },
+  { id: "CITY_RUN", theme: "city", lenScore: 130, night: false, safeOnEnter: 0 },
+  { id: "DESERT_RUN", theme: "desert", lenScore: 130, night: false, safeOnEnter: 0 },
+
+  // Return journey back to forest loop
+  { id: "RETURN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
 ];
 
 function clearWorld(objects) {
@@ -140,6 +151,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       if (game.setpiece) {
         game.setpiece.finished = false;
         game.setpiece.requestedMode = beat.setpiece; // "ocean" | "rocket"
+        game.setpiece.targetTheme = beat.targetTheme ?? null;
         game.setpiece.t = 0;
         game.setpiece.phaseT = 0;
         game.setpiece.phase = "approach";
@@ -149,6 +161,8 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
         // during flight: no safe mode (landing/next beat sets it)
         game.safeTimer = 0;
       }
+    } else if (game.setpiece) {
+      game.setpiece.targetTheme = null;
     }
   }
 
@@ -202,7 +216,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       return;
     }
 
-    // otherwise progress linearly (loop after NIGHT_PASSAGE back to CHECKPOINT_BREATH for wave rhythm)
+    // otherwise progress linearly (loop after RETURN_JOURNEY back to FOREST_INTRO)
     const nextIdx = (game.progression.beatIdx + 1) % BEATS.length;
     enterBeat(nextIdx, "auto");
   }

@@ -142,8 +142,8 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
         sp.phase = "arrive";
         sp.phaseT = 0;
 
-      // fade into Mars on approach
-      startThemeFade("mars", 140);
+      // fade into target theme on approach (default: Mars)
+      startThemeFade(sp.targetTheme ?? "mars", 140);
       }
       return;
     }
@@ -274,8 +274,8 @@ function update() {
         sp.phase = "arrive";
         sp.phaseT = 0;
 
-        // fade to island on approach
-        startThemeFade("island", 120);
+        // fade to target theme on approach (default: island)
+        startThemeFade(sp.targetTheme ?? "island", 120);
       }
     }
 
