@@ -275,14 +275,23 @@ export function createSpawner(game, terrain, objects, canvas) {
 
       if (themeKey === "city") {
         // city: cars as harmless setpieces/platforms (no chase)
-        const w = 110, h = 44;
+        const carTypes = ["car", "suv", "bus"];
+        const carType = carTypes[Math.floor(Math.random() * carTypes.length)];
+        const dims = (carType === "bus")
+          ? { w: 150, h: 56 }
+          : (carType === "suv")
+            ? { w: 122, h: 50 }
+            : { w: 110, h: 44 };
+        const w = dims.w, h = dims.h;
         const posCar = placeGroundObstacle(spawnX, w, h, 26);
         objects.add({
           kind: "platform", type: "car",
           x: posCar.x,
           y: posCar.y,
           w, h,
-          yMode: "ground", yOffset: -h
+          yMode: "ground", yOffset: -h,
+          carType,
+          drivePhase: Math.random() * 1000
         });
       } else if (themeKey === "jungle") {
         const w = 54, h = 54;

@@ -309,8 +309,8 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.globalAlpha = 0.60;
     ctx.fillStyle = `rgba(${p.forest[0]},${p.forest[1]},${p.forest[2]},0.42)`;
     for (let x = -30; x < Wv + 60; x += 28) {
-      const hh = 42 + (Math.sin((x + mid) * 0.06) * 10);
       const baseY = Hv * 0.70 + Math.sin((x + mid) * 0.02) * 8;
+      const hh = Math.min(42 + (Math.sin((x + mid) * 0.06) * 10), baseY - 8);
       ctx.beginPath();
       ctx.moveTo(x, baseY);
       ctx.lineTo(x + 14, baseY - hh);
@@ -331,7 +331,7 @@ export function createBackground(getW, getH, lakes, game, hud) {
     const baseY = Hv * 0.71;
     for (let i = 0; i < 12; i++) {
       const x = ((i * 86) - (mid * 0.22)) % (Wv + 140) - 70;
-      const h = 44 + ((i * 19) % 26);
+      const h = Math.min(44 + ((i * 19) % 26), baseY - 8);
       // trunk
       ctx.fillRect(x + 10, baseY - h, 6, h);
       // leaves
@@ -377,7 +377,7 @@ export function createBackground(getW, getH, lakes, game, hud) {
       for (let i = 0; i < 18; i++) {
         const x = ((i * 78) - (mid * 0.28)) % (Wv + 120) - 60;
         const bw = 36 + (i % 3) * 10;
-        const bh = 40 + ((i * 17) % 60);
+        const bh = Math.min(40 + ((i * 17) % 60), baseY - 8);
         const y0 = baseY - bh;
         ctx.fillRect(x, y0, bw, bh);
 

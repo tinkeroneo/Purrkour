@@ -224,7 +224,11 @@ if (themeKey === "mountain" || themeKey === "cliff") {
     function drawCar(o) {
         // car platform (safe to land on)
         const x = o.x, y = o.y, w = o.w, h = o.h;
+        const t = (game.tick + (o.drivePhase ?? 0));
+        const bob = Math.sin(t * 0.08) * 0.8;
+        const type = o.carType || "car";
         ctx.save();
+        ctx.translate(0, bob);
 
         // shadow
         ctx.globalAlpha = 0.16;
@@ -234,30 +238,98 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         ctx.fill();
         ctx.globalAlpha = 1;
 
-        // body
-        ctx.fillStyle = "rgba(70,150,230,0.95)";
-        roundRect(ctx, x, y + h * 0.30, w, h * 0.55, 12); ctx.fill();
+        if (type === "bus") {
+            // bus body
+            ctx.fillStyle = "rgba(235,185,60,0.95)";
+            roundRect(ctx, x, y + h * 0.20, w, h * 0.65, 14); ctx.fill();
 
-        // cabin
-        ctx.fillStyle = "rgba(40,110,190,0.95)";
-        roundRect(ctx, x + w * 0.18, y + h * 0.08, w * 0.52, h * 0.40, 12); ctx.fill();
+            // upper band
+            ctx.fillStyle = "rgba(190,120,20,0.95)";
+            roundRect(ctx, x + w * 0.06, y + h * 0.12, w * 0.86, h * 0.20, 10); ctx.fill();
 
-        // windows
-        ctx.fillStyle = "rgba(220,245,255,0.55)";
-        roundRect(ctx, x + w * 0.24, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
-        roundRect(ctx, x + w * 0.46, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+            // windows
+            ctx.fillStyle = "rgba(210,240,255,0.55)";
+            const wy = y + h * 0.26;
+            const ww = w * 0.12;
+            for (let i = 0; i < 5; i++) {
+                roundRect(ctx, x + w * (0.12 + i * 0.14), wy, ww, h * 0.20, 6); ctx.fill();
+            }
+
+            // door
+            ctx.fillStyle = "rgba(40,55,70,0.7)";
+            roundRect(ctx, x + w * 0.72, y + h * 0.28, w * 0.12, h * 0.34, 6); ctx.fill();
+        } else if (type === "suv") {
+            // SUV body
+            ctx.fillStyle = "rgba(90,180,120,0.95)";
+            roundRect(ctx, x, y + h * 0.28, w, h * 0.58, 12); ctx.fill();
+
+            // cabin
+            ctx.fillStyle = "rgba(55,120,85,0.95)";
+            roundRect(ctx, x + w * 0.16, y + h * 0.10, w * 0.58, h * 0.42, 12); ctx.fill();
+
+            // windows
+            ctx.fillStyle = "rgba(220,245,255,0.55)";
+            roundRect(ctx, x + w * 0.22, y + h * 0.16, w * 0.20, h * 0.18, 8); ctx.fill();
+            roundRect(ctx, x + w * 0.46, y + h * 0.16, w * 0.20, h * 0.18, 8); ctx.fill();
+
+            // spare box
+            ctx.fillStyle = "rgba(40,70,55,0.9)";
+            roundRect(ctx, x + w * 0.04, y + h * 0.34, w * 0.10, h * 0.20, 6); ctx.fill();
+        } else {
+            // car
+            ctx.fillStyle = "rgba(70,150,230,0.95)";
+            roundRect(ctx, x, y + h * 0.30, w, h * 0.55, 12); ctx.fill();
+
+            // cabin
+            ctx.fillStyle = "rgba(40,110,190,0.95)";
+            roundRect(ctx, x + w * 0.18, y + h * 0.08, w * 0.52, h * 0.40, 12); ctx.fill();
+
+            // windows
+            ctx.fillStyle = "rgba(220,245,255,0.55)";
+            roundRect(ctx, x + w * 0.24, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+            roundRect(ctx, x + w * 0.46, y + h * 0.14, w * 0.18, h * 0.18, 8); ctx.fill();
+        }
 
         // wheels
         const wy = y + h * 0.78;
         ctx.fillStyle = "rgba(20,20,25,0.95)";
-        ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.16, 0, Math.PI * 2); ctx.fill();
+        const r = h * ((type === "bus") ? 0.18 : 0.16);
+        const wx1 = x + w * 0.24;
+        const wx2 = x + w * 0.76;
+        ctx.beginPath(); ctx.arc(wx1, wy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(wx2, wy, r, 0, Math.PI * 2); ctx.fill();
 
         // rims
+        const spin = t * 0.25;
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.beginPath(); ctx.arc(x + w * 0.24, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + w * 0.76, wy, h * 0.08, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(wx1, wy, r * 0.55, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(wx2, wy, r * 0.55, 0, Math.PI * 2); ctx.fill();
+
+        // simple spinning spokes
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 2;
+        for (const wx of [wx1, wx2]) {
+            ctx.save();
+            ctx.translate(wx, wy);
+            ctx.rotate(spin);
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.5, 0);
+            ctx.lineTo(r * 0.5, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+
+        // motion streak
+        ctx.globalAlpha = 0.12;
+        ctx.strokeStyle = "rgba(255,255,255,0.8)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + w * 0.12, y + h * 0.22);
+        ctx.lineTo(x + w * 0.02, y + h * 0.18);
+        ctx.stroke();
         ctx.globalAlpha = 1;
 
         ctx.restore();
