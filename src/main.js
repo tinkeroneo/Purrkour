@@ -29,6 +29,7 @@ const ui = {
   catnip: document.getElementById("catnip"),
   restBtn: document.getElementById("restBtn"),
   soundBtn: document.getElementById("soundBtn"),
+  speedBtn: document.getElementById("speedBtn"),
 };
 
 
@@ -95,12 +96,22 @@ function setupThemeHudToggle(game, el) {
 
 function setupSpeedToggle(game, el) {
   if (!el) return;
-  const speeds = [0.8, 1.0, 1.2, 1.4];
+  const speeds = [0.8, 1.0, 1.2, 1.4, 1.6, 3, 5]
   const fmt = (v) => `${v.toFixed(1)}x`;
   function syncLabel() {
     el.textContent = fmt(game.speedMul ?? 1.0);
   }
   syncLabel();
+  function pulse() {
+    el.animate(
+      [
+        { transform: "scale(1)", filter: "brightness(1)" },
+        { transform: "scale(1.08)", filter: "brightness(1.2)" },
+        { transform: "scale(1)", filter: "brightness(1)" }
+      ],
+      { duration: 180, easing: "ease-out" }
+    );
+  }
   el.addEventListener("click", (e) => {
     e.preventDefault();
     const cur = game.speedMul ?? 1.0;
@@ -109,6 +120,7 @@ function setupSpeedToggle(game, el) {
     const next = speeds[(i + 1) % speeds.length];
     game.speedMul = next;
     syncLabel();
+    pulse();
   }, { passive: false });
 }
 
