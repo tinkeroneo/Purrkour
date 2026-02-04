@@ -1,5 +1,5 @@
 import { aabb, clamp } from "../core/util.js";
-export function createCollider(game, catApi, terrain, objects, audio, hud) {
+export function createCollider(game, catApi, terrain, objects, audio, hud, canvas) {
     const { cat } = catApi;
 
     function applyGroundY(o) {

@@ -32,91 +32,6 @@ const ui = {
 };
 
 
-function setupMobileThemeToggle() {
-  // Lightweight on-screen toggles for touch devices (Handy).
-  const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-  if (!isTouch) return;
-  if (!uiRoot) return;
-
-  const wrap = document.createElement("div");
-  wrap.style.position = "fixed";
-  wrap.style.right = "10px";
-  wrap.style.bottom = "10px";
-  wrap.style.display = "flex";
-  wrap.style.gap = "8px";
-  wrap.style.zIndex = "9999";
-
-  const mkBtn = (label) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = label;
-    b.style.padding = "10px 12px";
-    b.style.borderRadius = "12px";
-    b.style.border = "1px solid rgba(255,255,255,0.25)";
-    b.style.background = "rgba(0,0,0,0.35)";
-    b.style.color = "#fff";
-    b.style.font = "600 14px system-ui, sans-serif";
-    b.style.backdropFilter = "blur(6px)";
-    b.style.webkitBackdropFilter = "blur(6px)";
-    b.style.touchAction = "manipulation";
-    b.style.userSelect = "none";
-    return b;
-  };
-
-  const themePrevBtn = mkBtn("◀");
-const themeLabelBtn = mkBtn("theme");
-const themeNextBtn = mkBtn("▶");
-const bandBtn = mkBtn("Band");
-
-// Theme keys in a stable order (defined in themes.js). Fallback to object keys.
-const themeKeys = Array.isArray(THEMES.__order) ? THEMES.__order.slice() : Object.keys(THEMES);
-
-function setTheme(next) {
-  const prev = game.theme;
-  game.theme = next;
-  themeLabelBtn.textContent = next;
-  // small fade helper (optional)
-  if (game.themeFade) {
-    game.themeFade.active = true;
-    game.themeFade.from = prev;
-    game.themeFade.to = next;
-    game.themeFade.t = 0;
-    game.themeFade.dur = 45;
-  }
-}
-
-function stepTheme(dir) {
-  const cur = game.theme;
-  let i = themeKeys.indexOf(cur);
-  if (i < 0) i = 0;
-  const next = themeKeys[(i + dir + themeKeys.length) % themeKeys.length];
-  setTheme(next);
-}
-
-themePrevBtn.addEventListener("click", (e) => { e.preventDefault(); stepTheme(-1); });
-themeNextBtn.addEventListener("click", (e) => { e.preventDefault(); stepTheme(+1); });
-
-// Initialize label
-themeLabelBtn.textContent = game.theme || themeKeys[0] || "theme";
-
-const bands = ["ground", "mid", "air"];
-bandBtn.addEventListener("click", (e) => {
-  e.preventDefault();
-  game.vertical = game.vertical || {};
-  const cur = game.vertical.band || "ground";
-  const i = Math.max(0, bands.indexOf(cur));
-  const next = bands[(i + 1) % bands.length];
-  game.vertical.band = next;
-  bandBtn.textContent = `Band:${next}`;
-});
-
-wrap.appendChild(themePrevBtn);
-wrap.appendChild(themeLabelBtn);
-wrap.appendChild(themeNextBtn);
-wrap.appendChild(bandBtn);
-  document.body.appendChild(wrap);
-}
-
 const canvas = makeCanvas(canvasEl, ctx);
 const game = createGameState();
 const hud = createHUD(ui);
@@ -176,8 +91,6 @@ function setupThemeHudToggle(game, el) {
     longPressTimer = null;
   }, { passive: true });
 }
-
-setupMobileThemeToggle();
 
 const audio = createAudio(ui.soundBtn);
 const terrain = createTerrain(() => canvas.W, () => canvas.H);
