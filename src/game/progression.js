@@ -29,19 +29,19 @@ function scoreU(game, startScore, lenScore) {
 function speedForBeat(beatId, u) {
   switch (beatId) {
     case "FOREST_INTRO":
-      return lerp(5.05, 5.35, easeInOut(u));
+      return lerp(2.05, 2.35, easeInOut(u));
     case "CHECKPOINT_BREATH":
-      return lerp(5.10, 5.05, smoothstep(u));
+      return lerp(2.10, 2.05, smoothstep(u));
     case "OCEAN_JOURNEY":
-      return lerp(4.80, 4.65, smoothstep(u));
+      return lerp(1.80, 1.65, smoothstep(u));
     case "ISLAND_REST":
-      return lerp(4.95, 5.15, easeInOut(u));
+      return lerp(1.95, 2.15, easeInOut(u));
     case "MOUNTAIN_FOCUS":
-      return lerp(5.25, 5.85, easeInOut(u));
+      return lerp(2.25, 2.85, easeInOut(u));
     case "NIGHT_PASSAGE":
-      return lerp(5.35, 5.60, easeInOut(u));
+      return lerp(2.35, 2.60, easeInOut(u));
     default:
-      return 5.25;
+      return 2.25;
   }
 }
 

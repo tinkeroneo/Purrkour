@@ -54,14 +54,18 @@ export function createCat(game, hud) {
 
   function setAnimFrame(f) { cat.frame = f; }
 
-  function clampX(W) {
-    const minX = 70;
-    const maxX = Math.min(W * 0.45, 210);
-    cat.x = clamp(cat.x, minX, maxX);
+function clampX(W, blockedX = false) {
+  const minX = 70;
+  const maxX = Math.min(W * 0.45, 210);
+  cat.x = clamp(cat.x, minX, maxX);
 
-    const target = clamp(cat.baseX, minX, maxX);
-    if (cat.x > target + 8) cat.x = cat.x + (target - cat.x) * 0.08;
-  }
+  // Don't pull the cat back into solids when it was side-blocked this frame
+  if (blockedX) return;
+
+  const target = clamp(cat.baseX, minX, maxX);
+  if (cat.x > target + 8) cat.x = cat.x + (target - cat.x) * 0.08;
+}
+
 
   function catMood() {
     if (game.tick - game.lastHitTick < 240) return "annoyed";
@@ -93,7 +97,9 @@ function draw(ctx) {
     ctx.scale(sx, sy);
     ctx.translate(-cat.w * 0.5, -cat.h * 0.5);
 
-
+// Visual alignment: the tail extends far to the left, beyond the collision box.
+    // Shift the sprite slightly right so it doesn't look like it clips into solids.
+    ctx.translate(10, 0);
     // tail
     const tailPhase = running ? cat.frame : 2;
     ctx.save();

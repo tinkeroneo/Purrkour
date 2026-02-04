@@ -1,4 +1,5 @@
 import { aabb, clamp } from "../core/util.js";
+
 export function createCollider(game, catApi, terrain, objects, audio, hud, canvas) {
     const { cat } = catApi;
 
@@ -111,7 +112,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         game.tick = 0;
         game.score = 0;
         game.mice = 0;
-        game.speed = 5.35;
+        game.speed = 2.35;
 
         game.lives = 7;
         game.invulnTimer = 0;
@@ -132,10 +133,14 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         objects.toast("Purrkour 🐾", 160);
     }
 
-    function effSpeed() { return game._effSpeed || 5.15; }
+    function effSpeed() { return game._effSpeed || 2.15; }
 
     function update(palette) {
         if (game.finished) return;
+
+        let blockedX = false;
+        let blockObj = null;
+
 
         game.tick++;
 
@@ -156,9 +161,10 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
         const catnipMult = (game.catnipTimer > 0) ? 0.82 : 1.0;
         const slowMult = (game.slowTimer > 0) ? game.slowStrength : 1.0;
-        const eff = game.speed * catnipMult * slowMult;
-        // --- setpiece: disable ground physics + collisions (balloon/zeppelin) ---
-        // effective speed (used by loop / terrain.update) — also supports scripted setpieces
+        const speedMul = (game.speedMul ?? 1.0);
+        const eff = game.speed * speedMul * catnipMult * slowMult;
+
+        // effective speed (used by loop / terrain.update) — supports scripted setpieces
         const sp = game.setpiece;
         const scroll = (sp?.active) ? (sp.scroll ?? 1) : 1;
         game._effSpeed = eff * scroll;
@@ -209,11 +215,9 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             cat.onSurface = true;
         }
 
-        // move objects + align ground objects
+        // --- Bird drop Y-physics (run ONCE per frame, no x scroll here) ---
         for (const o of objects.list) {
             if (!o) continue;
-            o.x -= eff;
-            // bird drop physics (von oben)
             if (o.kind === "obstacle" && o.type === "bird" && o.drop) {
                 const targetY = (o.restY ?? (terrain.surfaceAt(o.x) - 150));
                 o.vy = (o.vy ?? 0) + 0.28;
@@ -224,10 +228,70 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                     o.drop = false;
                 }
             }
-            applyGroundY(o);
         }
 
-        // platform land (top)
+        // --- Substep world scroll to avoid tunneling into solids ---
+        const steps = Math.max(1, Math.ceil(eff / 4)); // <= 4px per substep
+        const stepEff = eff / steps;
+
+        for (let s = 0; s < steps; s++) {
+            // move objects a little
+            for (const o of objects.list) {
+                if (!o) continue;
+                o.x -= stepEff;
+                applyGroundY(o);
+            }
+
+            // resolve side collisions each substep
+            for (const o of objects.list) {
+                if (!o) continue;
+                if (o.kind === "setpiece") continue;
+
+                const isSolidPlatform = (o.kind === "platform");
+                const isSolidFenceObstacle = (o.kind === "obstacle" && (o.type === "fence" || o.type === "crate" || o.solid));
+                if (!isSolidPlatform && !isSolidFenceObstacle) continue;
+
+                const inset = clamp(Math.floor(Math.min(o.w, 80) * 0.04), 1, 4);
+                const topPad = 2;
+                const fenceW = Math.max(2, o.w - inset * 2);
+                const fenceH = Math.max(2, o.h - topPad);
+
+                const fence = { x: o.x + inset, y: o.y + topPad, w: fenceW, h: fenceH };
+                // cat hitbox: use visual anchor X so collisions match what the player sees
+                // (cat.x can be gently corrected/clamped; baseX is the stable runner anchor)
+const c = { x: cat.baseX, y: cat.y + 4, w: cat.w, h: Math.max(2, cat.h - 8) };
+
+
+                if (!aabb(c, fence)) continue;
+
+                const overlapL = (c.x + c.w) - fence.x;
+                const overlapR = (fence.x + fence.w) - c.x;
+                const overlapT = (c.y + c.h) - fence.y;
+                const overlapB = (fence.y + fence.h) - c.y;
+
+                const minX = Math.min(overlapL, overlapR);
+                const minY = Math.min(overlapT, overlapB);
+
+                if (minX < minY) {
+                    blockedX = true;
+                    blockObj = o;
+                    // prefer push LEFT
+                    if (overlapL < overlapR) cat.x -= (overlapL + 0.5);
+                    else cat.x -= (overlapR + 0.5);
+                } else {
+                    if (overlapT < overlapB) {
+                        cat.y -= (overlapT + 0.5);
+                        cat.vy = Math.min(cat.vy, 0);
+                        cat.onSurface = true;
+                    } else {
+                        cat.y += (overlapB + 0.5);
+                        cat.vy = Math.max(cat.vy, 0);
+                    }
+                }
+            }
+        }
+
+        // platform land (top) - keep after scroll so platform positions are current
         for (const o of objects.list) {
             if (!o) continue;
             if (o.kind !== "platform") continue;
@@ -244,39 +308,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             }
         }
 
-        // platform side collision (solid fence)
-        for (const o of objects.list) {
-            if (!o) continue;
-            if (o.kind === "setpiece") continue;
-            if (o.kind !== "platform") continue;
-
-            const inset = 10;
-            const fence = { x: o.x + inset, y: o.y + 6, w: o.w - inset * 2, h: o.h - 6 };
-            const c = { x: cat.x + 10, y: cat.y + 10, w: cat.w - 20, h: cat.h - 14 };
-            if (!aabb(c, fence)) continue;
-
-            const overlapL = (c.x + c.w) - fence.x;
-            const overlapR = (fence.x + fence.w) - c.x;
-            const overlapT = (c.y + c.h) - fence.y;
-            const overlapB = (fence.y + fence.h) - c.y;
-
-            const minX = Math.min(overlapL, overlapR);
-            const minY = Math.min(overlapT, overlapB);
-
-            if (minX < minY) {
-                // IMPORTANT: prefer pushing LEFT (prevents “out of screen to the right”)
-                if (overlapL < overlapR) cat.x -= (overlapL + 0.5);
-                else cat.x -= (overlapR + 0.5) * 0.35; // softer right-side correction
-            } else {
-                if (overlapT < overlapB) { cat.y -= (overlapT + 0.5); cat.vy = Math.min(cat.vy, 0); cat.onSurface = true; }
-                else { cat.y += (overlapB + 0.5); cat.vy = Math.max(cat.vy, 0); }
-            }
-        }
-
-        // clamp + gentle return (fix “cat pushed out of frame”)
-        catApi.clampX(hud?.W ?? 99999); // may be undefined; harmless
-        // better: use viewport width (fallback via window)
-        catApi.clampX(window.innerWidth || 360);
+        // clamp + gentle return (must not pull into solids when blockedX)
+        catApi.clampX(hud?.W ?? (window.innerWidth || 360), blockedX);
 
         // reset jumps on ground
         if (cat.onSurface && cat.jumpsLeft !== cat.maxJumps) {
@@ -322,7 +355,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                     const birdTop = o.y;
                     const xOverlap = (cat.x + cat.w * 0.78) > o.x && (cat.x + cat.w * 0.22) < (o.x + o.w);
 
-                    // landing window (forgiving)
                     const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop + 8) && (catBottom >= birdTop + 2);
 
                     if (landing) {
@@ -331,7 +363,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                         cat.onSurface = true;
                         cat.jumpsLeft = cat.maxJumps;
 
-                        // stomp feedback
                         o.landedTimer = 14;
                         if (audio?.SFX?.stomp) audio.SFX.stomp();
                         else if (audio?.SFX?.combo) audio.SFX.combo();
@@ -339,7 +370,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                         continue; // IMPORTANT: don't treat as damage
                     }
 
-                    // side/below hit -> damage
                     loseLife();
                     objects.list.splice(i, 1); i--;
                     continue;
@@ -362,7 +392,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             if (o.type === "mouse") {
                 game.mice++;
                 game.score += 1;
-                game.speed += 0.010; // mice = slight acceleration
+                game.speed += 0.010;
                 if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
                 audio.SFX.mouse();
             } else if (o.type === "catnip") {

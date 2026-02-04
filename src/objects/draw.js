@@ -1,4 +1,6 @@
 import { clamp, roundRect, tri } from "../core/util.js";
+import { drawDog } from "../entities/dog.js";
+import { drawBird } from "../entities/bird.js";
 import { drawVehicle } from "../game/vehicles/index.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
@@ -67,70 +69,6 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     }
 
     // ----- object draw helpers -----
-    function drawBird(o) {
-        o.flapT += 0.12;
-        if (o.landedTimer && o.landedTimer > 0) o.landedTimer--;
-        const landBoost = (o.landedTimer && o.landedTimer > 0) ? (o.landedTimer / 14) : 0;
-        const flap = Math.sin(o.flapT) * (2 + landBoost * 5);
-        const v = o.variant || "crow";
-
-        ctx.save();
-        ctx.translate(o.x, o.y + flap);
-
-        // base styles per variant
-        let body = "#2b2b2b";
-        let wing = "rgba(255,255,255,0.65)";
-        let eye = "#fff";
-        let beak = "rgba(255,200,80,0.95)";
-
-        if (v === "seagull") { body = "rgba(245,245,245,0.95)"; wing = "rgba(0,0,0,0.35)"; eye = "#111"; beak = "rgba(255,190,70,0.95)"; }
-        else if (v === "pigeon") { body = "rgba(120,130,145,0.95)"; wing = "rgba(255,255,255,0.45)"; eye = "#fff"; beak = "rgba(230,180,120,0.9)"; }
-        else if (v === "parrot") { body = "rgba(80,200,120,0.95)"; wing = "rgba(255,255,255,0.55)"; eye = "#fff"; beak = "rgba(255,120,60,0.95)"; }
-        else if (v === "drone") { body = "rgba(110,120,135,0.95)"; wing = "rgba(255,255,255,0.25)"; eye = "rgba(140,220,255,0.95)"; beak = "rgba(200,200,220,0.90)"; }
-        else if (v === "eagle") { body = "rgba(150,95,55,0.95)"; wing = "rgba(255,255,255,0.40)"; eye = "#fff"; beak = "rgba(255,210,90,0.95)"; }
-        else if (v === "hawk") { body = "rgba(170,120,70,0.95)"; wing = "rgba(255,255,255,0.40)"; eye = "#fff"; beak = "rgba(255,210,90,0.95)"; }
-        else if (v === "bat") { body = "rgba(35,35,45,0.95)"; wing = "rgba(255,255,255,0.25)"; eye = "rgba(255,255,255,0.85)"; beak = "rgba(0,0,0,0)"; }
-
-        // body
-        ctx.fillStyle = body;
-        roundRect(ctx, 6, 6, o.w - 12, o.h - 12, 6); ctx.fill();
-
-        // wings / arc
-        ctx.strokeStyle = wing;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        if (v === "bat") {
-            // bat wings: two arcs
-            ctx.moveTo(o.w * 0.10, o.h * 0.60);
-            ctx.quadraticCurveTo(o.w * 0.28, o.h * 0.20, o.w * 0.46, o.h * 0.60);
-            ctx.quadraticCurveTo(o.w * 0.64, o.h * 0.20, o.w * 0.82, o.h * 0.60);
-        } else {
-            ctx.moveTo(o.w * 0.15, o.h * 0.55);
-            ctx.quadraticCurveTo(o.w * 0.45, o.h * 0.25, o.w * 0.75, o.h * 0.55);
-        }
-        ctx.stroke();
-
-        // beak (not for bat)
-        if (v !== "bat") {
-            ctx.fillStyle = beak;
-            ctx.beginPath();
-            ctx.moveTo(o.w * 0.86, o.h * 0.55);
-            ctx.lineTo(o.w * 1.02, o.h * 0.50);
-            ctx.lineTo(o.w * 0.86, o.h * 0.45);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        // eye
-        ctx.fillStyle = eye;
-        ctx.beginPath(); ctx.arc(o.w * 0.70, o.h * 0.40, 2.4, 0, Math.PI * 2); ctx.fill();
-        if (v !== "seagull" && v !== "bat") {
-            ctx.fillStyle = "#111";
-            ctx.beginPath(); ctx.arc(o.w * 0.70, o.h * 0.40, 1.0, 0, Math.PI * 2); ctx.fill();
-        }
-
-        ctx.restore();
-    }
 
     function drawYarn(o) {
         // red yarn ball with visible strands
@@ -328,66 +266,6 @@ if (themeKey === "mountain" || themeKey === "cliff") {
 
 
 
-    function drawDog(o) {
-        o.anim += o.chasing ? 0.22 : 0.10;
-        const themeKey = game.theme || (game.progression?.current?.theme) || "forest";
-        const asGoat = (themeKey === "mountain" || themeKey === "cliff");
-        const asMonkey = (themeKey === "island" || themeKey === "jungle");
-        const bounce = o.chasing ? Math.sin(o.anim) * 2.2 : Math.sin(o.anim) * 0.8;
-
-        ctx.save(); ctx.translate(o.x, o.y + bounce);
-
-        ctx.fillStyle = asGoat ? (o.chasing ? "#8a8a8a" : "#7a7a7a") : asMonkey ? (o.chasing ? "#6b4a2a" : "#5a3e24") : (o.chasing ? "#8b4b2a" : "#7a4a2b");
-        roundRect(ctx, 0, 8, o.w, o.h - 8, 12); ctx.fill();
-
-        // theme accents
-        if (asGoat) {
-            ctx.fillStyle = "#d7d7d7";
-            ctx.beginPath();
-            ctx.arc(o.w * 0.18, 6, 5, Math.PI, Math.PI * 2);
-            ctx.arc(o.w * 0.30, 6, 5, Math.PI, Math.PI * 2);
-            ctx.fill();
-        } else if (asMonkey) {
-            ctx.fillStyle = "#d9b58a";
-            ctx.beginPath();
-            ctx.arc(o.w * 0.22, 14, 6, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.fillStyle = "#5a341f";
-        roundRect(ctx, o.w * 0.62, 0, o.w * 0.38, o.h * 0.78, 12); ctx.fill();
-
-        ctx.fillStyle = "#432415";
-        roundRect(ctx, o.w * 0.72, o.h * 0.08, o.w * 0.16, o.h * 0.22, 8); ctx.fill();
-
-        if (o.chasing) {
-            ctx.fillStyle = "rgba(220,70,70,0.95)";
-            roundRect(ctx, o.w * 0.18, o.h * 0.32, o.w * 0.20, 6, 6); ctx.fill();
-        }
-
-        ctx.fillStyle = "#432415";
-        const legPhase = Math.sin(o.anim * 2);
-        const ly = o.h * 0.70;
-        roundRect(ctx, o.w * 0.18, ly + (legPhase > 0 ? 2 : -1), 8, 14, 4); ctx.fill();
-        roundRect(ctx, o.w * 0.40, ly + (legPhase < 0 ? 2 : -1), 8, 14, 4); ctx.fill();
-        roundRect(ctx, o.w * 0.58, ly + (legPhase > 0 ? 2 : -1), 8, 14, 4); ctx.fill();
-
-        if (o.asleep && !o.chasing) {
-            ctx.strokeStyle = "rgba(255,255,255,0.75)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(o.w * 0.75, o.h * 0.28); ctx.lineTo(o.w * 0.86, o.h * 0.28);
-            ctx.stroke();
-        } else {
-            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(o.w * 0.80, o.h * 0.26, 2.6, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(o.w * 0.80, o.h * 0.26, 1.2, 0, Math.PI * 2); ctx.fill();
-        }
-
-        ctx.fillStyle = "rgba(255,255,255,0.60)";
-        roundRect(ctx, o.w * 0.86, o.h * 0.44, 8, 5, 3); ctx.fill();
-
-        ctx.restore();
-    }
 
     function drawMouse(o) {
         if (o.taken) return;
@@ -551,9 +429,21 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         // objects
         for (const o of objects.list) {
             if (o.kind === "platform") { if (o.type === "car") drawCar(o); else drawFence(o); }
+            else if (o.kind === "setpiece") {
+                if (o.draw) o.draw(ctx, game);
+            }
             else if (o.kind === "obstacle") {
-                if (o.type === "bird") drawBird(o);
-                else if (o.type === "dog") drawDog(o);
+                if (o.type === "bird") {
+                    if (o.draw) o.draw(ctx, game);
+                    else drawBird(ctx, o);
+                } else if (o.type === "monkey") {
+                    if (o.draw) o.draw(ctx, game);
+                } else if (o.type === "goat") {
+                    if (o.draw) o.draw(ctx, game);
+                } else if (o.type === "dog") {
+                    if (o.draw) o.draw(ctx, game);
+                    else drawDog(ctx, o, game);
+                }
                 else drawYarn(o);
             } else if (o.kind === "collectible") {
                 if (o.type === "mouse") drawMouse(o);
@@ -572,6 +462,31 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             const hx = game.pause.hutX ?? 240;
             const hy = terrain.surfaceAt(hx) - 52;
             drawRestHut(hx, hy);
+        }
+
+        // DEBUG: collision boxes
+        if (game?._dbg?.lastSolidCheck) {
+            const { c, fence } = game._dbg.lastSolidCheck;
+            ctx.save();
+            ctx.globalAlpha = 0.9;
+            ctx.strokeStyle = "yellow";
+            ctx.strokeRect(c.x, c.y, c.w, c.h);
+            ctx.strokeStyle = "cyan";
+            ctx.strokeRect(fence.x, fence.y, fence.w, fence.h);
+            ctx.restore();
+        }
+
+        if (game?._dbg?.lastSolidHit) {
+            const { c, fence, o } = game._dbg.lastSolidHit;
+            ctx.save();
+            ctx.globalAlpha = 1.0;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "red";
+            ctx.strokeRect(c.x, c.y, c.w, c.h);
+            ctx.strokeRect(fence.x, fence.y, fence.w, fence.h);
+            ctx.fillStyle = "red";
+            ctx.fillText(`HIT ${o.kind}:${o.type}`, 10, 20);
+            ctx.restore();
         }
 
         // checkpoint glow

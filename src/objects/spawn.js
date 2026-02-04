@@ -1,4 +1,8 @@
 import { clamp } from "../core/util.js";
+import { createDog } from "../entities/dog.js";
+import { createMonkey } from "../entities/monkey.js";
+import { createBird } from "../entities/bird.js";
+import { createGoat } from "../entities/goat.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
 
@@ -251,7 +255,18 @@ export function createSpawner(game, terrain, objects, canvas) {
       const themeVariant = theme.birdVariant || "crow";
       const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
       const restY = ground - (150 + Math.random() * 60 + extra);
-      objects.add({ kind: "obstacle", type: "bird", variant, x: spawnX, y: flyY, w, h, flapT: Math.random() * 1000, yMode: "fixed", drop, vy: drop ? (0.2 + Math.random() * 0.6) : 0, restY });
+      objects.add(createBird({
+        variant,
+        x: spawnX,
+        y: flyY,
+        w,
+        h,
+        flapT: Math.random() * 1000,
+        yMode: "fixed",
+        drop,
+        vy: drop ? (0.2 + Math.random() * 0.6) : 0,
+        restY
+      }));
 
     }
     else if (type === "dog") {
@@ -268,20 +283,29 @@ export function createSpawner(game, terrain, objects, canvas) {
           w, h,
           yMode: "ground", yOffset: -h
         });
+      } else if (themeKey === "jungle") {
+        const w = 54, h = 54;
+        const posMonkey = placeGroundObstacle(spawnX, w, h, 26);
+        objects.add(createMonkey(posMonkey.x, posMonkey.y, { w, h }));
+      } else if (themeKey === "mountain" || themeKey === "cliff") {
+        const w = 58, h = 48;
+        const posGoat = placeGroundObstacle(spawnX, w, h, 26);
+        objects.add(createGoat(posGoat.x, posGoat.y, { w, h }));
       } else {
         const w = 58, h = 36;
         const posDog = placeGroundObstacle(spawnX, w, h, 26);
-        objects.add({
-          kind: "obstacle", type: "dog",
+        objects.add(createDog(game, {
           x: posDog.x,
           y: posDog.y,
-          w, h,
+          w,
+          h,
           asleep: (Math.random() < 0.55),
           chasing: false,
           chaseSpeedBoost: 1.45 + Math.random() * 0.22,
           anim: Math.random() * 100,
-          yMode: "ground", yOffset: -h
-        });
+          yMode: "ground",
+          yOffset: -h
+        }));
       }
     } else { // yarn slow
       const size = 28;
@@ -331,7 +355,14 @@ export function createSpawner(game, terrain, objects, canvas) {
         objects.add({ kind: "obstacle", type: "yarn", x: pos2.x, y: pos2.y, w: size, h: size, yMode: "ground", yOffset: -size });
       } else {
         const w = 34, h = 18;
-        objects.add({ kind: "obstacle", type: "bird", x: x2, y: terrain.surfaceAt(x2) - (160 + Math.random() * 40), w, h, flapT: Math.random() * 1000, yMode: "fixed" });
+        objects.add(createBird({
+          x: x2,
+          y: terrain.surfaceAt(x2) - (160 + Math.random() * 40),
+          w,
+          h,
+          flapT: Math.random() * 1000,
+          yMode: "fixed"
+        }));
       }
     }
 

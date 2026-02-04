@@ -3,7 +3,8 @@ export function createGameState() {
         tick: 0,
         score: 0,
         mice: 0,
-        speed: 5.35,
+        speed: 2.35,
+        speedMul: 1.0,
 
         finished: false,
         lives: 7,

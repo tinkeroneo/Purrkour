@@ -37,6 +37,7 @@ const game = createGameState();
 const hud = createHUD(ui);
 
 setupThemeHudToggle(game, ui.catnip);
+setupSpeedToggle(game, ui.speedBtn);
 
 function setupThemeHudToggle(game, el) {
   if (!el) return;
@@ -90,6 +91,25 @@ function setupThemeHudToggle(game, el) {
     if (longPressTimer) clearTimeout(longPressTimer);
     longPressTimer = null;
   }, { passive: true });
+}
+
+function setupSpeedToggle(game, el) {
+  if (!el) return;
+  const speeds = [0.8, 1.0, 1.2, 1.4];
+  const fmt = (v) => `${v.toFixed(1)}x`;
+  function syncLabel() {
+    el.textContent = fmt(game.speedMul ?? 1.0);
+  }
+  syncLabel();
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    const cur = game.speedMul ?? 1.0;
+    let i = speeds.indexOf(cur);
+    if (i < 0) i = 1;
+    const next = speeds[(i + 1) % speeds.length];
+    game.speedMul = next;
+    syncLabel();
+  }, { passive: false });
 }
 
 const audio = createAudio(ui.soundBtn);
