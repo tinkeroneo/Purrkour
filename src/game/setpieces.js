@@ -30,6 +30,148 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
   const R_TRAVEL_DUR = SETPIECE_TIMINGS.rocket.TRAVEL;
   const R_ARRIVE_DUR = SETPIECE_TIMINGS.rocket.ARRIVE;
 
+  const OCEAN_PHASES = {
+    approach({ sp, surf }) {
+      // vehicle stands on land, cat walks in, world eases to a stop
+      sp.vehicle.x = canvas.W * 0.76;
+      sp.vehicle.y = surf - 110;
+
+      const u = clamp(sp.phaseT / APPROACH_DUR, 0, 1);
+      sp.scroll = 1 - smoothstep(u);              // 1 -> 0
+      sp.oceanMaskX = canvas.W;                   // still land, no ocean
+
+      if (sp.phaseT >= APPROACH_DUR) {
+        transitionPhase(sp, "board");
+        sp.scroll = 0;
+        // little UI bubble (optional)
+        objects.addBubble?.("...einsteigen");
+      }
+    },
+    board({ sp, surf }) {
+      // frozen world, cat climbs in; ocean starts behind vehicle near end
+      sp.vehicle.x = canvas.W * 0.76;
+      sp.vehicle.y = surf - 110;
+
+      const u = clamp(sp.phaseT / BOARD_DUR, 0, 1);
+      // ocean creeps in from behind the vehicle (right side)
+      const reveal = smoothstep(clamp((u - 0.35) / 0.65, 0, 1));
+      sp.oceanMaskX = clamp(sp.vehicle.x - 40 - reveal * 220, 0, canvas.W);
+
+      sp.scroll = 0;
+
+      if (sp.phaseT >= BOARD_DUR) {
+        transitionPhase(sp, "travel");
+        sp.catInVehicle = true;
+      }
+    },
+    travel({ sp }) {
+      // full ocean, vehicle drifts; world scroll resumes smoothly
+      const u = clamp(sp.phaseT / TRAVEL_DUR, 0, 1);
+
+      sp.oceanMaskX = 0; // full ocean
+
+      // ramp world movement back up to normal (gentle takeoff)
+      sp.scroll = smoothstep(clamp(u / 0.18, 0, 1)); // 0 -> 1
+
+      // whoosh once at takeoff
+      if (!sp._whooshed && sp.phaseT > 20) {
+        sp._whooshed = true;
+        audio?.SFX?.whoosh?.();
+      }
+
+      // drift vehicle slightly (draw module uses sp.t too)
+      sp.vehicle.x = canvas.W * (0.28 + 0.16 * Math.sin((sp.t + sp.motion.phase) * 0.006));
+      sp.vehicle.y = canvas.H * 0.28 + Math.sin((sp.t + sp.motion.phase) * 0.02) * 6;
+
+      if (sp.phaseT >= TRAVEL_DUR) {
+        transitionPhase(sp, "arrive");
+      }
+    },
+    arrive({ sp }) {
+      // land creeps in (reverse), world slows to a stop, then cat steps out
+      const u = clamp(sp.phaseT / ARRIVE_DUR, 0, 1);
+
+      // vehicle comes back to landing spot
+      const landX = canvas.W * 0.72;
+      const landSurf = terrain.surfaceAt(landX);
+      sp.vehicle.x = landX;
+      sp.vehicle.y = (landSurf - 110) * smoothstep(clamp(u / 0.5, 0, 1)) + (canvas.H * 0.28) * (1 - smoothstep(clamp(u / 0.5, 0, 1)));
+
+      // ocean retreats to the right, revealing land behind the vehicle
+      const retreat = smoothstep(u);
+      sp.oceanMaskX = clamp((sp.vehicle.x - 40) + retreat * (canvas.W + 60), 0, canvas.W);
+
+      // slow down to 0 near the end
+      sp.scroll = 1 - smoothstep(clamp((u - 0.55) / 0.45, 0, 1)); // 1 -> 0
+
+      if (sp.phaseT >= ARRIVE_DUR) {
+        // done: cat leaves vehicle, resume gameplay
+        sp.catInVehicle = false;
+        finishOceanCrossing();
+      }
+    },
+  };
+
+  const ROCKET_PHASES = {
+    approach({ sp, surf }) {
+      // rocket rolls in on a tiny pad, cat walks up, world slows
+      sp.vehicle.x = canvas.W * 0.76;
+      sp.vehicle.y = surf - 80;
+
+      const u = clamp(sp.phaseT / R_APPROACH_DUR, 0, 1);
+      sp.scroll = 1 - smoothstep(u); // 1 -> 0
+
+      if (sp.phaseT >= R_APPROACH_DUR) {
+        transitionPhase(sp, "board");
+      }
+    },
+    board({ sp, surf }) {
+      sp.scroll = 0;
+
+      // small pre-launch shake + flame cue
+      const shake = Math.sin(sp.phaseT * 0.4) * 2;
+      sp.vehicle.y = (surf - 80) + shake;
+
+      // lock cat into capsule near the end of boarding
+      const u = clamp(sp.phaseT / R_BOARD_DUR, 0, 1);
+      sp.catInVehicle = u > 0.45;
+
+      if (sp.phaseT >= R_BOARD_DUR) {
+        transitionPhase(sp, "travel");
+        sp.oceanMaskX = canvas.W; // ensure no ocean mask used
+      }
+    },
+    travel({ sp }) {
+      // fly through space: gentle forward drift + bob
+      sp.scroll = 0.18;
+      sp.vehicle.x = canvas.W * 0.58 + Math.sin(game.tick * 0.02) * 6;
+      sp.vehicle.y = canvas.H * 0.32 + Math.sin(game.tick * 0.06) * 4;
+
+      if (sp.phaseT >= R_TRAVEL_DUR) {
+        transitionPhase(sp, "arrive");
+      }
+    },
+    arrive({ sp, surf }) {
+      // descend back to land; world gradually resumes
+      const u = clamp(sp.phaseT / R_ARRIVE_DUR, 0, 1);
+      sp.scroll = smoothstep(u); // 0 -> 1
+      sp.vehicle.x = canvas.W * 0.70;
+      sp.vehicle.y = lerp(canvas.H * 0.32, surf - 80, smoothstep(u));
+
+      // once we're mostly down, release cat
+      if (u > 0.55) sp.catInVehicle = false;
+
+      if (sp.phaseT >= R_ARRIVE_DUR) {
+        finishRocketFlight();
+      }
+    },
+  };
+
+  function runPhase(phases, ctx) {
+    const fn = phases[ctx.sp.phase];
+    if (fn) fn(ctx);
+  }
+
   function applyThemePlan(sp, phase) {
     const plan = THEME_PLANS[sp.mode];
     if (!plan) return;
@@ -124,72 +266,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
   }
 
 
-  function updateRocket(sp) {
-    const vx = sp.vehicle?.x ?? (canvas.W * 0.76);
-    const surf = terrain.surfaceAt(vx);
-
-    if (sp.phase === "approach") {
-      // rocket rolls in on a tiny pad, cat walks up, world slows
-      sp.vehicle.x = canvas.W * 0.76;
-      sp.vehicle.y = surf - 80;
-
-      const u = clamp(sp.phaseT / R_APPROACH_DUR, 0, 1);
-      sp.scroll = 1 - smoothstep(u); // 1 -> 0
-
-      if (sp.phaseT >= R_APPROACH_DUR) {
-        transitionPhase(sp, "board");
-      }
-      return;
-    }
-
-    if (sp.phase === "board") {
-      sp.scroll = 0;
-
-      // small pre-launch shake + flame cue
-      const shake = Math.sin(sp.phaseT * 0.4) * 2;
-      sp.vehicle.y = (surf - 80) + shake;
-
-      // lock cat into capsule near the end of boarding
-      const u = clamp(sp.phaseT / R_BOARD_DUR, 0, 1);
-      sp.catInVehicle = u > 0.45;
-
-      if (sp.phaseT >= R_BOARD_DUR) {
-        transitionPhase(sp, "travel");
-        sp.oceanMaskX = canvas.W; // ensure no ocean mask used
-      }
-      return;
-    }
-
-    if (sp.phase === "travel") {
-      // fly through space: gentle forward drift + bob
-      sp.scroll = 0.18;
-      sp.vehicle.x = canvas.W * 0.58 + Math.sin(game.tick * 0.02) * 6;
-      sp.vehicle.y = canvas.H * 0.32 + Math.sin(game.tick * 0.06) * 4;
-
-      if (sp.phaseT >= R_TRAVEL_DUR) {
-        transitionPhase(sp, "arrive");
-      }
-      return;
-    }
-
-    if (sp.phase === "arrive") {
-      // descend back to land; world gradually resumes
-      const u = clamp(sp.phaseT / R_ARRIVE_DUR, 0, 1);
-      sp.scroll = smoothstep(u); // 0 -> 1
-      sp.vehicle.x = canvas.W * 0.70;
-      sp.vehicle.y = lerp(canvas.H * 0.32, surf - 80, smoothstep(u));
-
-      // once we're mostly down, release cat
-      if (u > 0.55) sp.catInVehicle = false;
-
-      if (sp.phaseT >= R_ARRIVE_DUR) {
-        finishRocketFlight();
-      }
-      return;
-    }
-  }
-
-function update() {
+  function update() {
     if (!game.setpiece) return;
     const sp = game.setpiece;
 
@@ -226,96 +303,13 @@ function update() {
     sp.t++;
     sp.phaseT++;
 
-    if (sp.mode === "rocket") {
-      updateRocket(sp);
-      return;
-    }
-
-    // Keep vehicle y anchored to terrain (unless travel)
     const vx = sp.vehicle?.x ?? (canvas.W * 0.76);
     const surf = terrain.surfaceAt(vx);
 
-    if (sp.phase === "approach") {
-      // vehicle stands on land, cat walks in, world eases to a stop
-      sp.vehicle.x = canvas.W * 0.76;
-      sp.vehicle.y = surf - 110;
-
-      const u = clamp(sp.phaseT / APPROACH_DUR, 0, 1);
-      sp.scroll = 1 - smoothstep(u);              // 1 -> 0
-      sp.oceanMaskX = canvas.W;                   // still land, no ocean
-
-      if (sp.phaseT >= APPROACH_DUR) {
-        transitionPhase(sp, "board");
-        sp.scroll = 0;
-        // little UI bubble (optional)
-        objects.addBubble?.("…einsteigen");
-      }
-    }
-
-    else if (sp.phase === "board") {
-      // frozen world, cat climbs in; ocean starts behind vehicle near end
-      sp.vehicle.x = canvas.W * 0.76;
-      sp.vehicle.y = surf - 110;
-
-      const u = clamp(sp.phaseT / BOARD_DUR, 0, 1);
-      // ocean creeps in from behind the vehicle (right side)
-      const reveal = smoothstep(clamp((u - 0.35) / 0.65, 0, 1));
-      sp.oceanMaskX = clamp(sp.vehicle.x - 40 - reveal * 220, 0, canvas.W);
-
-      sp.scroll = 0;
-
-      if (sp.phaseT >= BOARD_DUR) {
-        transitionPhase(sp, "travel");
-        sp.catInVehicle = true;
-      }
-    }
-
-    else if (sp.phase === "travel") {
-      // full ocean, vehicle drifts; world scroll resumes smoothly
-      const u = clamp(sp.phaseT / TRAVEL_DUR, 0, 1);
-
-      sp.oceanMaskX = 0; // full ocean
-
-      // ramp world movement back up to normal (gentle takeoff)
-      sp.scroll = smoothstep(clamp(u / 0.18, 0, 1)); // 0 -> 1
-
-      // whoosh once at takeoff
-      if (!sp._whooshed && sp.phaseT > 20) {
-        sp._whooshed = true;
-        audio?.SFX?.whoosh?.();
-      }
-
-      // drift vehicle slightly (draw module uses sp.t too)
-      sp.vehicle.x = canvas.W * (0.28 + 0.16 * Math.sin((sp.t + sp.motion.phase) * 0.006));
-      sp.vehicle.y = canvas.H * 0.28 + Math.sin((sp.t + sp.motion.phase) * 0.02) * 6;
-
-      if (sp.phaseT >= TRAVEL_DUR) {
-        transitionPhase(sp, "arrive");
-      }
-    }
-
-    else if (sp.phase === "arrive") {
-      // land creeps in (reverse), world slows to a stop, then cat steps out
-      const u = clamp(sp.phaseT / ARRIVE_DUR, 0, 1);
-
-      // vehicle comes back to landing spot
-      const landX = canvas.W * 0.72;
-      const landSurf = terrain.surfaceAt(landX);
-      sp.vehicle.x = landX;
-      sp.vehicle.y = (landSurf - 110) * smoothstep(clamp(u / 0.5, 0, 1)) + (canvas.H * 0.28) * (1 - smoothstep(clamp(u / 0.5, 0, 1)));
-
-      // ocean retreats to the right, revealing land behind the vehicle
-      const retreat = smoothstep(u);
-      sp.oceanMaskX = clamp((sp.vehicle.x - 40) + retreat * (canvas.W + 60), 0, canvas.W);
-
-      // slow down to 0 near the end
-      sp.scroll = 1 - smoothstep(clamp((u - 0.55) / 0.45, 0, 1)); // 1 -> 0
-
-      if (sp.phaseT >= ARRIVE_DUR) {
-        // done: cat leaves vehicle, resume gameplay
-        sp.catInVehicle = false;
-        finishOceanCrossing();
-      }
+    if (sp.mode === "rocket") {
+      runPhase(ROCKET_PHASES, { sp, surf });
+    } else {
+      runPhase(OCEAN_PHASES, { sp, surf });
     }
 
     // safety: hard cap
@@ -392,3 +386,5 @@ function update() {
 
 return { update, triggerOceanCrossing, finishOceanCrossing, triggerRocketFlight, finishRocketFlight };
 }
+
+

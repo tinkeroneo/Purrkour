@@ -5,10 +5,11 @@ import { setupInput } from "./core/input.js";
 import { createGameState } from "./game/state.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
+import { setupDebugControls } from "./game/debug.js";
 
 import { createTerrain } from "./world/terrain.js";
 import { createBackground } from "./world/background.js";
-import { THEMES } from "./world/themes.js";
+import { THEMES, getThemeOrder } from "./world/themes.js";
 
 import { createCat } from "./entities/cat.js";
 
@@ -47,7 +48,7 @@ setupSpeedToggle(game, ui.speedBtn);
 
 function setupThemeHudToggle(game, el) {
   if (!el) return;
-  const order = Array.isArray(THEMES.__order) ? THEMES.__order.slice() : Object.keys(THEMES).filter(k => k !== "__order");
+  const order = getThemeOrder();
   if (!order.length) return;
 
   el.style.cursor = "pointer";
@@ -157,6 +158,8 @@ hardResize();
 window.addEventListener("resize", hardResize, { passive: true });
 
 // input
+const debug = setupDebugControls({ game, cat, objects, terrain, bg, uiRoot });
+
 setupInput({
   onJump: () => {
     if (game.pause?.active) return;
@@ -164,32 +167,7 @@ setupInput({
     cat.jump(audio);
   },
   onKey: (e) => {
-    // Dev shortcuts (non-destructive)
-    if (e.code === "KeyH") {
-      if (!uiRoot) return;
-      uiRoot.style.display = (uiRoot.style.display === "none") ? "" : "none";
-    } else if (e.code === "Digit1") {
-      // jump close to ocean/setpiece
-      window.__purrkour?.gotoOcean?.();
-    } else if (e.code === "Digit2") {
-      // trigger current setpiece immediately
-      window.__purrkour?.triggerSetpiece?.();
-    } else if (e.code === "KeyO") {
-      // force ocean beat (progression)
-      window.__purrkour?.enterBeat?.("OCEAN_JOURNEY");
-    } else if (e.code === "KeyM") {
-      // force rocket -> mars
-      window.__purrkour?.enterBeat?.("ROCKET_FLIGHT");
-    } else if (e.code === "Digit3") {
-      // cycle theme
-      const order = game.themeCycle?.order || [];
-      if (!order.length) return;
-      const i = Math.max(0, order.indexOf(game.theme));
-      game.theme = order[(i + 1) % order.length];
-    } else if (e.code === "KeyR") {
-      // soft reset via reload (fastest reliable)
-      location.reload();
-    }
+    if (debug?.onKey?.(e)) return;
   }
 });
 
@@ -221,40 +199,3 @@ const loop = createLoop({
   drawer, hud, audio, canvas
 });
 loop.start();
-// DEBUG helpers
-window.__purrkour = {
-  game,
-  cat,
-  objects,
-  terrain,
-  bg
-};
-window.__purrkour.setTheme = (k) => game.theme = k;
-
-// quick testing shortcuts (Console)
-window.__purrkour.setScore = (s) => { game.score = Math.max(0, s | 0); };
-window.__purrkour.gotoOcean = () => {
-  // Prefer progression if present
-  if (game.progressionApi?.enterBeatById) {
-    game.progressionApi.enterBeatById("OCEAN_JOURNEY", "dev");
-    return;
-  }
-  game.score = game.setpiece?.startScore ?? 120;
-  if (game.setpiece) game.setpiece.cooldown = 1000000;
-};
-
-window.__purrkour.triggerSetpiece = () => {
-  if (!game.setpiece) return;
-  // Explicit request works with Progression + legacy
-  game.setpiece.requestedMode = game.setpiece.mode || "ocean";
-  game.setpiece.cooldown = 1000000;
-  game.score = Math.max(game.score, game.setpiece.startScore);
-};
-
-window.__purrkour.enterBeat = (id) => {
-  const api = game.progressionApi;
-  if (api?.enterBeatById) api.enterBeatById(id, "dev");
-};
-
-window.speedUp = () => game.baseSpeed += 0.05;
-window.speedDown = () => game.baseSpeed -= 0.05;

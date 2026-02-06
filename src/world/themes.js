@@ -24,8 +24,12 @@ export const THEMES = {
   cliff: cliffTheme,
 };
 
-// stable theme order for UI
+// stable theme order for UI (legacy access)
 THEMES.__order = THEME_ORDER;
+
+export function getThemeOrder() {
+  return THEME_ORDER.slice();
+}
 
 export function getTheme(key) {
   return THEMES[key] ?? forestTheme;
