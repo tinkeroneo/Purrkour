@@ -1,4 +1,4 @@
-import { clamp, roundRect, tri } from "../core/util.js";
+import { clamp, lerp, roundRect, tri } from "../core/util.js";
 import { drawDog } from "../entities/dog.js";
 import { drawBird } from "../entities/bird.js";
 import { drawVehicle } from "../game/vehicles/index.js";
@@ -38,7 +38,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         }
     }
 
-    function drawBubbles(objects) {
+    function drawSpeechBubbles(objects) {
         for (const b of objects.bubbles) {
             const a = clamp(b.life / 70, 0, 1);
             ctx.globalAlpha = a;
@@ -53,7 +53,9 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.fillText(b.text, b.x, b.y - 7);
             ctx.globalAlpha = 1;
         }
+    }
 
+    function drawToast(objects) {
         const t = objects.toastState();
         if (t.toastTimer > 0) {
             const a = clamp(t.toastTimer / 60, 0, 1);
@@ -476,6 +478,22 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         bg.drawSky(ctx);
         bg.drawParallax(ctx);
 
+        // camera follow: keep cat visible on high jumps, leave some view below
+        const followEnabled = !game.setpiece?.active;
+        const desiredY = canvas.H * 0.40;
+        const margin = canvas.H * 0.12;
+        const maxLift = canvas.H * 0.35;
+        let targetCamY = 0;
+        if (followEnabled) {
+            if (cat.y < (desiredY - margin)) {
+                targetCamY = Math.min(maxLift, desiredY - cat.y);
+            }
+        }
+        game.cameraY = lerp(game.cameraY ?? 0, targetCamY, 0.08);
+
+        ctx.save();
+        ctx.translate(0, game.cameraY);
+
         // Setpiece mode: scripted beats (ocean crossing etc.)
         // Phase-aware:
         // - approach/board/arrive: draw normal land + masked ocean behind vehicle
@@ -483,8 +501,10 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         if (game.setpiece?.active && game.setpiece.phase === "travel") {
             // ocean-only travel shot
             drawSetpieceVehicle();
+            drawSpeechBubbles(objects);
+            ctx.restore();
             drawHeartWave();
-            drawBubbles(objects);
+            drawToast(objects);
             return;
         }
 
@@ -497,6 +517,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         drawPawprints(objects);
 
         drawPuffs(objects);
+        drawSpeechBubbles(objects);
 
         // objects
         for (const o of objects.list) {
@@ -564,14 +585,6 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             ctx.restore();
         }
 
-        // checkpoint glow
-        if (game.checkpointGlow > 0) {
-            ctx.globalAlpha = clamp(game.checkpointGlow / 120, 0, 1) * 0.16;
-            ctx.fillStyle = "rgba(255,120,170,1)";
-            ctx.fillRect(0, 0, canvas.W, canvas.H);
-            ctx.globalAlpha = 1;
-        }
-
         // cat shadow + sprite
         const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
         const inVehicle = !!(game.setpiece?.active && game.setpiece.catInVehicle);
@@ -605,6 +618,15 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             catApi.draw(ctx);
         }
 
+        ctx.restore();
+
+        // checkpoint glow (screen-space)
+        if (game.checkpointGlow > 0) {
+            ctx.globalAlpha = clamp(game.checkpointGlow / 120, 0, 1) * 0.16;
+            ctx.fillStyle = "rgba(255,120,170,1)";
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+            ctx.globalAlpha = 1;
+        }
 
         // overlays
         if (game.catnipTimer > 0) {
@@ -623,7 +645,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         }
 
         drawHeartWave();
-        drawBubbles(objects);
+        drawToast(objects);
 
 
 

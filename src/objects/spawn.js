@@ -34,6 +34,33 @@ export function createSpawner(game, terrain, objects, canvas) {
 
   function reset() { nextSpawnIn = 260; }
 
+  function maybeSpawnSkyPath(spawnX, safeMode) {
+    if (safeMode) return false;
+    if (game.setpiece?.active) return false;
+    if (game.score < 40) return false;
+    if (Math.random() > 0.08) return false;
+
+    const w = 120;
+    const h = 48;
+    const extra = Math.min(12, Math.floor((game.score || 0) / 60));
+    const count = (15 + extra) + Math.floor(Math.random() * 31); // 15..45 (+score)
+    const stepX = 168 + Math.floor(Math.random() * 42); // ~40% larger spacing
+    const baseLift = 120 + Math.floor(Math.random() * 40);
+    const liftStep = 70 + Math.floor(Math.random() * 25);
+    const peakIndex = Math.max(2, Math.min(count - 3, 3 + Math.floor(Math.random() * 3))); // 3..5-ish
+
+    for (let i = 0; i < count; i++) {
+      const x = spawnX + i * stepX;
+      const rise = Math.min(i, peakIndex);
+      const fall = Math.max(0, i - peakIndex);
+      const wave = (i % 2 === 0) ? 14 : -10; // slight up/down wobble
+      const lift = baseLift + (rise * liftStep) - (fall * (liftStep * 0.85)) + wave;
+      const topY = terrain.surfaceAt(x) - lift;
+      objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0 });
+    }
+    return true;
+  }
+
   function spawnLife(spawnX) {
     const surf = terrain.surfaceAt(spawnX);
     objects.add({ kind: "collectible", type: "life", x: spawnX, y: surf - 90, w: 20, h: 20, taken: false, yMode: "fixed" });
@@ -387,7 +414,13 @@ export function createSpawner(game, terrain, objects, canvas) {
 
   function update(palette) {
     nextSpawnIn -= game._effSpeed;
-    if (nextSpawnIn <= 0) spawnPack(canvas.W + 140, game.safeTimer > 0);
+    if (nextSpawnIn <= 0) {
+      const spawnX = canvas.W + 140;
+      const safeMode = game.safeTimer > 0;
+      if (!maybeSpawnSkyPath(spawnX, safeMode)) {
+        spawnPack(spawnX, safeMode);
+      }
+    }
 
     // bonus life every 60 score (only if not full)
     if (game.lives < (game.maxLives ?? 7) && game.score > 0 && game.score % 60 === 0) {
