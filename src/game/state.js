@@ -1,4 +1,5 @@
 import { THEME_ORDER } from "../world/themes.js";
+import { getInitialBaseSpeed } from "./speed.js";
 
 export function createGameState({ initialTheme: initialThemeOverride } = {}) {
     const initialTheme = initialThemeOverride || "forest";
@@ -7,7 +8,7 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         tick: 0,
         score: 0,
         mice: 0,
-        speed: 2.35,
+        speed: getInitialBaseSpeed(),
         speedMul: 1.0,
 
         finished: false,

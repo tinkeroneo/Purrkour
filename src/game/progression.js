@@ -3,6 +3,7 @@
 // Beats statt Zufall. Spawner/Background/Audio lesen nur game.progression.*
 
 import { clamp } from "../core/util.js";
+import { setBaseSpeed } from "./speed.js";
 
 // --- Tuning (hier feinjustieren, ohne suchen) ---
 export const SAFE_AFTER_CHECKPOINT = 180; // 2–3s @60fps
@@ -235,7 +236,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       ? clamp((game.setpiece?.t ?? 0) / Math.max(1, game.setpiece?.dur ?? 1), 0, 1)
       : scoreU(game, game.progression.beatStartScore, beat.lenScore);
 
-    game.speed = speedForBeat(beat.id, u);
+    setBaseSpeed(game, speedForBeat(beat.id, u));
 
     // night smoothing (owned by progression)
     const tau = 0.08; // lower = smoother

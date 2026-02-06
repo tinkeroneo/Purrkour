@@ -1,4 +1,5 @@
 import { aabb, clamp } from "../core/util.js";
+import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffectiveSpeed, resetBaseSpeed } from "../game/speed.js";
 
 export function createCollider(game, catApi, terrain, objects, audio, hud, canvas) {
     const { cat } = catApi;
@@ -112,7 +113,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         game.tick = 0;
         game.score = 0;
         game.mice = 0;
-        game.speed = 2.35;
+        resetBaseSpeed(game);
 
         game.lives = 7;
         game.invulnTimer = 0;
@@ -133,7 +134,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         objects.toast("Purrkour 🐾", 160);
     }
 
-    function effSpeed() { return game._effSpeed || 2.15; }
+    function effSpeed() { return getEffectiveSpeed(game); }
 
     function update(palette) {
         if (game.finished) return;
@@ -155,19 +156,10 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         // jump capacity
         cat.maxJumps = (game.tripleJumpTimer > 0) ? 3 : cat.baseMaxJumps;
 
-        // acceleration
-        if (game.tick % 60 === 0) game.speed += 0.035;
-        if (game.score > 0 && game.score % 20 === 0 && game.tick % 30 === 0) game.speed += 0.01;
-
-        const catnipMult = (game.catnipTimer > 0) ? 0.82 : 1.0;
-        const slowMult = (game.slowTimer > 0) ? game.slowStrength : 1.0;
-        const speedMul = (game.speedMul ?? 1.0);
-        const eff = game.speed * speedMul * catnipMult * slowMult;
-
-        // effective speed (used by loop / terrain.update) — supports scripted setpieces
+        // acceleration + effective speed (used by loop / terrain.update)
+        applyAutoAcceleration(game);
+        const eff = computeEffectiveSpeed(game);
         const sp = game.setpiece;
-        const scroll = (sp?.active) ? (sp.scroll ?? 1) : 1;
-        game._effSpeed = eff * scroll;
 
         // --- setpiece: scripted beat (approach/board/travel/arrive) ---
         if (sp?.active) {
@@ -392,7 +384,7 @@ const c = { x: cat.baseX, y: cat.y + 4, w: cat.w, h: Math.max(2, cat.h - 8) };
             if (o.type === "mouse") {
                 game.mice++;
                 game.score += 1;
-                game.speed += 0.010;
+                bumpBaseSpeed(game, 0.010);
                 if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
                 audio.SFX.mouse();
             } else if (o.type === "catnip") {
@@ -449,3 +441,4 @@ const c = { x: cat.baseX, y: cat.y + 4, w: cat.w, h: Math.max(2, cat.h - 8) };
         effSpeed
     };
 }
+
