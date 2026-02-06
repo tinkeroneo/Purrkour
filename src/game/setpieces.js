@@ -5,16 +5,46 @@
 import { clamp, smoothstep, lerp } from "../core/util.js";
 
 export function createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio }) {
-  const APPROACH_DUR = 240; // ~4s
-  const BOARD_DUR    = 90;  // ~1.5s
-  const TRAVEL_DUR   = 420; // ~7s
-  const ARRIVE_DUR   = 180; // ~3s
+  const SETPIECE_TIMINGS = {
+    ocean: { APPROACH: 240, BOARD: 90, TRAVEL: 420, ARRIVE: 180 }, // ~4s, ~1.5s, ~7s, ~3s
+    rocket: { APPROACH: 180, BOARD: 80, TRAVEL: 420, ARRIVE: 160 }, // ~3s, ~1.3s, ~7s, ~2.7s
+  };
 
-  // Rocket intermezzo (Mars hop)
-  const R_APPROACH_DUR = 180; // ~3s
-  const R_BOARD_DUR    = 80;  // ~1.3s
-  const R_TRAVEL_DUR   = 420; // ~7s
-  const R_ARRIVE_DUR   = 160; // ~2.7s
+  const THEME_PLANS = {
+    ocean: [
+      { at: "travel", theme: "ocean", fade: 90 },
+      { at: "arrive", theme: "target", fallback: "island", fade: 120 },
+    ],
+    rocket: [
+      { at: "arrive", theme: "target", fallback: "mars", fade: 140 },
+    ],
+  };
+
+  const APPROACH_DUR = SETPIECE_TIMINGS.ocean.APPROACH;
+  const BOARD_DUR = SETPIECE_TIMINGS.ocean.BOARD;
+  const TRAVEL_DUR = SETPIECE_TIMINGS.ocean.TRAVEL;
+  const ARRIVE_DUR = SETPIECE_TIMINGS.ocean.ARRIVE;
+
+  const R_APPROACH_DUR = SETPIECE_TIMINGS.rocket.APPROACH;
+  const R_BOARD_DUR = SETPIECE_TIMINGS.rocket.BOARD;
+  const R_TRAVEL_DUR = SETPIECE_TIMINGS.rocket.TRAVEL;
+  const R_ARRIVE_DUR = SETPIECE_TIMINGS.rocket.ARRIVE;
+
+  function applyThemePlan(sp, phase) {
+    const plan = THEME_PLANS[sp.mode];
+    if (!plan) return;
+    for (const step of plan) {
+      if (step.at !== phase) continue;
+      const key = (step.theme === "target") ? (sp.targetTheme ?? step.fallback) : step.theme;
+      startThemeFade?.(key, step.fade);
+    }
+  }
+
+  function transitionPhase(sp, nextPhase) {
+    sp.phase = nextPhase;
+    sp.phaseT = 0;
+    applyThemePlan(sp, nextPhase);
+  }
 
   function clearWorldForBeat() {
     objects.list.length = 0;
@@ -107,8 +137,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
       sp.scroll = 1 - smoothstep(u); // 1 -> 0
 
       if (sp.phaseT >= R_APPROACH_DUR) {
-        sp.phase = "board";
-        sp.phaseT = 0;
+        transitionPhase(sp, "board");
       }
       return;
     }
@@ -125,8 +154,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
       sp.catInVehicle = u > 0.45;
 
       if (sp.phaseT >= R_BOARD_DUR) {
-        sp.phase = "travel";
-        sp.phaseT = 0;
+        transitionPhase(sp, "travel");
         sp.oceanMaskX = canvas.W; // ensure no ocean mask used
       }
       return;
@@ -139,11 +167,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
       sp.vehicle.y = canvas.H * 0.32 + Math.sin(game.tick * 0.06) * 4;
 
       if (sp.phaseT >= R_TRAVEL_DUR) {
-        sp.phase = "arrive";
-        sp.phaseT = 0;
-
-      // fade into target theme on approach (default: Mars)
-      startThemeFade(sp.targetTheme ?? "mars", 140);
+        transitionPhase(sp, "arrive");
       }
       return;
     }
@@ -221,8 +245,7 @@ function update() {
       sp.oceanMaskX = canvas.W;                   // still land, no ocean
 
       if (sp.phaseT >= APPROACH_DUR) {
-        sp.phase = "board";
-        sp.phaseT = 0;
+        transitionPhase(sp, "board");
         sp.scroll = 0;
         // little UI bubble (optional)
         objects.addBubble?.("…einsteigen");
@@ -242,12 +265,8 @@ function update() {
       sp.scroll = 0;
 
       if (sp.phaseT >= BOARD_DUR) {
-        sp.phase = "travel";
-        sp.phaseT = 0;
+        transitionPhase(sp, "travel");
         sp.catInVehicle = true;
-
-        // switch to ocean theme now (beat starts)
-        startThemeFade("ocean", 90);
       }
     }
 
@@ -271,11 +290,7 @@ function update() {
       sp.vehicle.y = canvas.H * 0.28 + Math.sin((sp.t + sp.motion.phase) * 0.02) * 6;
 
       if (sp.phaseT >= TRAVEL_DUR) {
-        sp.phase = "arrive";
-        sp.phaseT = 0;
-
-        // fade to target theme on approach (default: island)
-        startThemeFade(sp.targetTheme ?? "island", 120);
+        transitionPhase(sp, "arrive");
       }
     }
 

@@ -34,7 +34,12 @@ const ui = {
 
 
 const canvas = makeCanvas(canvasEl, ctx);
-const game = createGameState();
+const config = window.__purrkourConfig || {};
+const THEME_STORAGE_KEY = "purrkour.initialTheme";
+const queryTheme = new URLSearchParams(window.location.search).get("theme");
+const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
+const game = createGameState({ initialTheme });
 const hud = createHUD(ui);
 
 setupThemeHudToggle(game, ui.catnip);
@@ -123,6 +128,7 @@ function setupSpeedToggle(game, el) {
     pulse();
   }, { passive: false });
 }
+
 
 const audio = createAudio(ui.soundBtn);
 const terrain = createTerrain(() => canvas.W, () => canvas.H);

@@ -9,7 +9,8 @@ import { desertTheme } from "./themes/desert.js";
 import { marsTheme } from "./themes/mars.js";
 import { cliffTheme } from "./themes/cliff.js";
 
-export const THEME_ORDER = ["forest","jungle","ocean","island","cliff","mountain","city","desert","mars"];
+// UI/default cycle order (aligned to progression arc, unique keys)
+export const THEME_ORDER = ["forest", "ocean", "island", "mars", "mountain", "jungle", "cliff", "city", "desert"];
 
 export const THEMES = {
   forest: forestTheme,

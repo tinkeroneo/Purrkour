@@ -1,4 +1,8 @@
-export function createGameState() {
+import { THEME_ORDER } from "../world/themes.js";
+
+export function createGameState({ initialTheme: initialThemeOverride } = {}) {
+    const initialTheme = initialThemeOverride || "forest";
+    const initialThemeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
     return {
         tick: 0,
         score: 0,
@@ -12,8 +16,8 @@ export function createGameState() {
 
         heartWave: { active: false, startTick: 0, dur: 90 },
         invulnTimer: 0,
-        theme: "forest",
-        themeCycle: { order: ["island", "mountain", "forest", "jungle", "cliff", "city", "desert", "ocean", "mars"], idx: 0, nextAt: 999999, step: 140 },
+        theme: initialTheme,
+        themeCycle: { order: THEME_ORDER.slice(), idx: initialThemeIdx, nextAt: 999999, step: 140 },
         nextTheme: null,
 
         vertical: { band: "ground" },
