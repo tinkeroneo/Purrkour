@@ -1,5 +1,6 @@
-export function setupInput({ onJump, onKey }) {
+export function setupInput({ onJump, onKey, onMove, onCrouch }) {
   let last = 0;
+  const keys = new Set();
 
   function isUiEvent(e) {
     const target = e?.target;
@@ -25,6 +26,41 @@ export function setupInput({ onJump, onKey }) {
       triggerJump(e);
       return;
     }
+    if (e.code === "ArrowLeft" || e.code === "KeyA") {
+      keys.add("left");
+      onMove?.(-1);
+      return;
+    }
+    if (e.code === "ArrowRight" || e.code === "KeyD") {
+      keys.add("right");
+      onMove?.(1);
+      return;
+    }
+    if (e.code === "ArrowDown" || e.code === "KeyS") {
+      keys.add("down");
+      onCrouch?.(true);
+      return;
+    }
     onKey?.(e);
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.code === "ArrowLeft" || e.code === "KeyA") {
+      keys.delete("left");
+    }
+    if (e.code === "ArrowRight" || e.code === "KeyD") {
+      keys.delete("right");
+    }
+    if (e.code === "ArrowDown" || e.code === "KeyS") {
+      keys.delete("down");
+      onCrouch?.(false);
+    }
+    if (!keys.has("left") && !keys.has("right")) {
+      onMove?.(0);
+    } else if (keys.has("left") && !keys.has("right")) {
+      onMove?.(-1);
+    } else if (keys.has("right") && !keys.has("left")) {
+      onMove?.(1);
+    }
   });
 }

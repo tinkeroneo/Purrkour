@@ -61,6 +61,7 @@ function clampX(W, blockedX = false) {
 
   // Don't pull the cat back into solids when it was side-blocked this frame
   if (blockedX) return;
+  if (game.input?.moveDir) return;
 
   const target = clamp(cat.baseX, minX, maxX);
   if (cat.x > target + 8) cat.x = cat.x + (target - cat.x) * 0.08;

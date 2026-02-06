@@ -63,6 +63,10 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
 
         // input lock for scripted beats
         controlLocked: false,
+        input: {
+            moveDir: 0,   // -1 left, 0 idle, 1 right
+            crouch: false // for tunnel/duck mechanics
+        },
         // short safety window after landings / pauses
         safeTimer: 0,
         // Rest at a hut (HUD button). When active, gameplay pauses.

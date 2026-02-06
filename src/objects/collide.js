@@ -126,6 +126,10 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         game.chaseTimer = 0;
         game.barkTimer = 0;
         game.finished = false;
+        if (game.input) {
+            game.input.moveDir = 0;
+            game.input.crouch = false;
+        }
 
         game.checkpointActive = false;
         game.checkpointGlow = 0;
@@ -193,6 +197,12 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
             objects.updateBubbles();
             return;
+        }
+
+        // manual horizontal control (forward/back)
+        if (game.input?.moveDir) {
+            const moveSpeed = 2.8 + (eff * 0.18);
+            cat.x += game.input.moveDir * moveSpeed;
         }
 
         // cat physics

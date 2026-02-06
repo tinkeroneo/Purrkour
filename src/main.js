@@ -194,6 +194,14 @@ setupInput({
     audio.ensure();
     cat.jump(audio);
   },
+  onMove: (dir) => {
+    if (!game.input) game.input = { moveDir: 0, crouch: false };
+    game.input.moveDir = dir;
+  },
+  onCrouch: (active) => {
+    if (!game.input) game.input = { moveDir: 0, crouch: false };
+    game.input.crouch = !!active;
+  },
   onKey: (e) => {
     if (debug?.onKey?.(e)) return;
   }
