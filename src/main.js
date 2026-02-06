@@ -44,6 +44,7 @@ const game = createGameState({ initialTheme });
 const hud = createHUD(ui);
 
 setupThemeHudToggle(game, ui.catnip);
+setupHudMinimode(uiRoot, uiRoot);
 setupSpeedToggle(game, ui.speedBtn);
 
 function setupThemeHudToggle(game, el) {
@@ -52,7 +53,7 @@ function setupThemeHudToggle(game, el) {
   if (!order.length) return;
 
   el.style.cursor = "pointer";
-  el.title = "Tap: next theme â€¢ Long-press: auto";
+  el.title = "Tap: next theme • Long-press: auto";
 
   let downAt = 0;
   let longPressTimer = null;
@@ -94,6 +95,33 @@ function setupThemeHudToggle(game, el) {
     }
   }, { passive: true });
 
+  el.addEventListener("pointercancel", () => {
+    if (longPressTimer) clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }, { passive: true });
+}
+
+
+function setupHudMinimode(uiRoot, el) {
+  if (!uiRoot || !el) return;
+  let longPressTimer = null;
+  function toggleMinimode() {
+    uiRoot.classList.toggle("minimal");
+  }
+  el.addEventListener("pointerdown", (e) => {
+    if (e.target !== el) return;
+    if (e.target.closest && e.target.closest("button,.btn")) return;
+    longPressTimer = setTimeout(() => {
+      toggleMinimode();
+      longPressTimer = null;
+    }, 500);
+  }, { passive: true });
+  el.addEventListener("pointerup", () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }, { passive: true });
   el.addEventListener("pointercancel", () => {
     if (longPressTimer) clearTimeout(longPressTimer);
     longPressTimer = null;
@@ -199,3 +227,4 @@ const loop = createLoop({
   drawer, hud, audio, canvas
 });
 loop.start();
+

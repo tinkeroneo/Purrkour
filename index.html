@@ -13,39 +13,71 @@
 
     #ui{
       position:fixed; top:10px; left:50%; transform:translateX(-50%);
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-      padding:10px 12px; border-radius:16px;
+      display:grid; grid-template-columns:repeat(6, auto); grid-auto-rows:auto; gap:8px 10px;
+      align-items:center;
+      padding:8px 10px; border-radius:14px;
       background:rgba(20,30,40,0.72); backdrop-filter:blur(8px);
       z-index:10; max-width:calc(100vw - 16px);
     }
-    #ui>div{ color:#fff; font-weight:800; }
+    #ui>div{ color:#fff; font-weight:800; font-variant-numeric:tabular-nums; }
     .pill{
-      padding:5px 10px; border-radius:999px;
+      padding:4px 9px; border-radius:999px;
       background:rgba(255,255,255,0.10); color:#fff; font-weight:900; white-space:nowrap;
     }
     .btn{
-      border:0; padding:6px 10px; border-radius:999px;
+      border:0; padding:5px 9px; border-radius:999px;
       background:rgba(255,255,255,0.16); color:#fff; font-weight:900; cursor:pointer;
     }
-    #lives{ letter-spacing:1px; }
+    #lives{ display:flex; gap:2px; }
+    #lives .heart{ display:inline-block; width:1.05em; text-align:center; opacity:1; }
+    #lives .heart.off{ opacity:0.22; filter:grayscale(1); }
+    #ui .score{ grid-column:1 / span 2; }
+    #ui .lives{ grid-column:3 / span 2; }
+    #ui .mice{ grid-column:5 / span 1; }
+    #ui .theme{ grid-column:6 / span 1; }
+    #ui .controls{ grid-column:1 / span 6; display:flex; gap:6px; justify-content:center; }
     #hint{
       position:fixed; left:0; right:0; bottom:10px; text-align:center;
       color:rgba(255,255,255,0.65); font-size:13px; z-index:10; pointer-events:none;
       text-shadow:0 1px 10px rgba(0,0,0,0.35); padding:0 10px;
     }
+    #hint.minimal{ display:none; }
+    #ui.minimal .mice, #ui.minimal .theme, #ui.minimal .controls{ display:none; }
+    #ui.minimal{ grid-template-columns:auto auto; gap:6px 8px; }
+    #ui.minimal .score{ grid-column:1 / span 1; }
+    #ui.minimal .lives{ grid-column:2 / span 1; }
+    #ui.minimal .score .label{ display:none; }
+    @media (max-width: 700px){
+      #ui{
+        top:6px; gap:6px 8px; padding:6px 8px; border-radius:12px;
+        max-width:calc(100vw - 12px);
+      }
+      #ui>div{ font-size:12px; }
+      .pill{ padding:3px 8px; }
+      .btn{ padding:4px 8px; font-size:12px; }
+      #hint{ display:block; font-size:11px; bottom:6px; }
+      #ui{ grid-template-columns:repeat(4, auto); }
+      #ui .score{ grid-column:1 / span 2; }
+      #ui .lives{ grid-column:3 / span 2; }
+      #ui .mice{ grid-column:1 / span 2; }
+      #ui .theme{ grid-column:3 / span 2; }
+      #ui .controls{ grid-column:1 / span 4; }
+    }
   </style>
 </head>
 <body>
   <div id="ui">
-    <div>Score: <span id="score">0</span></div>
-    <div class="pill" id="lives">❤️❤️❤️❤️❤️❤️❤️</div>
+    <div class="score"><span class="label">Score: </span><span id="score">0</span></div>
+    <div class="pill lives" id="lives">❤️❤️❤️❤️❤️❤️❤️</div>
 
-    <div class="pill" id="miceDisplay">🐭 × 0</div>
-    <div class="pill"><span id="catnip">aus</span></div>
+    <div class="pill mice" id="miceDisplay">🐭 × 0</div>
+    <div class="pill theme"><span id="catnip">aus</span></div>
 
-    <button class="btn" id="restBtn" title="Zur Hütte (Pause)">🏠</button>
-    <button class="btn" id="soundBtn" title="Sound an/aus">🔊</button>
-    <button class="btn" id="speedBtn" title="Geschwindigkeit umschalten">1.0x</button>
+    <div class="controls">
+      <button class="btn" id="restBtn" title="Zur Hütte (Pause)">🏠</button>
+      <button class="btn" id="soundBtn" title="Sound an/aus">🔊</button>
+      <button class="btn" id="speedBtn" title="Geschwindigkeit umschalten">1.0x</button>
+    </div>
   </div>
 
   <div id="hint">
@@ -57,3 +89,4 @@
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
+

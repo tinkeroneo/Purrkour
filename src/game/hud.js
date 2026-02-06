@@ -8,7 +8,16 @@ export function createHUD(ui) {
 
   function sync(game, cat) {
     if (ui.score) ui.score.textContent = String(game.score);
-    if (ui.lives) ui.lives.textContent = "❤️".repeat(Math.max(0, game.lives));
+    if (ui.lives) {
+      const maxLives = game.maxLives ?? 7;
+      const curLives = Math.max(0, Math.min(maxLives, game.lives));
+      let html = "";
+      for (let i = 0; i < maxLives; i++) {
+        const off = (i >= curLives) ? " off" : "";
+        html += `<span class="heart${off}">❤️</span>`;
+      }
+      ui.lives.innerHTML = html;
+    }
     if (ui.miceDisplay) ui.miceDisplay.textContent = `🐭 × ${game.mice}`;
 
     if (ui.speedBtn) ui.speedBtn.textContent = `${(game.speedMul ?? 1.0).toFixed(1)}x`;
@@ -31,3 +40,4 @@ export function createHUD(ui) {
 
   return { setBiome, sync };
 }
+
