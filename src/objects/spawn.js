@@ -35,10 +35,14 @@ export function createSpawner(game, terrain, objects, canvas) {
   function reset() { nextSpawnIn = 260; }
 
   function maybeSpawnSkyPath(spawnX, safeMode) {
+    const platformOnScreen = objects.list.filter(o => o && o.kind === "platform" && o.x > -100 && o.x < (canvas.W + 100)).length;
+    if (platformOnScreen > 9) return false;
+    const skyOnScreen = objects.list.some(o => o && o.kind === "platform" && o.skyPath && o.x > -200 && o.x < (canvas.W + 200));
+    if (skyOnScreen) return false;
     if (safeMode) return false;
     if (game.setpiece?.active) return false;
     if (game.score < 40) return false;
-    if (Math.random() > 0.08) return false;
+    if (Math.random() > 0.045) return false;
 
     const w = 120;
     const h = 48;
@@ -55,7 +59,7 @@ export function createSpawner(game, terrain, objects, canvas) {
       const wave = Math.sin(i * 0.7) * 10;   // gentle wobble
       const lift = baseLift + (arc * peakLift) + wave;
       const topY = terrain.surfaceAt(x) - lift;
-      objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0 });
+      objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0, skyPath: true });
     }
     return true;
   }

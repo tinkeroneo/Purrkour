@@ -67,7 +67,7 @@ function ambienceForBeat(beatId, night) {
 
 // Beat table (score lengths are intentionally simple; tweak freely)
 const BEATS = [
-  { id: "FOREST_INTRO", theme: "forest", lenScore: 120, night: false, safeOnEnter: 0 },
+  { id: "FOREST_INTRO", theme: "forest", lenScore: 220, night: false, safeOnEnter: 0 },
   // Breath is usually triggered by checkpoint pickup; we keep a fallback scheduled beat too.
   { id: "CHECKPOINT_BREATH", theme: "forest", lenScore: 20, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
@@ -75,24 +75,24 @@ const BEATS = [
   { id: "OCEAN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "island" },
 
   // Land & breathe
-  { id: "ISLAND_REST", theme: "island", lenScore: 130, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "ISLAND_REST", theme: "island", lenScore: 230, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Rocket cutscene to Mars
   { id: "ROCKET_FLIGHT", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mars" },
 
   // Actual Mars gameplay segment
-  { id: "MARS_RUN", theme: "mars", lenScore: 130, night: false, safeOnEnter: 0 },
+  { id: "MARS_RUN", theme: "mars", lenScore: 230, night: false, safeOnEnter: 0 },
 
   // Rocket cutscene back from Mars
   { id: "ROCKET_RETURN", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mountain" },
 
-  { id: "MOUNTAIN_FOCUS", theme: "mountain", lenScore: 70, night: false, safeOnEnter: 0 },
-  { id: "NIGHT_PASSAGE", theme: "mountain", lenScore: 60, night: true, safeOnEnter: 0 },
+  { id: "MOUNTAIN_FOCUS", theme: "mountain", lenScore: 200, night: false, safeOnEnter: 0 },
+  { id: "NIGHT_PASSAGE", theme: "mountain", lenScore: 200, night: true, safeOnEnter: 0 },
 
-  { id: "JUNGLE_RUN", theme: "jungle", lenScore: 130, night: false, safeOnEnter: 0 },
-  { id: "CLIFF_RUN", theme: "cliff", lenScore: 130, night: false, safeOnEnter: 0 },
-  { id: "CITY_RUN", theme: "city", lenScore: 130, night: false, safeOnEnter: 0 },
-  { id: "DESERT_RUN", theme: "desert", lenScore: 130, night: false, safeOnEnter: 0 },
+  { id: "JUNGLE_RUN", theme: "jungle", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "CLIFF_RUN", theme: "cliff", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "CITY_RUN", theme: "city", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "DESERT_RUN", theme: "desert", lenScore: 230, night: false, safeOnEnter: 0 },
 
   // Return journey back to forest loop
   { id: "RETURN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
