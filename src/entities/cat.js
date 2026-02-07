@@ -1,5 +1,6 @@
 // src/entities/cat.js
 import { clamp, roundRect, tri } from "../core/util.js";
+import { getOverlay } from "../world/overlays.js";
 
 const BASE_GRAVITY = 0.34;
 const BASE_JUMP_VY = -9.0;
@@ -29,7 +30,9 @@ export function createCat(game, hud) {
     if (cat.jumpsLeft <= 0) return;
 
     const jumpBoost = (game.catnipTimer > 0) ? 1.08 : 1.0;
-    cat.vy = BASE_JUMP_VY * jumpBoost;
+    const overlay = getOverlay(game.themeOverlay);
+    const overlayJump = overlay?.jumpMul ?? 1.0;
+    cat.vy = BASE_JUMP_VY * jumpBoost * overlayJump;
     cat.jumpsLeft--;
 
     audio?.SFX?.jump?.();
@@ -38,7 +41,9 @@ export function createCat(game, hud) {
 
   function gravityStep() {
     if (cat.squashTimer > 0) cat.squashTimer--;
-    cat.vy += BASE_GRAVITY * (game.catnipTimer > 0 ? 0.95 : 1.0);
+    const overlay = getOverlay(game.themeOverlay);
+    const overlayGrav = overlay?.gravityMul ?? 1.0;
+    cat.vy += BASE_GRAVITY * (game.catnipTimer > 0 ? 0.95 : 1.0) * overlayGrav;
     cat.y += cat.vy;
   }
 

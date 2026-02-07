@@ -1,5 +1,6 @@
 import { aabb, clamp } from "../core/util.js";
 import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffectiveSpeed, resetBaseSpeed } from "../game/speed.js";
+import { getOverlay } from "../world/overlays.js";
 
 export function createCollider(game, catApi, terrain, objects, audio, hud, canvas) {
     const { cat } = catApi;
@@ -130,6 +131,10 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             game.input.moveDir = 0;
             game.input.crouch = false;
         }
+        if (game.tunnel) {
+            game.tunnel.active = false;
+            game.tunnel.exitSpawned = false;
+        }
 
         game.checkpointActive = false;
         game.checkpointGlow = 0;
@@ -201,7 +206,9 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
         // manual horizontal control (forward/back)
         if (game.input?.moveDir) {
-            const moveSpeed = 2.8 + (eff * 0.18);
+            const overlay = getOverlay(game.themeOverlay);
+            const controlMul = overlay?.controlMul ?? 1.0;
+            const moveSpeed = (2.8 + (eff * 0.18)) * controlMul;
             cat.x += game.input.moveDir * moveSpeed;
         }
 
@@ -210,7 +217,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         catApi.gravityStep();
         cat.onSurface = false;
 
-        const groundSurface = terrain.surfaceAt(cat.x);
+        const tunnelDepth = (game.tunnel?.active ? (game.tunnel.depth ?? 0) : 0);
+        const groundSurface = terrain.surfaceAt(cat.x) + tunnelDepth;
         if (cat.y + cat.h > groundSurface) {
             cat.y = groundSurface - cat.h;
             cat.vy = 0;
@@ -261,7 +269,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                 const fence = { x: o.x + inset, y: o.y + topPad, w: fenceW, h: fenceH };
                 // cat hitbox: use visual anchor X so collisions match what the player sees
                 // (cat.x can be gently corrected/clamped; baseX is the stable runner anchor)
-const c = { x: cat.baseX, y: cat.y + 4, w: cat.w, h: Math.max(2, cat.h - 8) };
+                const cX = (game.input?.moveDir ? cat.x : cat.baseX);
+                const c = { x: cX, y: cat.y + 4, w: cat.w, h: Math.max(2, cat.h - 8) };
 
 
                 if (!aabb(c, fence)) continue;
@@ -336,6 +345,31 @@ const c = { x: cat.baseX, y: cat.y + 4, w: cat.w, h: Math.max(2, cat.h - 8) };
 
                 const obsBox = { x: o.x + 4, y: o.y + 4, w: o.w - 8, h: o.h - 8 };
                 if (!aabb(catBox, obsBox)) continue;
+
+                if (o.type === "tunnel") {
+                    if (game.input?.crouch) {
+                        if (!game.tunnel?.active) {
+                            game.tunnel.active = true;
+                            game.tunnel.exitSpawned = false;
+                            game.safeTimer = Math.max(game.safeTimer, 90);
+                        }
+                        objects.list.splice(i, 1); i--;
+                        continue;
+                    }
+                    objects.addBubble("duck!", cat.x + cat.w * 0.55, cat.y - 8);
+                    loseLife();
+                    objects.list.splice(i, 1); i--;
+                    continue;
+                }
+                if (o.type === "tunnel_exit") {
+                    if (game.tunnel?.active) {
+                        game.tunnel.active = false;
+                        game.tunnel.exitSpawned = false;
+                        objects.addBubble("raus!", cat.x + cat.w * 0.55, cat.y - 8);
+                    }
+                    objects.list.splice(i, 1); i--;
+                    continue;
+                }
 
                 if (o.type === "yarn") {
                     game.slowTimer = 180;

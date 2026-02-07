@@ -1,3 +1,5 @@
+import { getOverlay } from "../world/overlays.js";
+
 export const DEFAULT_BASE_SPEED = 2.35;
 export const BASE_SPEED_MULT = 2;
 export const BASE_SPEED_BOOST = DEFAULT_BASE_SPEED * (BASE_SPEED_MULT - 1);
@@ -33,7 +35,9 @@ export function computeEffectiveSpeed(game) {
   const catnipMult = (game.catnipTimer > 0) ? 0.82 : 1.0;
   const slowMult = (game.slowTimer > 0) ? (game.slowStrength ?? 1.0) : 1.0;
   const speedMul = (game.speedMul ?? 1.0);
-  const eff = base * speedMul * catnipMult * slowMult;
+  const overlay = getOverlay(game.themeOverlay);
+  const overlaySpeed = overlay?.speedMul ?? 1.0;
+  const eff = base * speedMul * catnipMult * slowMult * overlaySpeed;
 
   const sp = game.setpiece;
   const scroll = (sp?.active) ? (sp.scroll ?? 1) : 1;

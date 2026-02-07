@@ -156,6 +156,16 @@ if (game.setpiece?.active) {
                 }
             }
 
+            // overlay cycle (seasonal modifiers)
+            if (!game.setpiece.active && game.overlayCycle) {
+                if (game.score >= (game.overlayCycle.nextAt ?? 999999)) {
+                    const nextOverlay = game.overlayCycle.order[game.overlayCycle.idx % game.overlayCycle.order.length];
+                    game.themeOverlay = nextOverlay;
+                    game.overlayCycle.idx = (game.overlayCycle.idx + 1) % game.overlayCycle.order.length;
+                    game.overlayCycle.nextAt = game.score + game.overlayCycle.step;
+                }
+            }
+
             // 3) spawns (nutzt game._effSpeed)
             if (!game.setpiece.active) spawner.update(bg.palette?.());
 

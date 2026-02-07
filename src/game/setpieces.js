@@ -16,7 +16,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
       { at: "arrive", theme: "target", fallback: "island", fade: 120 },
     ],
     rocket: [
-      { at: "arrive", theme: "target", fallback: "mars", fade: 140 },
+      { at: "arrive", theme: "target", fallback: "mars", fade: 240 },
     ],
   };
 

@@ -51,6 +51,8 @@ export function setupDebugControls({ game, cat, objects, terrain, bg, uiRoot }) 
     bg
   };
   window.__purrkour.setTheme = (k) => game.theme = k;
+  window.__purrkour.setOverlay = (id) => { game.themeOverlay = id; };
+  window.__purrkour.clearOverlay = () => { game.themeOverlay = null; };
 
   // quick testing shortcuts (Console)
   window.__purrkour.setScore = (s) => { game.score = Math.max(0, s | 0); };

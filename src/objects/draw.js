@@ -1,4 +1,5 @@
 import { clamp, lerp, roundRect, tri } from "../core/util.js";
+import { getOverlay } from "../world/overlays.js";
 import { drawDog } from "../entities/dog.js";
 import { drawBird } from "../entities/bird.js";
 import { drawVehicle } from "../game/vehicles/index.js";
@@ -115,6 +116,26 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.quadraticCurveTo(r * 0.95, r * 0.55, r * 1.25, r * 0.25);
         ctx.stroke();
 
+        ctx.restore();
+    }
+
+    function drawTunnel(o) {
+        const x = o.x, y = o.y, w = o.w, h = o.h;
+        const archH = Math.max(12, h * 0.55);
+        ctx.save();
+        // base shadow
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.ellipse(x + w * 0.52, y + h + 6, w * 0.36, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // arch body
+        ctx.fillStyle = "rgba(70,70,80,0.95)";
+        roundRect(ctx, x, y + (h - archH), w, archH, 10); ctx.fill();
+        ctx.fillStyle = "rgba(30,30,35,0.95)";
+        roundRect(ctx, x + 8, y + (h - archH) + 6, w - 16, archH - 10, 8); ctx.fill();
         ctx.restore();
     }
 
@@ -540,6 +561,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
                 else if (o.type === "scorpion") {
                     if (o.draw) o.draw(ctx, game);
                 }
+                else if (o.type === "tunnel") drawTunnel(o);
                 else drawYarn(o);
             } else if (o.kind === "collectible") {
                 if (o.type === "mouse") drawMouse(o);
@@ -629,6 +651,12 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         }
 
         // overlays
+        const overlay = getOverlay(game.themeOverlay);
+        if (overlay?.tint) {
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = overlay.tint;
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+        }
         if (game.catnipTimer > 0) {
             const pulse = 0.18 + 0.12 * Math.sin(game.tick * 0.15);
             ctx.globalAlpha = pulse;

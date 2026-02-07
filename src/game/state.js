@@ -18,7 +18,9 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         heartWave: { active: false, startTick: 0, dur: 90 },
         invulnTimer: 0,
         theme: initialTheme,
-        themeCycle: { order: THEME_ORDER.slice(), idx: initialThemeIdx, nextAt: 999999, step: 140 },
+        themeOverlay: null,
+        overlayCycle: { order: ["spring", "summer", "autumn", "winter"], idx: 0, nextAt: 160, step: 220 },
+        themeCycle: { order: THEME_ORDER.slice(), idx: initialThemeIdx, nextAt: 999999, step: 240 },
         nextTheme: null,
 
         vertical: { band: "ground" },
@@ -58,6 +60,13 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
             scroll: 1,
             oceanMaskX: 0,
             oceanFromX: 0,
+        },
+
+        // tunnel/bonus area
+        tunnel: {
+            active: false,
+            depth: 140,
+            exitSpawned: false
         },
 
 

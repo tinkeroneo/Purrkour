@@ -20,7 +20,7 @@ export function setupInput({ onJump, onKey, onMove, onCrouch }) {
   window.addEventListener("pointerdown", triggerJump, { passive: false });
 
   window.addEventListener("keydown", (e) => {
-    if (e.code === "Space") {
+    if (e.code === "Space"  || e.code === "KeyW" || e.code === "ArrowUp") {
       const active = document.activeElement;
       if (active?.closest?.("#ui")) return;
       triggerJump(e);

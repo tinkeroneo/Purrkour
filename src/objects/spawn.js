@@ -11,16 +11,16 @@ import { nightFactor } from "../world/daynight.js";
 export function createSpawner(game, terrain, objects, canvas) {
   // calmer start tuning
   const CALM = {
-    gapBase: 300,
-    gapMin: 200,
+    gapBase: 360,
+    gapMin: 240,
     gapSlope: 1.1,
     closeGapStartScore: 70,
-    closeGapChanceMax: 0.05,
+    closeGapChanceMax: 0.02,
     staircaseChance: 0.36,
     staircaseMin: 2,
     staircaseMax: 3,
     collectiblesScale: 0.80,
-    animalsScale: 0.82,
+    animalsScale: 0.72,
   };
 
   let nextSpawnIn = 260;
@@ -46,15 +46,14 @@ export function createSpawner(game, terrain, objects, canvas) {
     const count = (15 + extra) + Math.floor(Math.random() * 31); // 15..45 (+score)
     const stepX = 168 + Math.floor(Math.random() * 42); // ~40% larger spacing
     const baseLift = 120 + Math.floor(Math.random() * 40);
-    const liftStep = 70 + Math.floor(Math.random() * 25);
-    const peakIndex = Math.max(2, Math.min(count - 3, 3 + Math.floor(Math.random() * 3))); // 3..5-ish
+    const peakLift = 360 + Math.floor(Math.random() * 120);
 
     for (let i = 0; i < count; i++) {
       const x = spawnX + i * stepX;
-      const rise = Math.min(i, peakIndex);
-      const fall = Math.max(0, i - peakIndex);
-      const wave = (i % 2 === 0) ? 14 : -10; // slight up/down wobble
-      const lift = baseLift + (rise * liftStep) - (fall * (liftStep * 0.85)) + wave;
+      const phase = (count > 1) ? (i / (count - 1)) : 0;
+      const arc = Math.sin(phase * Math.PI); // smooth up/down
+      const wave = Math.sin(i * 0.7) * 10;   // gentle wobble
+      const lift = baseLift + (arc * peakLift) + wave;
       const topY = terrain.surfaceAt(x) - lift;
       objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0 });
     }
@@ -82,10 +81,11 @@ export function createSpawner(game, terrain, objects, canvas) {
     const allowClose = (Math.random() < closeGapChance(game.score));
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
 
-    const pFence = z("fence") * clamp(0.24 + game.score * 0.0022, 0.22, 0.32);
-    const pBird = z("bird") * clamp((0.09 + game.score * 0.0018) * CALM.animalsScale, 0.07, 0.14);
-    const pDog = clamp((0.10 + game.score * 0.0017) * CALM.animalsScale, 0.08, 0.16);
-    const pYarn = z("yarn") * 0.18;
+    const pFence = z("fence") * clamp(0.20 + game.score * 0.0018, 0.18, 0.28);
+    const pBird = z("bird") * clamp((0.08 + game.score * 0.0015) * CALM.animalsScale, 0.06, 0.12);
+    const pDog = clamp((0.08 + game.score * 0.0013) * CALM.animalsScale, 0.06, 0.14);
+    const pYarn = z("yarn") * 0.14;
+    const pTunnel = z("tunnel") * 0.08;
 
     // grace window: no stressful obstacles right after big transitions
     if (safeMode) {
@@ -110,7 +110,7 @@ export function createSpawner(game, terrain, objects, canvas) {
           if (aabb(box, ob)) return true;
         }
         // treat yarn/dog as solid for "don't spawn inside"
-        if (o.kind === "obstacle" && (o.type === "yarn" || o.type === "dog")) {
+        if (o.kind === "obstacle" && (o.type === "yarn" || o.type === "dog" || o.type === "tunnel")) {
           const ob = { x: o.x + 2, y: o.y + 2, w: Math.max(1, o.w - 4), h: Math.max(1, o.h - 4) };
           if (aabb(box, ob)) return true;
         }
@@ -176,6 +176,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     const pBirdV = pBirdT * vbBird;
     const pDogV = pDogT * vbDog;
     const pYarnV = pYarnT * vbYarn;
+    const pTunnelV = pTunnel * vbYarn;
 
 
     function rndType() {
@@ -349,6 +350,15 @@ export function createSpawner(game, terrain, objects, canvas) {
           yOffset: -h
         }));
       }
+    } else if (type === "tunnel") {
+      const w = 92, h = 40;
+      const posTunnel = placeGroundObstacle(spawnX, w, h, 22);
+      objects.add({
+        kind: "obstacle", type: "tunnel",
+        x: posTunnel.x, y: posTunnel.y,
+        w, h,
+        yMode: "ground", yOffset: -h
+      });
     } else { // yarn slow
       const size = 28;
       const posYarn = placeGroundObstacle(spawnX, size, size, 18);
@@ -382,7 +392,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
       const cx = spawnX + 20;
       {
-        const cy = terrain.surfaceAt(cx) - 100 - Math.random() * 40;
+        const cy = terrain.surfaceAt(cx) - 200 - Math.random() * 140;
         const pos = placeCollectible(cx, cy, 18, 18);
         objects.add({ kind: "collectible", type: "catnip", x: pos.x, y: pos.y, w: 18, h: 18, taken: false, yMode: "fixed" });
       }
