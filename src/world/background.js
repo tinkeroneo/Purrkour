@@ -127,11 +127,12 @@ export function createBackground(getW, getH, lakes, game, hud) {
 
     function palette() {
         // Theme-based palette + optional crossfade
+        const forceOcean = (game.setpiece?.active && game.setpiece?.mode === "ocean" && game.setpiece?.phase === "travel");
         const t = game.themeFade;
-        const cur = getTheme(game.theme);
+        const cur = getTheme(forceOcean ? "ocean" : game.theme);
         let pal = cur.palette || {};
 
-        if (t?.active && t.from && t.to && t.dur > 0) {
+        if (!forceOcean && t?.active && t.from && t.to && t.dur > 0) {
             const a = getTheme(t.from).palette || {};
             const b = getTheme(t.to).palette || {};
             const u = clamp(t.t / t.dur, 0, 1);
@@ -411,7 +412,7 @@ export function createBackground(getW, getH, lakes, game, hud) {
   }
 
   // ---- OCEAN SPECIAL ----
-  if (themeKey === "ocean" || game?.setpiece?.active) {
+  if (themeKey === "ocean" || game?.setpiece?.active || game?.setpiece?.preludeActive) {
     const maskX = game?.setpiece?.oceanMaskX ?? 0;
     if (typeof drawOceanMasked === "function") drawOceanMasked(ctx, maskX);
   }

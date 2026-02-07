@@ -497,7 +497,19 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         const palette = bg.palette();
 
         bg.drawSky(ctx);
-        bg.drawParallax(ctx);
+
+        const landMaskX = ((game.setpiece?.active || game.setpiece?.preludeActive) ? (game.setpiece.oceanMaskX ?? canvas.W) : canvas.W);
+        const hasLandMask = (landMaskX < canvas.W);
+        if (hasLandMask) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, landMaskX, canvas.H);
+            ctx.clip();
+            bg.drawParallax(ctx);
+            ctx.restore();
+        } else {
+            bg.drawParallax(ctx);
+        }
 
         // camera follow: keep cat visible on high jumps, leave some view below
         const followEnabled = !game.setpiece?.active;
@@ -521,12 +533,26 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         // - travel: ocean-only
         if (game.setpiece?.active && game.setpiece.phase === "travel") {
             // ocean-only travel shot
+            if (typeof bg.drawOcean === "function") {
+                bg.drawOcean(ctx);
+            }
+            if (typeof bg.drawGroundFog === "function") {
+                bg.drawGroundFog(ctx);
+            }
             drawSetpieceVehicle();
             drawSpeechBubbles(objects);
             ctx.restore();
             drawHeartWave();
             drawToast(objects);
             return;
+        }
+
+        // land mask for ocean transition (hide land/objects on water side)
+        if (hasLandMask) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, landMaskX, canvas.H);
+            ctx.clip();
         }
 
         terrain.drawGround(ctx, palette);
@@ -639,6 +665,8 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         } else if (!inVehicle && blink) {
             catApi.draw(ctx);
         }
+
+        if (hasLandMask) ctx.restore();
 
         ctx.restore();
 

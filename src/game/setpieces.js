@@ -24,6 +24,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
   const BOARD_DUR = SETPIECE_TIMINGS.ocean.BOARD;
   const TRAVEL_DUR = SETPIECE_TIMINGS.ocean.TRAVEL;
   const ARRIVE_DUR = SETPIECE_TIMINGS.ocean.ARRIVE;
+  const PRELUDE_DUR = 210; // ~3.5s prelude into ocean
 
   const R_APPROACH_DUR = SETPIECE_TIMINGS.rocket.APPROACH;
   const R_BOARD_DUR = SETPIECE_TIMINGS.rocket.BOARD;
@@ -38,7 +39,8 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
       const u = clamp(sp.phaseT / APPROACH_DUR, 0, 1);
       sp.scroll = 1 - smoothstep(u);              // 1 -> 0
-      sp.oceanMaskX = canvas.W;                   // still land, no ocean
+      sp.oceanMaskX = canvas.W;
+// still land, no ocean
 
       if (sp.phaseT >= APPROACH_DUR) {
         transitionPhase(sp, "board");
@@ -138,7 +140,8 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
       if (sp.phaseT >= R_BOARD_DUR) {
         transitionPhase(sp, "travel");
-        sp.oceanMaskX = canvas.W; // ensure no ocean mask used
+        sp.oceanMaskX = canvas.W;
+// ensure no ocean mask used
       }
     },
     travel({ sp }) {
@@ -228,7 +231,10 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
     // ocean reveal: maskX is where ocean starts (pixels).
     // 0 = full ocean, W = no ocean.
-    sp.oceanMaskX = canvas.W;    // start with no ocean
+    sp.oceanMaskX = canvas.W;
+    sp.preludeActive = false;
+    sp.preludeT = 0;
+// start with no ocean
 
     // ambience helper
     sp._whooshed = false;
@@ -253,8 +259,9 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
     sp.scroll = 1;
     sp.oceanMaskX = canvas.W;
-
-    // avoid looping the same beat at the same score
+    sp.preludeActive = false;
+    sp.preludeT = 0;
+// avoid looping the same beat at the same score
     sp.cooldown = 0;
     sp.startScore = Math.max(sp.startScore + 200, game.score + 200);
     sp.finished = true;
@@ -281,10 +288,10 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
         sp.requestedMode = null;
         if (mode === "rocket") { triggerRocketFlight(); return; }
         if (mode === "ocean")  { triggerOceanCrossing(); return; }
+      }
+
       // If Progression owns the story beats, do not auto-trigger via score.
       if (game.progression?.controlsSpeed) return;
-
-      }
 
       // Rocket has priority once scheduled (fun intermezzo)
       if (game.score >= (sp.nextRocketAt ?? 999999) && (sp.rocketCooldown ?? 0) > 240) {
@@ -292,6 +299,24 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
         return;
       }
 
+      // Ocean prelude: soft shoreline + theme fade before setpiece
+      if (!sp.preludeActive && game.score >= sp.startScore && (sp.cooldown ?? 0) > 180) {
+        sp.preludeActive = true;
+        sp.preludeT = 0;
+        sp.oceanMaskX = canvas.W;
+        startThemeFade?.("ocean", 120);
+      }
+
+      if (sp.preludeActive) {
+        sp.preludeT++;
+        const u = clamp(sp.preludeT / PRELUDE_DUR, 0, 1);
+        sp.oceanMaskX = lerp(canvas.W, canvas.W * 0.55, smoothstep(u));
+        if (u >= 1) {
+          sp.preludeActive = false;
+          triggerOceanCrossing();
+        }
+        return;
+      }
       // Ocean crossing at baseline milestone
       if (game.score >= sp.startScore && (sp.cooldown ?? 0) > 180) {
         triggerOceanCrossing();
@@ -386,5 +411,4 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
 return { update, triggerOceanCrossing, finishOceanCrossing, triggerRocketFlight, finishRocketFlight };
 }
-
 
