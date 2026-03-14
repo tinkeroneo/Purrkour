@@ -26,6 +26,11 @@ function scoreU(game, startScore, lenScore) {
   return clamp((game.score - startScore) / Math.max(1, lenScore), 0, 1);
 }
 
+function progressionSpeedMulForScore(score) {
+  const u = smoothstep(clamp(score / 1400, 0, 1));
+  return lerp(1.0, 1.8, u);
+}
+
 // Speed curves per beat (base speed; modifiers are still applied in collider)
 function speedForBeat(beatId, u) {
   switch (beatId) {
@@ -237,6 +242,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       : scoreU(game, game.progression.beatStartScore, beat.lenScore);
 
     setBaseSpeed(game, speedForBeat(beat.id, u));
+    game.progressionSpeedMul = progressionSpeedMulForScore(game.score);
 
     // night smoothing (owned by progression)
     const tau = 0.08; // lower = smoother

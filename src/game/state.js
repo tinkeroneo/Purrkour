@@ -9,6 +9,7 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         score: 0,
         mice: 0,
         speed: getInitialBaseSpeed(),
+        progressionSpeedMul: 1.0,
         speedMul: 1.0,
 
         finished: false,

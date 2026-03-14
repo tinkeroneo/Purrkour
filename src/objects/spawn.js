@@ -44,19 +44,24 @@ export function createSpawner(game, terrain, objects, canvas) {
     if (game.score < 40) return false;
     if (Math.random() > 0.045) return false;
 
-    const w = 120;
-    const h = 48;
+    const w = 104;
+    const h = 44;
     const extra = Math.min(12, Math.floor((game.score || 0) / 60));
-    const count = (15 + extra) + Math.floor(Math.random() * 31); // 15..45 (+score)
-    const stepX = 168 + Math.floor(Math.random() * 42); // ~40% larger spacing
-    const baseLift = 120 + Math.floor(Math.random() * 40);
-    const peakLift = 360 + Math.floor(Math.random() * 120);
+    const count = (14 + extra) + Math.floor(Math.random() * 28);
+    const stepX = 210 + Math.floor(Math.random() * 72);
+    const entryGap = 220 + Math.floor(Math.random() * 90);
+    const baseLift = 150 + Math.floor(Math.random() * 44);
+    const peakLift = 420 + Math.floor(Math.random() * 140);
 
     for (let i = 0; i < count; i++) {
-      const x = spawnX + i * stepX;
+      // intentionally skip occasional segments to avoid a "continuous runway"
+      if (i > 2 && i < count - 2 && i % 7 === 0 && Math.random() < 0.65) continue;
+
+      const x = spawnX + entryGap + i * stepX;
       const phase = (count > 1) ? (i / (count - 1)) : 0;
-      const arc = Math.sin(phase * Math.PI); // smooth up/down
-      const wave = Math.sin(i * 0.7) * 10;   // gentle wobble
+      const climb = Math.pow(phase, 0.58);
+      const arc = Math.sin(climb * Math.PI); // climbs faster early, then glides down
+      const wave = Math.sin(i * 0.82) * 14;
       const lift = baseLift + (arc * peakLift) + wave;
       const topY = terrain.surfaceAt(x) - lift;
       objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0, skyPath: true });

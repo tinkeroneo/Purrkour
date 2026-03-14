@@ -20,7 +20,7 @@ export function createHUD(ui) {
     }
     if (ui.miceDisplay) ui.miceDisplay.textContent = `🐭 × ${game.mice}`;
 
-    if (ui.speedBtn) ui.speedBtn.textContent = `${(game.speedMul ?? 1.0).toFixed(1)}x`;
+    if (ui.speedBtn) ui.speedBtn.textContent = `Pace ${(game.progressionSpeedMul ?? 1.0).toFixed(1)}x`;
 
     // Debug/info slot (was catnip status): show current theme key
     if (ui.catnip) ui.catnip.textContent = String(game.theme || "");
