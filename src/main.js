@@ -45,7 +45,7 @@ const hud = createHUD(ui);
 
 setupThemeHudToggle(game, ui.catnip);
 setupHudMinimode(uiRoot, uiRoot);
-setupSpeedToggle(game, ui.speedBtn);
+setupSpeedIndicator(ui.speedBtn);
 
 function setupThemeHudToggle(game, el) {
   if (!el) return;
@@ -53,7 +53,7 @@ function setupThemeHudToggle(game, el) {
   if (!order.length) return;
 
   el.style.cursor = "pointer";
-  el.title = "Tap: next theme • Long-press: auto";
+  el.title = "Tap: next theme ï¿½ Long-press: auto";
 
   let downAt = 0;
   let longPressTimer = null;
@@ -128,35 +128,13 @@ function setupHudMinimode(uiRoot, el) {
   }, { passive: true });
 }
 
-function setupSpeedToggle(game, el) {
+function setupSpeedIndicator(el) {
   if (!el) return;
-  const speeds = [0.8, 1.0, 1.2, 1.4, 1.6, 3, 5]
-  const fmt = (v) => `${v.toFixed(1)}x`;
-  function syncLabel() {
-    el.textContent = fmt(game.speedMul ?? 1.0);
-  }
-  syncLabel();
-  function pulse() {
-    el.animate(
-      [
-        { transform: "scale(1)", filter: "brightness(1)" },
-        { transform: "scale(1.08)", filter: "brightness(1.2)" },
-        { transform: "scale(1)", filter: "brightness(1)" }
-      ],
-      { duration: 180, easing: "ease-out" }
-    );
-  }
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    const cur = game.speedMul ?? 1.0;
-    let i = speeds.indexOf(cur);
-    if (i < 0) i = 1;
-    const next = speeds[(i + 1) % speeds.length];
-    game.speedMul = next;
-    syncLabel();
-    pulse();
-  }, { passive: false });
+  el.type = "button";
+  el.disabled = true;
+  el.title = "Pace steigt automatisch mit der Progression";
 }
+
 
 
 const audio = createAudio(ui.soundBtn);

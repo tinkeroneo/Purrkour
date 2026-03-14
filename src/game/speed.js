@@ -32,12 +32,13 @@ export function applyAutoAcceleration(game) {
 
 export function computeEffectiveSpeed(game) {
   const base = getBaseSpeed(game);
+  const progressionMul = (game.progressionSpeedMul ?? 1.0);
   const catnipMult = (game.catnipTimer > 0) ? 0.82 : 1.0;
   const slowMult = (game.slowTimer > 0) ? (game.slowStrength ?? 1.0) : 1.0;
   const speedMul = (game.speedMul ?? 1.0);
   const overlay = getOverlay(game.themeOverlay);
   const overlaySpeed = overlay?.speedMul ?? 1.0;
-  const eff = base * speedMul * catnipMult * slowMult * overlaySpeed;
+  const eff = base * progressionMul * speedMul * catnipMult * slowMult * overlaySpeed;
 
   const sp = game.setpiece;
   const scroll = (sp?.active) ? (sp.scroll ?? 1) : 1;
