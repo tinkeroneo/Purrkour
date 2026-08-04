@@ -29,6 +29,10 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
     game.progressionApi = progression;
 function simulate() {
         if (!game.finished) {
+            if (game.helpOpen) {
+                hud.sync(game, cat.cat ?? cat);
+                return;
+            }
             // dx: letzter effSpeed (wird in collider.update() neu berechnet)
             const dx = collider.effSpeed();
             // advance theme crossfade

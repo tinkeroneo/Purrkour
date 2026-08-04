@@ -24,6 +24,8 @@
       padding:4px 9px; border-radius:999px;
       background:rgba(255,255,255,0.10); color:#fff; font-weight:900; white-space:nowrap;
     }
+    .theme-button{ border:0; cursor:pointer; min-height:44px; }
+    .theme-button:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
     .btn{
       min-width:44px; min-height:44px;
       border:0; padding:7px 11px; border-radius:999px;
@@ -39,7 +41,7 @@
     #ui .lives{ grid-column:3 / span 2; }
     #ui .mice{ grid-column:5 / span 1; }
     #ui .theme{ grid-column:6 / span 1; }
-    #ui .controls{ grid-column:1 / span 6; display:flex; gap:6px; justify-content:center; }
+    #ui .controls{ grid-column:1 / span 6; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
     #hint{
       position:fixed; left:0; right:0; bottom:10px; text-align:center;
       color:rgba(255,255,255,0.65); font-size:13px; z-index:10; pointer-events:none;
@@ -59,48 +61,74 @@
     .result strong{ display:block; font-size:28px; font-variant-numeric:tabular-nums; }
     #gameOverBestLabel{ color:#ffd56a; font-weight:900; }
     #restartBtn{ width:100%; font-size:16px; background:#f3c55e; color:#17202a; }
-    #ui.minimal .mice, #ui.minimal .theme, #ui.minimal .controls{ display:none; }
-    #ui.minimal{ grid-template-columns:auto auto; gap:6px 8px; }
+    #helpDialog{ text-align:left; }
+    #helpDialog h1, #helpDialog>p{ text-align:center; }
+    #helpDialog ul{ display:grid; gap:10px; padding-left:22px; line-height:1.35; }
+    #helpDialog kbd{ padding:2px 6px; border-radius:5px; background:rgba(255,255,255,0.14); font:inherit; }
+    #closeHelpBtn{ width:100%; background:#f3c55e; color:#17202a; font-size:16px; }
+    .hint-mobile{ display:none; }
+    #ui.minimal .mice, #ui.minimal .theme, #ui.minimal .controls>*:not(#minimalBtn){ display:none; }
+    #ui.minimal{ grid-template-columns:auto auto auto; gap:6px 8px; }
     #ui.minimal .score{ grid-column:1 / span 1; }
     #ui.minimal .lives{ grid-column:2 / span 1; }
+    #ui.minimal .controls{ display:flex; grid-column:3 / span 1; }
     #ui.minimal .score .label{ display:none; }
     @media (max-width: 700px){
       #ui{
         top:6px; gap:6px 8px; padding:6px 8px; border-radius:12px;
-        max-width:calc(100vw - 12px);
+        width:calc(100vw - 12px); max-width:none; box-sizing:border-box;
+        grid-template-columns:repeat(4, minmax(0, 1fr));
       }
       #ui>div{ font-size:12px; }
       .pill{ padding:3px 8px; }
       .btn{ padding:6px 9px; font-size:12px; }
       #hint{ display:block; font-size:11px; bottom:6px; }
-      #ui{ grid-template-columns:repeat(4, auto); }
       #ui .score{ grid-column:1 / span 2; }
       #ui .lives{ grid-column:3 / span 2; }
       #ui .mice{ grid-column:1 / span 2; }
       #ui .theme{ grid-column:3 / span 2; }
       #ui .controls{ grid-column:1 / span 4; }
+      #ui .controls>.btn{ flex:1 1 44px; }
+      .hint-desktop{ display:none; }
+      .hint-mobile{ display:inline; }
     }
   </style>
 </head>
 <body>
   <div id="ui">
     <div class="score"><span class="label">Score: </span><span id="score">0</span></div>
-    <div class="pill lives" id="lives">❤️❤️❤️❤️❤️❤️❤️</div>
+    <div class="pill lives" id="lives" aria-label="7 von 7 Leben">❤️❤️❤️❤️❤️❤️❤️</div>
 
     <div class="pill mice" id="miceDisplay">🐭 × 0</div>
-    <div class="pill theme"><span id="catnip">aus</span></div>
+    <button class="pill theme theme-button" id="themeBtn" type="button" aria-label="Nächstes Thema" title="Nächstes Thema"><span id="catnip">wald</span></button>
 
     <div class="controls">
       <button class="btn" id="restBtn" type="button" aria-label="Pause an der Hütte" aria-pressed="false" title="Zur Hütte (Pause)">🏠</button>
       <button class="btn" id="crouchBtn" type="button" aria-label="Ducken" aria-pressed="false" title="Zum Ducken gedrückt halten">↓</button>
       <button class="btn" id="soundBtn" type="button" aria-label="Sound ausschalten" aria-pressed="true" title="Sound an/aus">🔊</button>
       <button class="btn" id="speedBtn" type="button" aria-label="Pace steigt automatisch" title="Pace steigt automatisch" disabled>Pace 1.0x</button>
+      <button class="btn" id="autoThemeBtn" type="button" aria-label="Automatischen Themenwechsel verwenden" aria-pressed="true" title="Themen automatisch wechseln">Auto</button>
+      <button class="btn" id="minimalBtn" type="button" aria-label="Kompaktansicht einschalten" aria-pressed="false" title="HUD kompakter anzeigen">HUD</button>
+      <button class="btn" id="helpBtn" type="button" aria-label="Spielhilfe öffnen" title="Spielhilfe">❓</button>
     </div>
   </div>
 
   <div id="hint">
-    Tippen: springen · ↓ halten: ducken · A/D oder Pfeile: bewegen
+    <span class="hint-desktop">Tippen oder Leertaste: springen · ↓ halten: ducken · A/D oder Pfeile: bewegen</span>
+    <span class="hint-mobile">Tippen: Sprung · ↓: Ducken · ?: Hilfe</span>
   </div>
+
+  <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpIntro">
+    <h1 id="helpTitle">So spielst du</h1>
+    <p id="helpIntro">Sammle Mäuse, weiche Hindernissen aus und entdecke neue Welten.</p>
+    <ul>
+      <li><strong>Springen:</strong> Tippe ins Spiel oder drücke <kbd>Leertaste</kbd>.</li>
+      <li><strong>Bewegen:</strong> Nutze <kbd>A</kbd>/<kbd>D</kbd> oder die Pfeiltasten.</li>
+      <li><strong>Ducken:</strong> Halte <kbd>↓</kbd>, <kbd>S</kbd> oder den ↓-Button.</li>
+      <li><strong>Pause:</strong> Die Hütte hält den Lauf an. Thema, Automatik und HUD haben eigene Buttons.</li>
+    </ul>
+    <button class="btn" id="closeHelpBtn" type="button">Loslaufen</button>
+  </dialog>
 
   <dialog id="gameOverDialog" aria-labelledby="gameOverTitle" aria-describedby="gameOverDescription">
     <h1 id="gameOverTitle">Lauf beendet</h1>

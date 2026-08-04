@@ -33,6 +33,12 @@ const ui = {
   crouchBtn: document.getElementById("crouchBtn"),
   soundBtn: document.getElementById("soundBtn"),
   speedBtn: document.getElementById("speedBtn"),
+  themeBtn: document.getElementById("themeBtn"),
+  autoThemeBtn: document.getElementById("autoThemeBtn"),
+  minimalBtn: document.getElementById("minimalBtn"),
+  helpBtn: document.getElementById("helpBtn"),
+  helpDialog: document.getElementById("helpDialog"),
+  closeHelpBtn: document.getElementById("closeHelpBtn"),
   gameOverDialog: document.getElementById("gameOverDialog"),
   gameOverScore: document.getElementById("gameOverScore"),
   gameOverBest: document.getElementById("gameOverBest"),
@@ -44,17 +50,20 @@ const ui = {
 const canvas = makeCanvas(canvasEl, ctx);
 const config = window.__purrkourConfig || {};
 const THEME_STORAGE_KEY = "purrkour.initialTheme";
+const ONBOARDING_STORAGE_KEY = "purrkour.onboardingSeen.v1";
 const queryTheme = new URLSearchParams(window.location.search).get("theme");
 const storedTheme = readStoredTheme();
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
 const hud = createHUD(ui);
 const runStorage = getLocalStorage();
+if (initialTheme) game.userTheme = initialTheme;
 
-setupThemeHudToggle(game, ui.catnip);
-setupHudMinimode(uiRoot, uiRoot);
+setupThemeControls(game, ui.themeBtn, ui.autoThemeBtn);
+setupHudMinimode(uiRoot, ui.minimalBtn);
 setupSpeedIndicator(ui.speedBtn);
 setupCrouchButton(game, ui.crouchBtn);
+setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage);
 
 function getLocalStorage() {
   try {
@@ -81,16 +90,17 @@ function storeTheme(theme) {
   }
 }
 
-function setupThemeHudToggle(game, el) {
-  if (!el) return;
+function setupThemeControls(game, themeButton, autoButton) {
+  if (!themeButton) return;
   const order = getThemeOrder();
   if (!order.length) return;
 
-  el.style.cursor = "pointer";
-  el.title = "Tippen: nächstes Thema · Halten: automatisch";
-
-  let downAt = 0;
-  let longPressTimer = null;
+  function syncAutoButton() {
+    if (!autoButton) return;
+    const automatic = !game.userTheme;
+    autoButton.setAttribute("aria-pressed", String(automatic));
+    autoButton.classList.toggle("is-active", automatic);
+  }
 
   function nextTheme() {
     const cur = game.userTheme || game.theme || order[0];
@@ -104,39 +114,19 @@ function setupThemeHudToggle(game, el) {
 
     // smooth fade if supported by background
     game.themeFade = { active: true, from, to: next, t: 0, dur: 80 };
+    syncAutoButton();
   }
 
   function clearOverride() {
     game.userTheme = null;
     storeTheme(null);
     // let progression reclaim theme next tick
+    syncAutoButton();
   }
 
-  el.addEventListener("pointerdown", (e) => {
-    downAt = performance.now();
-    try { el.setPointerCapture(e.pointerId); } catch {
-      // Pointer capture is optional for the long-press gesture.
-    }
-    longPressTimer = setTimeout(() => {
-      clearOverride();
-      longPressTimer = null;
-    }, 450);
-  }, { passive: true });
-
-  el.addEventListener("pointerup", () => {
-    const held = performance.now() - downAt;
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-      // short tap
-      if (held < 450) nextTheme();
-    }
-  }, { passive: true });
-
-  el.addEventListener("pointercancel", () => {
-    if (longPressTimer) clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }, { passive: true });
+  themeButton.addEventListener("click", nextTheme);
+  autoButton?.addEventListener("click", clearOverride);
+  syncAutoButton();
 }
 
 function setupCrouchButton(game, el) {
@@ -160,30 +150,50 @@ function setupCrouchButton(game, el) {
 }
 
 
-function setupHudMinimode(uiRoot, el) {
-  if (!uiRoot || !el) return;
-  let longPressTimer = null;
+function setupHudMinimode(uiRoot, button) {
+  if (!uiRoot || !button) return;
   function toggleMinimode() {
-    uiRoot.classList.toggle("minimal");
+    const minimal = uiRoot.classList.toggle("minimal");
+    button.textContent = minimal ? "+" : "HUD";
+    button.setAttribute("aria-pressed", String(minimal));
+    button.setAttribute("aria-label", minimal ? "Vollständige Ansicht einschalten" : "Kompaktansicht einschalten");
   }
-  el.addEventListener("pointerdown", (e) => {
-    if (e.target !== el) return;
-    if (e.target.closest && e.target.closest("button,.btn")) return;
-    longPressTimer = setTimeout(() => {
-      toggleMinimode();
-      longPressTimer = null;
-    }, 500);
-  }, { passive: true });
-  el.addEventListener("pointerup", () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
+  button.addEventListener("click", toggleMinimode);
+}
+
+function setupHelp(game, dialog, openButton, closeButton, storage) {
+  if (!dialog || !openButton || !closeButton) return;
+
+  function openHelp() {
+    if (dialog.open) return;
+    game.helpOpen = true;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+
+  function closeHelp() {
+    try { storage?.setItem(ONBOARDING_STORAGE_KEY, "1"); } catch {
+      // Help remains usable when preference storage is unavailable.
     }
-  }, { passive: true });
-  el.addEventListener("pointercancel", () => {
-    if (longPressTimer) clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }, { passive: true });
+    game.helpOpen = false;
+    game.safeTimer = Math.max(game.safeTimer ?? 0, 30);
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  }
+
+  openButton.addEventListener("click", openHelp);
+  closeButton.addEventListener("click", closeHelp);
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeHelp();
+  });
+
+  let onboardingSeen = false;
+  try { onboardingSeen = storage?.getItem(ONBOARDING_STORAGE_KEY) === "1"; } catch {
+    onboardingSeen = false;
+  }
+  const helpQuery = new URLSearchParams(window.location.search).get("help");
+  if (helpQuery === "1" || (helpQuery !== "0" && !onboardingSeen)) openHelp();
 }
 
 function setupSpeedIndicator(el) {
@@ -267,15 +277,17 @@ const debug = setupDebugControls({ game, cat, objects, terrain, bg, uiRoot });
 
 setupInput({
   onJump: () => {
-    if (game.pause?.active) return;
+    if (game.pause?.active || game.helpOpen) return;
     audio.ensure();
     cat.jump(audio);
   },
   onMove: (dir) => {
+    if (game.helpOpen) return;
     if (!game.input) game.input = { moveDir: 0, crouch: false };
     game.input.moveDir = dir;
   },
   onCrouch: (active) => {
+    if (game.helpOpen) return;
     if (!game.input) game.input = { moveDir: 0, crouch: false };
     game.input.crouch = !!active;
   },

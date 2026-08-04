@@ -29,6 +29,7 @@ export function createHUD(ui) {
         html += `<span class="heart${off}">❤️</span>`;
       }
       ui.lives.innerHTML = html;
+      ui.lives.setAttribute("aria-label", `${curLives} von ${maxLives} Leben`);
       lastLives = livesKey;
     }
 
