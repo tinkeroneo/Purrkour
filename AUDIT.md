@@ -18,7 +18,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen und `--max-warnings=0` verhindert neue Warnschulden |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
-| PURR-08 | erledigt | 16 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI und reproduzierbarer Release-Build |
+| PURR-08 | erledigt | 16 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI, npm-10-kompatible Installation und reproduzierbarer Release-Build |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
 | PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | erledigt | First-run-Hilfe, kurze Mobile-Hilfe, semantische Theme-/Auto-/HUD-Aktionen, Zielgrößen, Fokus, Zoom und ARIA umgesetzt |
@@ -38,13 +38,14 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
 - Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint, 16 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build aus.
+- ESLint, Husky, Commitlint, 16 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
 
 ## Durchgeführte Prüfungen
 
 | Prüfung | Ergebnis |
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
+| `npm ci` mit npm 10.8.2 | erfolgreich; Peer-Auflösung ist über `.npmrc` reproduzierbar |
 | `npm run check` | erfolgreich; aktiver Linter plus 16/16 Tests |
 | `npm run test:browser` | erfolgreich; echter Modulstart, dynamisches HUD und geöffnete Hilfe in Headless Chrome |
 | `npm run build` | 47 Runtime-Dateien, 221.696 Bytes bei 750-KiB-Budget |
@@ -55,6 +56,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | Browserprotokoll | keine bestätigte Exception; kein AudioContext vor Nutzergeste |
 | HUD-Ziele | mindestens 44 × 44 CSS-Pixel, auf Mobile sichtbar größer |
 | Commit-Hook | gültige Conventional-Commit-Nachricht akzeptiert, ungültige abgelehnt |
+| `npm audit` | 0 bekannte Schwachstellen nach sicheren Lockfile-Aktualisierungen |
 
 ## Befunde
 
@@ -205,7 +207,7 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 1. Vollständigen Progressionszyklus inklusive Ocean-/Rocket-Setpieces manuell durchspielen.
 2. Physisches Touchgerät, reale Rotation, Screenreader und mindestens Firefox/Safari prüfen.
 3. Urheber und Freigabe des Favicons dokumentieren; das technische Inventar liegt in `docs/ASSETS.md`.
-4. Den ersten CI-Lauf auf GitHub kontrollieren und anschließend nur `dist/` deployen.
+4. Nach dem Deployment einen Smoke-Test gegen die veröffentlichte `dist/`-Version durchführen.
 
 ## Browser-Nachweise
 

@@ -2,10 +2,10 @@
 
 ## Automatisch
 
-- [ ] `npm ci` läuft mit der vorgesehenen Node-LTS-Version.
-- [ ] `npm run check` endet mit 0 Fehlern, 0 Warnungen und vollständig grünen Tests.
-- [ ] `npm run build` hält das 750-KiB-Budget ein.
-- [ ] CI ist für den Zielcommit grün.
+- [x] `npm ci` läuft mit der vorgesehenen Node-LTS-Version.
+- [x] `npm run check` endet mit 0 Fehlern, 0 Warnungen und vollständig grünen Tests.
+- [x] `npm run build` hält das 750-KiB-Budget ein.
+- [x] CI ist für den Zielcommit grün.
 
 ## Manuell
 
