@@ -81,10 +81,6 @@ function clampX(W, blockedX = false) {
   }
 
 
-  function stomp() {
-    cat.squashTimer = 10;
-  }
-
 function draw(ctx) {
     const w = cat.w, h = cat.h;
     const mood = catMood();

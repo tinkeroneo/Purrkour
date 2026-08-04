@@ -1,4 +1,4 @@
-import { roundRect, tri, clamp } from "../core/util.js";
+import { roundRect } from "../core/util.js";
 
 export function createMonkey(x, y, opts = {}) {
   const m = {
@@ -12,7 +12,7 @@ export function createMonkey(x, y, opts = {}) {
     solid: !!opts.solid, // if you ever want it solid
   };
 
-  m.update = function update(game, terrain, eff) {
+  m.update = function update(game, terrain, _eff) {
     m.t++;
     // tiny idle bob (no real physics)
     const ground = terrain.surfaceAt(m.x);

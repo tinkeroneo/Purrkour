@@ -1,5 +1,5 @@
 // src/game/vehicles/balloon.js
-import { clamp, roundRect, tri } from "../../core/util.js";
+import { roundRect, tri } from "../../core/util.js";
 
 export function drawBalloonVehicle(ctx, env) {
   const { game, setpiece } = env;

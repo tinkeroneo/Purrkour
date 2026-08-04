@@ -1,4 +1,4 @@
-import { clamp, lerp, roundRect, tri } from "../core/util.js";
+import { clamp, lerp, roundRect } from "../core/util.js";
 import { getOverlay } from "../world/overlays.js";
 import { drawDog } from "../entities/dog.js";
 import { drawBird } from "../entities/bird.js";

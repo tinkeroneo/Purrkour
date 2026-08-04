@@ -95,7 +95,6 @@ export function createSpawner(game, terrain, objects, canvas) {
     const pBird = z("bird") * clamp((0.08 + game.score * 0.0015) * CALM.animalsScale, 0.06, 0.12);
     const pDog = clamp((0.08 + game.score * 0.0013) * CALM.animalsScale, 0.06, 0.14);
     const pYarn = z("yarn") * 0.14;
-    const pTunnel = z("tunnel") * 0.08;
 
     // grace window: no stressful obstacles right after big transitions
     if (safeMode) {
@@ -186,9 +185,6 @@ export function createSpawner(game, terrain, objects, canvas) {
     const pBirdV = pBirdT * vbBird;
     const pDogV = pDogT * vbDog;
     const pYarnV = pYarnT * vbYarn;
-    const pTunnelV = pTunnel * vbYarn;
-
-
     function rndType() {
       if (safeMode) return "fence";
       const r = Math.random();
@@ -432,7 +428,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     if (safeMode) nextSpawnIn += 120;
   }
 
-  function update(palette) {
+  function update(_palette) {
     if (game.tick < lastTick) reset();
     lastTick = game.tick;
     nextSpawnIn -= game._effSpeed;

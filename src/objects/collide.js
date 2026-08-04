@@ -125,13 +125,10 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
     function effSpeed() { return getEffectiveSpeed(game); }
 
-    function update(palette) {
+    function update(_palette) {
         if (game.finished) return;
 
         let blockedX = false;
-        let blockObj = null;
-
-
         game.tick++;
 
         // timers
@@ -265,7 +262,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
                 if (minX < minY) {
                     blockedX = true;
-                    blockObj = o;
                     // prefer push LEFT
                     if (overlapL < overlapR) cat.x -= (overlapL + 0.5);
                     else cat.x -= (overlapR + 0.5);

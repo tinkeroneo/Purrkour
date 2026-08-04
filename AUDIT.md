@@ -15,14 +15,14 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 |---|---|---|
 | PURR-01 | erledigt | AudioContext entsteht erst durch Nutzergeste; Ambience wird bis zum Unlock gepuffert |
 | PURR-02 | erledigt | fixer 60-Hz-Simulationsschritt mit Delta-Cap und Tests für 30/60/120/144 Hz |
-| PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen, 0 Fehler und 23 dokumentierte Altcode-Warnungen |
+| PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen und `--max-warnings=0` verhindert neue Warnschulden |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
 | PURR-08 | teilweise erledigt | 14 echte Node-Tests plus Browser-Audit; dauerhafter Browser-Smoke-Test und CI fehlen |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
 | PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | erledigt | First-run-Hilfe, kurze Mobile-Hilfe, semantische Theme-/Auto-/HUD-Aktionen, Zielgrößen, Fokus, Zoom und ARIA umgesetzt |
-| PURR-14 | offen | toter und doppelter Code bleibt aufzuräumen |
+| PURR-14 | erledigt | 23 Warnungen entfernt, doppelte/unreferenzierte Module gelöscht und Warnbudget auf null gesetzt |
 | PURR-15 | erledigt | Bonusleben verbraucht jeden 60-Punkte-Meilenstein exakt einmal |
 | PURR-16 | teilweise erledigt | Audio- und Themepräferenzen fehlertolerant; gemeinsame Storage-Abstraktion fehlt |
 | PURR-17 | erledigt | eigener Game-over-Dialog hält den Run an und zeigt Score, Bestwert sowie bewussten Neustart |
@@ -46,7 +46,7 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
 | `npm run check` | erfolgreich; aktiver Linter plus 14/14 Tests |
-| `npm run lint` | 0 Fehler; 23 Warnungen markieren vorhandenen Altcode |
+| `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
 | Mobile-Laufzeit, 390 × 844 | nach Änderungen erneut geladen; Ducken- und Pauseinteraktion geprüft |
@@ -154,11 +154,11 @@ Umsetzung: Controls haben mindestens 44 CSS-Pixel, sichtbare Tastaturfokusse und
 
 ### P2 – Aufräumen und Politur
 
-#### PURR-14: Toter und doppelter Code
+#### PURR-14 · erledigt: Toter und doppelter Code
 
 `src/world/lakes.js` wird durch ein No-op in `main.js` ersetzt. `src/objects/object.js` dupliziert Teile von `objects.js` und wird nicht importiert. Der `finished`-State wird geprüft und zurückgesetzt, aber nirgends gesetzt.
 
-Maßnahme: Bewusst entfernen oder mit dokumentiertem Feature-Flag reaktivieren; ungenutzte Zustände vermeiden.
+Umsetzung: Die unimportierten Doppeldateien `objects/object.js` und `world/lakes.js` wurden entfernt. Tote Imports, Argumente, Variablen und der unerreichbare Tunnel-Wahrscheinlichkeitsrest sind bereinigt; vorhandene Höhenwolken und Partikel-APIs sind wieder an aktive Renderpfade angeschlossen. ESLint akzeptiert keine Warnungen mehr.
 
 #### PURR-15 · erledigt: Bonusleben konnte an Score-Vielfachen erneut erscheinen
 
@@ -200,9 +200,8 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 
 ## Empfohlene Abarbeitung
 
-1. Die 23 Lint-Warnungen und den bekannten toten/doppelten Code kontrolliert bereinigen (`PURR-14`).
-2. Storage-Zugriffe zentralisieren und Präferenzmigration testen (`PURR-16`).
-3. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
+1. Storage-Zugriffe zentralisieren und Präferenzmigration testen (`PURR-16`).
+2. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
 
 ## Browser-Nachweise
 

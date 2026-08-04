@@ -10,7 +10,7 @@ export function createGoat(x, y, opts = {}) {
     t: 0,
   };
 
-  g.update = function update(game, terrain, eff) {
+  g.update = function update(game, terrain, _eff) {
     g.t++;
     const ground = terrain.surfaceAt(g.x);
     g.y = ground - g.h;

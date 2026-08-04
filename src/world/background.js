@@ -2,8 +2,6 @@ import { clamp, lerp, smoothstep } from "../core/util.js";
 import { getTheme } from "./themes.js";
 import { nightFactor } from "./daynight.js";
 
-const fireflies = []; // {x,y,phase,r,life}
-
 function mixRGB(a, b, t) {
     // Defensive: themes may omit some palette keys.
     if (!a && !b) return [0, 0, 0];
@@ -114,17 +112,6 @@ function drawSpaceSky(ctx, W, H, sp, tick, themeKey) {
     }
 }
 export function createBackground(getW, getH, lakes, game, hud) {
-    const W = () => getW();
-    const H = () => getH();
-
-    function themeSeed(key) {
-        // stable small offset per theme key to avoid "popping" when switching themes
-        let h = 0;
-        const s = String(key || "");
-        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-        return (h % 997) / 997; // 0..1
-    }
-
     function palette() {
         // Theme-based palette + optional crossfade
         const forceOcean = (game.setpiece?.active && game.setpiece?.mode === "ocean" && game.setpiece?.phase === "travel");
@@ -412,6 +399,7 @@ export function createBackground(getW, getH, lakes, game, hud) {
     const maskX = game?.setpiece?.oceanMaskX ?? 0;
     if (typeof drawOceanMasked === "function") drawOceanMasked(ctx, maskX);
   }
+  drawHighClouds(ctx, near, p.n ?? 0);
 }
 
 function drawHighClouds(ctx, near, night) {
@@ -438,7 +426,6 @@ function drawHighClouds(ctx, near, night) {
 function drawGroundFog(ctx) {
         const W = getW(), H = getH();
         const p = palette();
-        const themeKey = getTheme(game.theme)?.key || game.theme || "forest";
         const n = p.n ?? 0;
         if (n < 0.35) return;
 
@@ -516,8 +503,6 @@ function drawHorizonIslands(ctx, horizonY) {
         const Wv = getW();
         const Hv = getH();
         const p = palette();
-        const themeKey = getTheme(game.theme)?.key || game.theme || "forest";
-
         // horizon line a bit above the ground plane
         const horizonY = Hv * 0.62;
 

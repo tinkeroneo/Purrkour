@@ -1,5 +1,3 @@
-import { clamp } from "../core/util.js";
-
 export function createObjects() {
   const list = [];
   const pawprints = [];
@@ -82,6 +80,7 @@ export function createObjects() {
     puffs,
     add,
     addBubble,
+    addPuff,
     toast,
     updateBubbles,
     maybeAddPawprint,
