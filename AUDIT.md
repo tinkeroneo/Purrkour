@@ -7,7 +7,7 @@ Geprüfter Branch: `main`
 
 `purrkour` ist ein visuell eigenständiger, modular aufgebauter Endless-Runner mit prozeduralem Canvas-Rendering, mehreren Themen, Setpieces, Fahrzeugen und Sammelobjekten. Die Modulaufteilung ist deutlich besser als beim Schwesterprojekt. Der Audit fand jedoch vier unmittelbar spielrelevante Risiken sowie wirkungslose Qualitätsgates; diese P0-Punkte sind im ersten Maßnahmenblock behoben und automatisiert abgesichert worden.
 
-Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf Resize-Stabilität, Onboarding, Game-over-UX, Altcodebereinigung und dauerhafte CI-/Browserabsicherung.
+Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verbleibend sind vor einem öffentlichen Release vor allem manuelle Langstrecken-, Geräte-, Screenreader- und Rechteprüfungen.
 
 ## Umsetzungsstand nach dem ersten Maßnahmenblock
 
@@ -18,7 +18,7 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 | PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen und `--max-warnings=0` verhindert neue Warnschulden |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
-| PURR-08 | teilweise erledigt | 16 echte Node-Tests plus Browser-Audit; dauerhafter Browser-Smoke-Test und CI fehlen |
+| PURR-08 | erledigt | 16 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI und reproduzierbarer Release-Build |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
 | PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | erledigt | First-run-Hilfe, kurze Mobile-Hilfe, semantische Theme-/Auto-/HUD-Aktionen, Zielgrößen, Fokus, Zoom und ARIA umgesetzt |
@@ -38,7 +38,7 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
 - Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint und 16 Node-Tests sind wirksam; eine CI-Pipeline fehlt.
+- ESLint, Husky, Commitlint, 16 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build aus.
 
 ## Durchgeführte Prüfungen
 
@@ -46,6 +46,8 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
 | `npm run check` | erfolgreich; aktiver Linter plus 16/16 Tests |
+| `npm run test:browser` | erfolgreich; echter Modulstart, dynamisches HUD und geöffnete Hilfe in Headless Chrome |
+| `npm run build` | 47 Runtime-Dateien, 221.696 Bytes bei 750-KiB-Budget |
 | `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
@@ -114,11 +116,11 @@ H, M, O, 1, 2, 3 und R verändern HUD, Progression, Theme oder laden die Seite n
 
 Maßnahme: Debugfunktionen nur über expliziten Query-Parameter oder Development-Build aktivieren; Helfer auf die öffentliche Speed-API umstellen.
 
-#### PURR-08 · teilweise erledigt: Tests prüften kein echtes Spielverhalten
+#### PURR-08 · erledigt: Tests prüften kein echtes Spielverhalten
 
 `tests/smoke.test.js` liest Dateien und extrahiert Strukturen mit regulären Ausdrücken. Module werden nicht importiert, Zustände nicht simuliert und Browserabläufe nicht gestartet. Änderungen an Physik, Reset, Input, Audio oder Rendering bleiben unentdeckt.
 
-Maßnahme: Paket auf konsistente ES-Module umstellen, den CommonJS-Test gegebenenfalls `.cjs` nennen, pure State-/Progressionsmodule direkt testen und einen Browser-Smoke-Test ergänzen.
+Umsetzung: Das ES-Modul-Paket besitzt 16 direkte Node-Tests für Audio, HUD, Storage, State, Resize und Timing. Ein dauerhafter Chrome-Smoke-Test startet einen isolierten lokalen Server und prüft echten Modulstart, Canvas, dynamisches HUD und Onboarding. GitHub Actions führt `npm ci`, das vollständige Gate und den Release-Build aus.
 
 Akzeptanz: Tests decken mindestens Initialzustand, Reset, Progression, Frame-Raten-Unabhängigkeit, Input-Mapping und Audio-Unlock ab.
 
@@ -196,11 +198,14 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 - UX: Der Runner startet schnell, erklärt aber weder Basis- noch Spezialinteraktionen; Game over und Reset wirken unfertig.
 - UI: Atmosphäre und Themen funktionieren, HUD und Controls sind auf großen Screens sehr klein und auf Mobile nicht ausreichend bedienbar.
 - Anwender: Springen ist sofort verständlich, Ducken und versteckte Funktionen dagegen nicht; Verhalten variiert je nach Display-Hz.
-- Betrieb: Statische Bereitstellung ist einfach. Es fehlen CI, echte Browserprüfung und belastbare Releasekriterien.
+- Betrieb: CI, Browser-Smoke, Allowlist-Build mit 750-KiB-Budget, README, Asset-Inventar und Release-Checkliste schaffen einen reproduzierbaren statischen Releasepfad.
 
-## Empfohlene Abarbeitung
+## Verbleibende Releaseprüfungen
 
-1. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
+1. Vollständigen Progressionszyklus inklusive Ocean-/Rocket-Setpieces manuell durchspielen.
+2. Physisches Touchgerät, reale Rotation, Screenreader und mindestens Firefox/Safari prüfen.
+3. Urheber und Freigabe des Favicons dokumentieren; das technische Inventar liegt in `docs/ASSETS.md`.
+4. Den ersten CI-Lauf auf GitHub kontrollieren und anschließend nur `dist/` deployen.
 
 ## Browser-Nachweise
 
