@@ -1,6 +1,7 @@
 import { makeCanvas } from "./core/util.js";
 import { createAudio } from "./core/audio.js";
 import { setupInput } from "./core/input.js";
+import { createSafeStorage } from "./core/storage.js";
 
 import { createGameState } from "./game/state.js";
 import { createHUD } from "./game/hud.js";
@@ -51,12 +52,12 @@ const canvas = makeCanvas(canvasEl, ctx);
 const config = window.__purrkourConfig || {};
 const THEME_STORAGE_KEY = "purrkour.initialTheme";
 const ONBOARDING_STORAGE_KEY = "purrkour.onboardingSeen.v1";
+const runStorage = createSafeStorage(getLocalStorage());
 const queryTheme = new URLSearchParams(window.location.search).get("theme");
-const storedTheme = readStoredTheme();
+const storedTheme = runStorage.getItem(THEME_STORAGE_KEY);
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
 const hud = createHUD(ui);
-const runStorage = getLocalStorage();
 if (initialTheme) game.userTheme = initialTheme;
 
 setupThemeControls(game, ui.themeBtn, ui.autoThemeBtn);
@@ -73,21 +74,9 @@ function getLocalStorage() {
   }
 }
 
-function readStoredTheme() {
-  try {
-    return localStorage.getItem(THEME_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
 function storeTheme(theme) {
-  try {
-    if (theme) localStorage.setItem(THEME_STORAGE_KEY, theme);
-    else localStorage.removeItem(THEME_STORAGE_KEY);
-  } catch {
-    // Theme selection remains session-local when storage is unavailable.
-  }
+  if (theme) runStorage.setItem(THEME_STORAGE_KEY, theme);
+  else runStorage.removeItem(THEME_STORAGE_KEY);
 }
 
 function setupThemeControls(game, themeButton, autoButton) {
@@ -205,7 +194,7 @@ function setupSpeedIndicator(el) {
 
 
 
-const audio = createAudio(ui.soundBtn);
+const audio = createAudio(ui.soundBtn, runStorage);
 const terrain = createTerrain(() => canvas.W, () => canvas.H);
 // Lakes are currently disabled (keeps core gameplay calmer). We keep a tiny no-op
 // object so other modules can call lakes.update/draw safely.

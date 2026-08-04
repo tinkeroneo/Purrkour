@@ -18,13 +18,13 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 | PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen und `--max-warnings=0` verhindert neue Warnschulden |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
-| PURR-08 | teilweise erledigt | 14 echte Node-Tests plus Browser-Audit; dauerhafter Browser-Smoke-Test und CI fehlen |
+| PURR-08 | teilweise erledigt | 16 echte Node-Tests plus Browser-Audit; dauerhafter Browser-Smoke-Test und CI fehlen |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
 | PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | erledigt | First-run-Hilfe, kurze Mobile-Hilfe, semantische Theme-/Auto-/HUD-Aktionen, Zielgrößen, Fokus, Zoom und ARIA umgesetzt |
 | PURR-14 | erledigt | 23 Warnungen entfernt, doppelte/unreferenzierte Module gelöscht und Warnbudget auf null gesetzt |
 | PURR-15 | erledigt | Bonusleben verbraucht jeden 60-Punkte-Meilenstein exakt einmal |
-| PURR-16 | teilweise erledigt | Audio- und Themepräferenzen fehlertolerant; gemeinsame Storage-Abstraktion fehlt |
+| PURR-16 | erledigt | gemeinsame getestete Storage-Abstraktion schützt Theme, Audio, Onboarding und Bestwert |
 | PURR-17 | erledigt | eigener Game-over-Dialog hält den Run an und zeigt Score, Bestwert sowie bewussten Neustart |
 | PURR-18 | erledigt | Hook reicht `$1` weiter; gültige Nachricht endet 0, ungültige 1 |
 | PURR-19 | erledigt | durch aktiven Linter entdeckten undefinierten City-Renderer entfernt |
@@ -38,14 +38,14 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
 - Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint und 14 Node-Tests sind wirksam; eine CI-Pipeline fehlt.
+- ESLint, Husky, Commitlint und 16 Node-Tests sind wirksam; eine CI-Pipeline fehlt.
 
 ## Durchgeführte Prüfungen
 
 | Prüfung | Ergebnis |
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
-| `npm run check` | erfolgreich; aktiver Linter plus 14/14 Tests |
+| `npm run check` | erfolgreich; aktiver Linter plus 16/16 Tests |
 | `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
@@ -166,11 +166,11 @@ Solange der Score exakt durch 60 teilbar ist, wird nach Einsammeln eines Bonusle
 
 Maßnahme: Nächsten erreichten Meilenstein explizit im State speichern.
 
-#### PURR-16 · teilweise erledigt: Persistenz war unvollständig und nicht fehlertolerant
+#### PURR-16 · erledigt: Persistenz war unvollständig und nicht fehlertolerant
 
 Das initiale Theme wird aus `localStorage` gelesen, aber von der Anwendung nicht geschrieben. Storage-Zugriffe sind nicht gegen gesperrten oder vollen Speicher abgesichert.
 
-Maßnahme: Kleine Storage-Abstraktion mit Validierung, Fehlerfallback und klar definierten persistenten Präferenzen einführen.
+Umsetzung: Eine getestete Safe-Storage-Abstraktion kapselt Lesen, Schreiben und Löschen mit sicheren Rückgabewerten. Theme, Audio, Onboarding und Bestwert nutzen denselben Backend-Wrapper; blockierter, voller oder fehlender Storage unterbricht das Spiel nicht.
 
 #### PURR-17 · erledigt: Game-over-Rückmeldung war zu kurz
 
@@ -200,8 +200,7 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 
 ## Empfohlene Abarbeitung
 
-1. Storage-Zugriffe zentralisieren und Präferenzmigration testen (`PURR-16`).
-2. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
+1. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
 
 ## Browser-Nachweise
 

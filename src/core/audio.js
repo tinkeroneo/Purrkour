@@ -1,4 +1,8 @@
-export function createAudio(soundBtnEl) {
+export function createAudio(soundBtnEl, storage = null) {
+    let preferenceStorage = storage;
+    if (!preferenceStorage) {
+        try { preferenceStorage = localStorage; } catch { preferenceStorage = null; }
+    }
     let audioCtx = null;
     let unlocked = false;
     let pendingAmbience = null;
@@ -6,7 +10,7 @@ export function createAudio(soundBtnEl) {
 
     function readPreference() {
         try {
-            return localStorage.getItem("purrkour_sfx") ?? "on";
+            return preferenceStorage?.getItem("purrkour_sfx") ?? "on";
         } catch {
             return "on";
         }
@@ -14,7 +18,7 @@ export function createAudio(soundBtnEl) {
 
     function writePreference(value) {
         try {
-            localStorage.setItem("purrkour_sfx", value);
+            preferenceStorage?.setItem("purrkour_sfx", value);
         } catch {
             // Audio remains usable when storage is blocked or full.
         }
