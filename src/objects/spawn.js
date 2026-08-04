@@ -24,6 +24,7 @@ export function createSpawner(game, terrain, objects, canvas) {
   };
 
   let nextSpawnIn = 260;
+  let lastTick = game.tick;
   function minGapForScore(s) {
     return clamp(CALM.gapBase - s * CALM.gapSlope, CALM.gapMin, CALM.gapBase);
   }
@@ -432,6 +433,8 @@ export function createSpawner(game, terrain, objects, canvas) {
   }
 
   function update(palette) {
+    if (game.tick < lastTick) reset();
+    lastTick = game.tick;
     nextSpawnIn -= game._effSpeed;
     if (nextSpawnIn <= 0) {
       const spawnX = canvas.W + 140;
@@ -441,10 +444,11 @@ export function createSpawner(game, terrain, objects, canvas) {
       }
     }
 
-    // bonus life every 60 score (only if not full)
-    if (game.lives < (game.maxLives ?? 7) && game.score > 0 && game.score % 60 === 0) {
+    // Consume each score milestone exactly once, even if the score stays unchanged.
+    while (game.score >= game.nextBonusLifeScore) {
+      game.nextBonusLifeScore += 60;
       const already = objects.list.some(o => o.kind === "collectible" && o.type === "life" && !o.taken);
-      if (!already) spawnLife(canvas.W + 260);
+      if (game.lives < (game.maxLives ?? 7) && !already) spawnLife(canvas.W + 260);
     }
   }
 

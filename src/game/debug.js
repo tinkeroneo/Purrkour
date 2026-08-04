@@ -1,4 +1,9 @@
+import { bumpBaseSpeed } from "./speed.js";
+
 export function setupDebugControls({ game, cat, objects, terrain, bg, uiRoot }) {
+  const enabled = new URLSearchParams(window.location.search).get("debug") === "1";
+  if (!enabled) return { onKey: () => false };
+
   function onKey(e) {
     // Dev shortcuts (non-destructive)
     if (e.code === "KeyH") {
@@ -79,8 +84,8 @@ export function setupDebugControls({ game, cat, objects, terrain, bg, uiRoot }) 
     if (api?.enterBeatById) api.enterBeatById(id, "dev");
   };
 
-  window.speedUp = () => game.baseSpeed += 0.05;
-  window.speedDown = () => game.baseSpeed -= 0.05;
+  window.speedUp = () => bumpBaseSpeed(game, 0.05);
+  window.speedDown = () => bumpBaseSpeed(game, -0.05);
 
   return { onKey };
 }

@@ -1,6 +1,6 @@
 export default [
   {
-    files: ["*/.js"],
+    files: ["**/*.js"],
 
     languageOptions: {
       ecmaVersion: "latest",
@@ -12,6 +12,11 @@ export default [
         requestAnimationFrame: "readonly",
         localStorage: "readonly",
         AudioContext: "readonly",
+        clearTimeout: "readonly",
+        location: "readonly",
+        performance: "readonly",
+        setTimeout: "readonly",
+        URLSearchParams: "readonly",
       },
     },
 

@@ -110,23 +110,25 @@ function clearWorld(objects) {
 }
 
 export function createProgression({ game, objects, startThemeFade, audio }) {
-  // persistent progression state lives on game.progression
-  if (!game.progression) {
-    game.progression = {
+  function initialProgressionState() {
+    return {
       controlsSpeed: true,
       beatIdx: 0,
       beatId: BEATS[0].id,
       beatStartScore: 0,
       beatTick: 0,
-      // night as continuous value (0..1), progression-owned
       night: 0,
       nightTarget: 0,
       ambiencePreset: null,
-      // checkpoint-triggered breath
       _lastCheckpointActive: false,
       _forcedBreath: false,
       _resumeIdx: null,
     };
+  }
+
+  // persistent progression state lives on game.progression
+  if (!game.progression) {
+    game.progression = initialProgressionState();
   }
 
   function currentBeat() {
@@ -274,10 +276,15 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     applyOutputs();
   }
 
+  function reset() {
+    game.progression = initialProgressionState();
+    enterBeat(0, "reset");
+  }
+
   // Ensure we start in a known beat on boot
   if (game.progression.beatIdx === 0 && game.score === 0) {
     enterBeat(0, "boot");
   }
 
-  return { update, enterBeat, enterBeatById, currentBeat };
+  return { update, reset, enterBeat, enterBeatById, currentBeat };
 }

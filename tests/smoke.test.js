@@ -1,6 +1,9 @@
-const fs = require("fs");
-const path = require("path");
-const assert = require("assert");
+import fs from "node:fs";
+import path from "node:path";
+import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function read(file) {
   return fs.readFileSync(path.join(__dirname, "..", file), "utf8");

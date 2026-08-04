@@ -1,11 +1,13 @@
 import { getTheme } from "../world/themes.js";
 import { createSetpieceManager } from "./setpieces.js";
 import { createProgression } from "./progression.js";
+import { createFixedStepClock } from "./timestep.js";
 
 
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio, canvas }) {
     const setpieces = createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio });
+    const clock = createFixedStepClock();
 
     function startThemeFade(toKey, dur = 70) {
         const fromKey = game.theme;
@@ -25,7 +27,7 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
     const progression = createProgression({ game, objects, startThemeFade, audio });
     // Expose for dev shortcuts
     game.progressionApi = progression;
-function step() {
+function simulate() {
         if (!game.finished) {
             // dx: letzter effSpeed (wird in collider.update() neu berechnet)
             const dx = collider.effSpeed();
@@ -90,8 +92,6 @@ function step() {
                 // still tick a bit for overlays
                 objects.updateBubbles?.();
                 hud.sync(game, c);
-                drawer.draw(objects);
-                requestAnimationFrame(step);
                 return;
             }
 
@@ -174,11 +174,13 @@ if (game.setpiece?.active) {
             hud.sync(game, cat.cat ?? cat); // je nachdem ob createCat {cat,...} zurückgibt
         }
 
-        // 5) render
-        drawer.draw(objects);
-
-        requestAnimationFrame(step);
     }
 
-    return { start: () => requestAnimationFrame(step) };
+    function frame(time) {
+        clock.advance(time, simulate);
+        drawer.draw(objects);
+        requestAnimationFrame(frame);
+    }
+
+    return { start: () => requestAnimationFrame(frame) };
 }

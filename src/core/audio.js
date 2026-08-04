@@ -1,10 +1,23 @@
 export function createAudio(soundBtnEl) {
     let audioCtx = null;
-    let enabled = (localStorage.getItem("purrkour_sfx") ?? "on") === "on";
+    let unlocked = false;
+    let pendingAmbience = null;
+    let enabled = readPreference() === "on";
 
-    function ensure() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === "suspended") audioCtx.resume().catch(() => { });
+    function readPreference() {
+        try {
+            return localStorage.getItem("purrkour_sfx") ?? "on";
+        } catch {
+            return "on";
+        }
+    }
+
+    function writePreference(value) {
+        try {
+            localStorage.setItem("purrkour_sfx", value);
+        } catch {
+            // Audio remains usable when storage is blocked or full.
+        }
     }
     // --- simple mixer buses ---
     let master = null, sfxBus = null, ambBus = null;
@@ -26,23 +39,49 @@ export function createAudio(soundBtnEl) {
         master.connect(audioCtx.destination);
     }
 
-    function ensureAll() {
-        ensure();
+    function isReady() {
+        return Boolean(enabled && unlocked && audioCtx && audioCtx.state === "running" && master);
+    }
+
+    function activateUnlockedContext() {
         initMixer();
+        unlocked = audioCtx?.state === "running";
+        if (unlocked && pendingAmbience) applyAmbience(pendingAmbience);
+    }
+
+    function unlock() {
+        if (!enabled) return;
+        if (!audioCtx) {
+            const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextCtor) return;
+            audioCtx = new AudioContextCtor();
+        }
+        if (audioCtx.state === "suspended") {
+            audioCtx.resume().then(activateUnlockedContext).catch(() => { unlocked = false; });
+            return;
+        }
+        activateUnlockedContext();
     }
 
 
     function setEnabled(on) {
         enabled = !!on;
-        localStorage.setItem("purrkour_sfx", enabled ? "on" : "off");
-        if (soundBtnEl) soundBtnEl.textContent = enabled ? "🔊" : "🔇";
-        if (!enabled) stopAmbience();
+        writePreference(enabled ? "on" : "off");
+        if (soundBtnEl) {
+            soundBtnEl.textContent = enabled ? "🔊" : "🔇";
+            soundBtnEl.setAttribute("aria-pressed", String(enabled));
+            soundBtnEl.setAttribute("aria-label", enabled ? "Sound ausschalten" : "Sound einschalten");
+        }
+        if (!enabled) {
+            pendingAmbience = null;
+            stopAmbience();
+        }
     }
 
 
 
     function tone({ freq = 440, dur = 0.08, type = "sine", vol = 0.05, slideTo = null }) {
-        if (!enabled || !audioCtx) return;
+        if (!isReady()) return;
         const t0 = audioCtx.currentTime;
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
@@ -55,7 +94,6 @@ export function createAudio(soundBtnEl) {
         g.gain.linearRampToValueAtTime(vol, t0 + 0.01);
         g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
-        ensureAll();
         o.connect(g).connect(sfxBus);
 
         o.start(t0);
@@ -75,8 +113,7 @@ export function createAudio(soundBtnEl) {
 
 
     function bark(vol = 0.07) {
-        if (!enabled) return;
-        ensureAll();
+        if (!isReady()) return;
 
         const t0 = audioCtx.currentTime;
 
@@ -119,7 +156,7 @@ export function createAudio(soundBtnEl) {
 
   // soft "thup" for stomps/landings
   function stomp(vol = 0.05) {
-    if (!enabled || !audioCtx) return;
+    if (!isReady()) return;
     const t0 = audioCtx.currentTime;
 
     const lp = audioCtx.createBiquadFilter();
@@ -154,34 +191,40 @@ function chime(vol = 0.045) {
         night: null,
         whoosh: null,
         rumble: null,
+        engine: null,
 
         windGain: null,
         oceanGain: null,
         nightGain: null,
         whooshGain: null,
         rumbleGain: null,
+        engineGain: null,
 
         whooshLfo: null,
-        whooshLfogain: null
+        whooshLfoGain: null,
+        engineLfo: null,
+        engineLfoGain: null
     };
     setEnabled(enabled);
-    function stopNode(n) { try { n?.stop?.(); } catch { } }
+    function stopNode(n) {
+        try { n?.stop?.(); } catch {
+            // A stopped WebAudio node cannot be stopped twice.
+        }
+    }
 
     function stopAmbience() {
         stopNode(amb.wind); stopNode(amb.ocean); stopNode(amb.night);
-        stopNode(amb.whoosh); stopNode(amb.rumble);
-        stopNode(amb.whooshLfo);
+        stopNode(amb.whoosh); stopNode(amb.rumble); stopNode(amb.engine);
+        stopNode(amb.whooshLfo); stopNode(amb.engineLfo);
 
-        amb.wind = amb.ocean = amb.night = amb.whoosh = amb.rumble = null;
-        amb.windGain = amb.oceanGain = amb.nightGain = amb.whooshGain = amb.rumbleGain = null;
-        amb.whooshLfo = amb.whooshLfoGain = null;
+        amb.wind = amb.ocean = amb.night = amb.whoosh = amb.rumble = amb.engine = null;
+        amb.windGain = amb.oceanGain = amb.nightGain = amb.whooshGain = amb.rumbleGain = amb.engineGain = null;
+        amb.whooshLfo = amb.whooshLfoGain = amb.engineLfo = amb.engineLfoGain = null;
     }
 
 
-    function setAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0, engine = 0, tau = 0.12 } = {}) {
-
-        if (!enabled) { stopAmbience(); return; }
-        ensureAll();
+    function applyAmbience({ wind = 0, ocean = 0, night = 0, whoosh = 0, rumble = 0, engine = 0, tau = 0.12 } = {}) {
+        if (!isReady()) return;
 
         // lazy-create each layer
         function ensureLayer(key, freq, type) {
@@ -303,6 +346,12 @@ function chime(vol = 0.045) {
 
     }
 
+    function setAmbience(mix = {}) {
+        if (!enabled) return;
+        pendingAmbience = { ...mix };
+        if (isReady()) applyAmbience(pendingAmbience);
+    }
+
     const SFX = {
         jump: () => tone({ freq: 320, dur: 0.07, type: "triangle", vol: 0.055, slideTo: 280 }),
         mouse: () => tone({ freq: 760, dur: 0.06, type: "sine", vol: 0.045, slideTo: 860 }),
@@ -321,10 +370,19 @@ function chime(vol = 0.045) {
     if (soundBtnEl) {
         soundBtnEl.addEventListener("click", (e) => {
             e.preventDefault();
-            ensureAll();
-            setEnabled(!enabled);
+            const next = !enabled;
+            setEnabled(next);
+            if (next) unlock();
         });
     }
 
-    return { ensure: ensureAll, SFX, setAmbience, stopAmbience, get enabled() { return enabled; }, setEnabled };
+    return {
+        ensure: unlock,
+        SFX,
+        setAmbience,
+        stopAmbience,
+        get enabled() { return enabled; },
+        get unlocked() { return unlocked; },
+        setEnabled
+    };
 }

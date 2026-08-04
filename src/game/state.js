@@ -5,9 +5,11 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
     const initialTheme = initialThemeOverride || "forest";
     const initialThemeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
     return {
+        initialTheme,
         tick: 0,
         score: 0,
         mice: 0,
+        nextBonusLifeScore: 60,
         speed: getInitialBaseSpeed(),
         progressionSpeedMul: 1.0,
         speedMul: 1.0,
@@ -104,4 +106,13 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
 
         lastHitTick: -99999
     };
+}
+
+export function resetGameState(game) {
+    const progressionApi = game.progressionApi;
+    const initial = createGameState({ initialTheme: game.initialTheme || "forest" });
+    for (const key of Object.keys(game)) delete game[key];
+    Object.assign(game, initial);
+    if (progressionApi) game.progressionApi = progressionApi;
+    return game;
 }

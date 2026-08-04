@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
   <title>Purrkour</title>
@@ -25,9 +25,13 @@
       background:rgba(255,255,255,0.10); color:#fff; font-weight:900; white-space:nowrap;
     }
     .btn{
-      border:0; padding:5px 9px; border-radius:999px;
+      min-width:44px; min-height:44px;
+      border:0; padding:7px 11px; border-radius:999px;
       background:rgba(255,255,255,0.16); color:#fff; font-weight:900; cursor:pointer;
+      touch-action:none;
     }
+    .btn:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+    .btn.is-active{ background:rgba(145,220,255,0.42); transform:translateY(1px); }
     #lives{ display:flex; gap:2px; }
     #lives .heart{ display:inline-block; width:1.05em; text-align:center; opacity:1; }
     #lives .heart.off{ opacity:0.22; filter:grayscale(1); }
@@ -54,7 +58,7 @@
       }
       #ui>div{ font-size:12px; }
       .pill{ padding:3px 8px; }
-      .btn{ padding:4px 8px; font-size:12px; }
+      .btn{ padding:6px 9px; font-size:12px; }
       #hint{ display:block; font-size:11px; bottom:6px; }
       #ui{ grid-template-columns:repeat(4, auto); }
       #ui .score{ grid-column:1 / span 2; }
@@ -74,14 +78,15 @@
     <div class="pill theme"><span id="catnip">aus</span></div>
 
     <div class="controls">
-      <button class="btn" id="restBtn" title="Zur Hütte (Pause)">🏠</button>
-      <button class="btn" id="soundBtn" title="Sound an/aus">🔊</button>
-      <button class="btn" id="speedBtn" title="Pace steigt automatisch">Pace 1.0x</button>
+      <button class="btn" id="restBtn" type="button" aria-label="Pause an der Hütte" aria-pressed="false" title="Zur Hütte (Pause)">🏠</button>
+      <button class="btn" id="crouchBtn" type="button" aria-label="Ducken" aria-pressed="false" title="Zum Ducken gedrückt halten">↓</button>
+      <button class="btn" id="soundBtn" type="button" aria-label="Sound ausschalten" aria-pressed="true" title="Sound an/aus">🔊</button>
+      <button class="btn" id="speedBtn" type="button" aria-label="Pace steigt automatisch" title="Pace steigt automatisch" disabled>Pace 1.0x</button>
     </div>
   </div>
 
   <div id="hint">
-    Purrkour ❤️
+    Tippen: springen · ↓ halten: ducken · A/D oder Pfeile: bewegen
   </div>
 
   <canvas id="game"></canvas>

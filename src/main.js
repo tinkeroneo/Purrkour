@@ -9,7 +9,7 @@ import { setupDebugControls } from "./game/debug.js";
 
 import { createTerrain } from "./world/terrain.js";
 import { createBackground } from "./world/background.js";
-import { THEMES, getThemeOrder } from "./world/themes.js";
+import { getThemeOrder } from "./world/themes.js";
 
 import { createCat } from "./entities/cat.js";
 
@@ -29,6 +29,7 @@ const ui = {
   miceDisplay: document.getElementById("miceDisplay"),
   catnip: document.getElementById("catnip"),
   restBtn: document.getElementById("restBtn"),
+  crouchBtn: document.getElementById("crouchBtn"),
   soundBtn: document.getElementById("soundBtn"),
   speedBtn: document.getElementById("speedBtn"),
 };
@@ -38,7 +39,7 @@ const canvas = makeCanvas(canvasEl, ctx);
 const config = window.__purrkourConfig || {};
 const THEME_STORAGE_KEY = "purrkour.initialTheme";
 const queryTheme = new URLSearchParams(window.location.search).get("theme");
-const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+const storedTheme = readStoredTheme();
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
 const hud = createHUD(ui);
@@ -46,6 +47,24 @@ const hud = createHUD(ui);
 setupThemeHudToggle(game, ui.catnip);
 setupHudMinimode(uiRoot, uiRoot);
 setupSpeedIndicator(ui.speedBtn);
+setupCrouchButton(game, ui.crouchBtn);
+
+function readStoredTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeTheme(theme) {
+  try {
+    if (theme) localStorage.setItem(THEME_STORAGE_KEY, theme);
+    else localStorage.removeItem(THEME_STORAGE_KEY);
+  } catch {
+    // Theme selection remains session-local when storage is unavailable.
+  }
+}
 
 function setupThemeHudToggle(game, el) {
   if (!el) return;
@@ -53,7 +72,7 @@ function setupThemeHudToggle(game, el) {
   if (!order.length) return;
 
   el.style.cursor = "pointer";
-  el.title = "Tap: next theme � Long-press: auto";
+  el.title = "Tippen: nächstes Thema · Halten: automatisch";
 
   let downAt = 0;
   let longPressTimer = null;
@@ -66,19 +85,23 @@ function setupThemeHudToggle(game, el) {
 
     game.userTheme = next;
     game.theme = next;
+    storeTheme(next);
 
     // smooth fade if supported by background
-    game.themeFade = { from, to: next, t: 0, dur: 350 };
+    game.themeFade = { active: true, from, to: next, t: 0, dur: 80 };
   }
 
   function clearOverride() {
     game.userTheme = null;
+    storeTheme(null);
     // let progression reclaim theme next tick
   }
 
   el.addEventListener("pointerdown", (e) => {
     downAt = performance.now();
-    try { el.setPointerCapture(e.pointerId); } catch {}
+    try { el.setPointerCapture(e.pointerId); } catch {
+      // Pointer capture is optional for the long-press gesture.
+    }
     longPressTimer = setTimeout(() => {
       clearOverride();
       longPressTimer = null;
@@ -99,6 +122,26 @@ function setupThemeHudToggle(game, el) {
     if (longPressTimer) clearTimeout(longPressTimer);
     longPressTimer = null;
   }, { passive: true });
+}
+
+function setupCrouchButton(game, el) {
+  if (!el) return;
+  function setCrouch(active) {
+    if (!game.input) game.input = { moveDir: 0, crouch: false };
+    game.input.crouch = !!active;
+    el.classList.toggle("is-active", !!active);
+    el.setAttribute("aria-pressed", String(!!active));
+  }
+  el.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    try { el.setPointerCapture(event.pointerId); } catch {
+      // Pointer capture is optional; release handlers still clear the state.
+    }
+    setCrouch(true);
+  }, { passive: false });
+  for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    el.addEventListener(eventName, () => setCrouch(false), { passive: true });
+  }
 }
 
 

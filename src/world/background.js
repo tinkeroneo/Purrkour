@@ -369,32 +369,28 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.globalAlpha = 1;
   } else if (themeKey === "city") {
     // skyline with subtle windows
-    if (typeof drawCitySkyline === "function") {
-      drawCitySkyline(ctx, mid, p);
-    } else {
-      const baseY = Hv * 0.72;
+    const baseY = Hv * 0.72;
+    ctx.globalAlpha = 0.50;
+    ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
+    for (let i = 0; i < 18; i++) {
+      const x = ((i * 78) - (mid * 0.28)) % (Wv + 120) - 60;
+      const bw = 36 + (i % 3) * 10;
+      const bh = Math.min(40 + ((i * 17) % 60), baseY - 8);
+      const y0 = baseY - bh;
+      ctx.fillRect(x, y0, bw, bh);
+
+      // windows
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "rgba(255,247,204,0.9)";
+      for (let wy = y0 + 10; wy < baseY - 10; wy += 12) {
+        for (let wx = x + 8; wx < x + bw - 8; wx += 10) {
+          if (((wx + wy + (mid|0)) % 23) < 10) ctx.fillRect(wx, wy, 4, 6);
+        }
+      }
       ctx.globalAlpha = 0.50;
       ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
-      for (let i = 0; i < 18; i++) {
-        const x = ((i * 78) - (mid * 0.28)) % (Wv + 120) - 60;
-        const bw = 36 + (i % 3) * 10;
-        const bh = Math.min(40 + ((i * 17) % 60), baseY - 8);
-        const y0 = baseY - bh;
-        ctx.fillRect(x, y0, bw, bh);
-
-        // windows
-        ctx.globalAlpha = 0.18;
-        ctx.fillStyle = "rgba(255,247,204,0.9)";
-        for (let wy = y0 + 10; wy < baseY - 10; wy += 12) {
-          for (let wx = x + 8; wx < x + bw - 8; wx += 10) {
-            if (((wx + wy + (mid|0)) % 23) < 10) ctx.fillRect(wx, wy, 4, 6);
-          }
-        }
-        ctx.globalAlpha = 0.50;
-        ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
-      }
-      ctx.globalAlpha = 1;
     }
+    ctx.globalAlpha = 1;
   } else if (themeKey === "desert") {
     // dunes
     ctx.globalAlpha = 0.35;

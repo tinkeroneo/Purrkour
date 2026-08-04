@@ -1,5 +1,6 @@
 import { aabb, clamp } from "../core/util.js";
-import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffectiveSpeed, resetBaseSpeed } from "../game/speed.js";
+import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffectiveSpeed } from "../game/speed.js";
+import { resetGameState } from "../game/state.js";
 import { getOverlay } from "../world/overlays.js";
 
 export function createCollider(game, catApi, terrain, objects, audio, hud, canvas) {
@@ -110,35 +111,9 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         objects.list.length = 0;
         objects.pawprints.length = 0;
         objects.bubbles.length = 0;
-
-        game.tick = 0;
-        game.score = 0;
-        game.mice = 0;
-        resetBaseSpeed(game);
-
-        game.lives = 7;
-        game.invulnTimer = 0;
-
-        game.slowTimer = 0;
-        game.catnipTimer = 0;
-        game.tripleJumpTimer = 0;
-
-        game.chaseActive = false;
-        game.chaseTimer = 0;
-        game.barkTimer = 0;
-        game.finished = false;
-        if (game.input) {
-            game.input.moveDir = 0;
-            game.input.crouch = false;
-        }
-        if (game.tunnel) {
-            game.tunnel.active = false;
-            game.tunnel.exitSpawned = false;
-        }
-
-        game.checkpointActive = false;
-        game.checkpointGlow = 0;
-
+        resetGameState(game);
+        game.progressionApi?.reset?.();
+        terrain.init();
         resetCatPosition();
         objects.toast("Purrkour 🐾", 160);
     }
