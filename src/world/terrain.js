@@ -34,6 +34,24 @@ export function createTerrain(getW, getH) {
     while (terrainPts[terrainPts.length - 1].x < getW() + TERRAIN.stepX) addPoint();
   }
 
+  function resize() {
+    if (!terrainPts.length) {
+      init();
+      return 0;
+    }
+
+    const previousBaseY = BASE_SURFACE_Y;
+    syncBounds();
+    const deltaY = BASE_SURFACE_Y - previousBaseY;
+
+    for (const point of terrainPts) {
+      point.y = clamp(point.y + deltaY, TERRAIN.minY, TERRAIN.maxY);
+    }
+    while (terrainPts[terrainPts.length - 1].x < getW() + TERRAIN.stepX) addPoint();
+
+    return deltaY;
+  }
+
   function addPoint() {
     const last = terrainPts[terrainPts.length - 1];
     const prev = terrainPts[terrainPts.length - 2] || last;
@@ -158,5 +176,5 @@ ctx.restore();
     ctx.stroke();
   }
 
-  return { init, update, surfaceAt, drawGround };
+  return { init, resize, update, surfaceAt, drawGround };
 }

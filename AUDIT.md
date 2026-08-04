@@ -1,8 +1,7 @@
 # Projektstatus und technisches Audit
 
-Stand: 2026-08-04
-Geprüfter Branch: `main` (`8aace1b`, synchron zu `origin/main`)
-Arbeitsbaum vor dem Audit: sauber
+Stand: 2026-08-05
+Geprüfter Branch: `main`
 
 ## Kurzurteil
 
@@ -19,14 +18,14 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 | PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen, 0 Fehler und 23 dokumentierte Altcode-Warnungen |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
-| PURR-08 | teilweise erledigt | 8 echte Node-Tests plus Browser-Audit; dauerhafter Browser-Smoke-Test und CI fehlen |
+| PURR-08 | teilweise erledigt | 13 echte Node-Tests plus Browser-Audit; dauerhafter Browser-Smoke-Test und CI fehlen |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
-| PURR-11 | offen | Resize verändert den laufenden Run weiterhin |
+| PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | teilweise erledigt | Hinweis, Ducken, Zielgrößen, Fokus, Zoom und ARIA verbessert; vollständiges Onboarding fehlt |
 | PURR-14 | offen | toter und doppelter Code bleibt aufzuräumen |
 | PURR-15 | erledigt | Bonusleben verbraucht jeden 60-Punkte-Meilenstein exakt einmal |
 | PURR-16 | teilweise erledigt | Audio- und Themepräferenzen fehlertolerant; gemeinsame Storage-Abstraktion fehlt |
-| PURR-17 | offen | eigener lesbarer Game-over-Zustand fehlt |
+| PURR-17 | erledigt | eigener Game-over-Dialog hält den Run an und zeigt Score, Bestwert sowie bewussten Neustart |
 | PURR-18 | erledigt | Hook reicht `$1` weiter; gültige Nachricht endet 0, ungültige 1 |
 | PURR-19 | erledigt | durch aktiven Linter entdeckten undefinierten City-Renderer entfernt |
 
@@ -39,14 +38,14 @@ Der aktuelle Schwerpunkt verschiebt sich dadurch von akuten Laufzeitrisiken auf 
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
 - Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint und acht Node-Tests sind wirksam; eine CI-Pipeline fehlt.
+- ESLint, Husky, Commitlint und 13 Node-Tests sind wirksam; eine CI-Pipeline fehlt.
 
 ## Durchgeführte Prüfungen
 
 | Prüfung | Ergebnis |
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
-| `npm run check` | erfolgreich; aktiver Linter plus 8/8 Tests |
+| `npm run check` | erfolgreich; aktiver Linter plus 13/13 Tests |
 | `npm run lint` | 0 Fehler; 23 Warnungen markieren vorhandenen Altcode |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
@@ -135,11 +134,11 @@ Maßnahme: `type: module` setzen und CommonJS-Konfigurationen/Tests explizit als
 
 Maßnahme: HUD nur bei Zustandsänderungen aktualisieren oder zuletzt gerenderte Werte cachen; Herzen einmal erzeugen und nur Klassen toggeln.
 
-#### PURR-11: Resize verändert einen laufenden Run
+#### PURR-11 · erledigt: Resize veränderte einen laufenden Run
 
 Jedes Resize initialisiert Terrain und Spawner neu und teleportiert die Katze, während bestehende Objekte und Progression bestehen bleiben. Mobile Browserleisten und Rotation können dadurch das Gameplay unerwartet verändern.
 
-Maßnahme: Canvasgröße von Run-Reset trennen; Terrain und aktive Objekte auf neue Maße migrieren oder Resize nur renderseitig behandeln.
+Umsetzung: Die initiale Weltanlage ist jetzt vom späteren Layout-Resize getrennt. Terrainform, Katze, aktive Objekte, Spuren, Sprechblasen und Partikel werden vertikal migriert; Score, Progression und Spawn-Timer bleiben erhalten. Zwei Modultests prüfen Höhen- und Breitenänderungen sowie die Objektmigration.
 
 #### PURR-12 · teilweise erledigt: Bedienung und wichtige Funktionen sind kaum auffindbar
 
@@ -173,11 +172,11 @@ Das initiale Theme wird aus `localStorage` gelesen, aber von der Anwendung nicht
 
 Maßnahme: Kleine Storage-Abstraktion mit Validierung, Fehlerfallback und klar definierten persistenten Präferenzen einführen.
 
-#### PURR-17: Game-over-Rückmeldung ist zu kurz
+#### PURR-17 · erledigt: Game-over-Rückmeldung war zu kurz
 
 Die Meldung kündigt einen Neustart an, der bereits nach 450 ms erfolgt und die visuelle Rückmeldung wieder löscht. Das ist kaum lesbar und bietet keine Wahl.
 
-Maßnahme: Klaren Game-over-Zustand mit Ergebnis, erneut spielen und optionalem Bestwert anzeigen.
+Umsetzung: Bei null Leben setzt der Collider einen echten `finished`-Zustand. Ein modaler Dialog zeigt Score und fehlertolerant gespeicherten Bestwert und bleibt stehen, bis die Person bewusst „Erneut spielen“ auswählt. Der Neustart verwendet weiterhin den kanonischen Reset-Pfad.
 
 #### PURR-18 · erledigt: Commit-Message-Hook war wirkungslos
 
@@ -201,18 +200,20 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 
 ## Empfohlene Abarbeitung
 
-1. Resize von Run-Reset trennen und Rotation/Browserleisten ohne Teleport oder Objektverlust behandeln (`PURR-11`).
-2. Eigenen lesbaren Game-over-Zustand mit Ergebnis und bewusster Neustartaktion bauen (`PURR-17`).
-3. Vollständiges First-run-Onboarding und semantische Themen-/Minimalmodus-Aktionen ergänzen (`PURR-12`, `PURR-13`).
-4. Die 23 Lint-Warnungen und den bekannten toten/doppelten Code kontrolliert bereinigen (`PURR-14`).
-5. Storage-Zugriffe zentralisieren und Präferenzmigration testen (`PURR-16`).
-6. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
+1. Vollständiges First-run-Onboarding und semantische Themen-/Minimalmodus-Aktionen ergänzen (`PURR-12`, `PURR-13`).
+2. Die 23 Lint-Warnungen und den bekannten toten/doppelten Code kontrolliert bereinigen (`PURR-14`).
+3. Storage-Zugriffe zentralisieren und Präferenzmigration testen (`PURR-16`).
+4. Browser-Smoke-Test, CI, README und Release-Checkliste ergänzen (`PURR-08`).
 
 ## Browser-Nachweise
 
 Desktopansicht nach Fixes:
 
 ![Purrkour Desktop](docs/audit/desktop.png)
+
+Aktuelle mobile Hochkantansicht mit allen Basisaktionen:
+
+![Purrkour Mobile](docs/audit/mobile.png)
 
 Mobiler Hochkant-Viewport im geprüften Pausezustand; der erste Button ist semantisch und visuell auf „Weiterspielen“ gewechselt:
 

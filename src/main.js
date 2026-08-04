@@ -6,6 +6,7 @@ import { createGameState } from "./game/state.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
 import { setupDebugControls } from "./game/debug.js";
+import { recordScore } from "./game/records.js";
 
 import { createTerrain } from "./world/terrain.js";
 import { createBackground } from "./world/background.js";
@@ -32,6 +33,11 @@ const ui = {
   crouchBtn: document.getElementById("crouchBtn"),
   soundBtn: document.getElementById("soundBtn"),
   speedBtn: document.getElementById("speedBtn"),
+  gameOverDialog: document.getElementById("gameOverDialog"),
+  gameOverScore: document.getElementById("gameOverScore"),
+  gameOverBest: document.getElementById("gameOverBest"),
+  gameOverBestLabel: document.getElementById("gameOverBestLabel"),
+  restartBtn: document.getElementById("restartBtn"),
 };
 
 
@@ -43,11 +49,20 @@ const storedTheme = readStoredTheme();
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
 const hud = createHUD(ui);
+const runStorage = getLocalStorage();
 
 setupThemeHudToggle(game, ui.catnip);
 setupHudMinimode(uiRoot, uiRoot);
 setupSpeedIndicator(ui.speedBtn);
 setupCrouchButton(game, ui.crouchBtn);
+
+function getLocalStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 function readStoredTheme() {
   try {
@@ -191,20 +206,61 @@ const cat = createCat(game, hud);
 const objects = createObjects();
 const drawer = createDrawer(ctx, canvas, game, cat, terrain, lakes, bg);
 const spawner = createSpawner(game, terrain, objects, canvas);
-const collider = createCollider(game, cat, terrain, objects, audio, hud, canvas);
+const collider = createCollider(game, cat, terrain, objects, audio, hud, canvas, {
+  onGameOver: showGameOver,
+});
 
-// resize init
-function hardResize() {
+function showGameOver({ score }) {
+  const result = recordScore(runStorage, score);
+  if (ui.gameOverScore) ui.gameOverScore.textContent = String(score);
+  if (ui.gameOverBest) ui.gameOverBest.textContent = String(result.best);
+  if (ui.gameOverBestLabel) ui.gameOverBestLabel.hidden = !result.isNewBest;
+  if (!ui.gameOverDialog) return;
+
+  if (typeof ui.gameOverDialog.showModal === "function") ui.gameOverDialog.showModal();
+  else ui.gameOverDialog.setAttribute("open", "");
+}
+
+function closeGameOver() {
+  if (!ui.gameOverDialog) return;
+  if (typeof ui.gameOverDialog.close === "function") ui.gameOverDialog.close();
+  else ui.gameOverDialog.removeAttribute("open");
+}
+
+if (ui.gameOverDialog) {
+  ui.gameOverDialog.addEventListener("cancel", (event) => event.preventDefault());
+}
+
+if (ui.restartBtn) {
+  ui.restartBtn.addEventListener("click", () => {
+    collider.resetAll();
+    closeGameOver();
+  });
+}
+
+let layoutInitialized = false;
+function resizeLayout() {
   canvas.resize();
-  terrain.init();
-  lakes.reset();
-  spawner.reset();
-  collider.resetCatPosition();
+
+  if (!layoutInitialized) {
+    terrain.init();
+    lakes.reset();
+    spawner.reset();
+    collider.resetCatPosition();
+    layoutInitialized = true;
+  } else {
+    const deltaY = terrain.resize();
+    objects.reflowVertical(deltaY, terrain);
+    cat.cat.y += deltaY;
+    cat.clampX(canvas.W);
+    if (cat.cat.onSurface) cat.cat.y = terrain.surfaceAt(cat.cat.x) - cat.cat.h;
+  }
+
   hud.sync(game, cat.cat);
 }
 
-hardResize();
-window.addEventListener("resize", hardResize, { passive: true });
+resizeLayout();
+window.addEventListener("resize", resizeLayout, { passive: true });
 
 // input
 const debug = setupDebugControls({ game, cat, objects, terrain, bg, uiRoot });

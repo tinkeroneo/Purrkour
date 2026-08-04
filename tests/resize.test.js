@@ -1,0 +1,42 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { createObjects } from "../src/objects/objects.js";
+import { createTerrain } from "../src/world/terrain.js";
+
+test("terrain resize preserves its shape while adapting to the viewport", () => {
+  let width = 390;
+  let height = 640;
+  const terrain = createTerrain(() => width, () => height);
+  terrain.init();
+
+  const surfaceBefore = terrain.surfaceAt(110);
+  height = 800;
+  const deltaY = terrain.resize();
+
+  assert.equal(deltaY, 160);
+  assert.equal(terrain.surfaceAt(110), surfaceBefore + 160);
+
+  width = 1400;
+  assert.equal(terrain.resize(), 0);
+  assert.ok(Number.isFinite(terrain.surfaceAt(1300)));
+});
+
+test("active objects migrate vertically without being reset", () => {
+  const objects = createObjects();
+  const terrain = { surfaceAt: (x) => 500 + x / 100 };
+  const ground = { x: 100, y: 0, yMode: "ground", yOffset: -30 };
+  const fixed = { x: 200, y: 120, yMode: "fixed" };
+  objects.add(ground);
+  objects.add(fixed);
+  objects.pawprints.push({ x: 50, y: 1, life: 10 });
+  objects.bubbles.push({ x: 10, y: 40, life: 10 });
+
+  objects.reflowVertical(90, terrain);
+
+  assert.equal(objects.list.length, 2);
+  assert.equal(ground.y, 471);
+  assert.equal(fixed.y, 210);
+  assert.equal(objects.pawprints[0].y, 494.5);
+  assert.equal(objects.bubbles[0].y, 130);
+});

@@ -3,7 +3,7 @@ import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffecti
 import { resetGameState } from "../game/state.js";
 import { getOverlay } from "../world/overlays.js";
 
-export function createCollider(game, catApi, terrain, objects, audio, hud, canvas) {
+export function createCollider(game, catApi, terrain, objects, audio, hud, canvas, lifecycle = {}) {
     const { cat } = catApi;
 
     function applyGroundY(o) {
@@ -40,8 +40,13 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         }
 
         if (game.lives <= 0) {
-            objects.toast("Alle Leben weg… Neustart 🐾", 160);
-            setTimeout(resetAll, 450);
+            game.finished = true;
+            if (game.input) {
+                game.input.moveDir = 0;
+                game.input.crouch = false;
+            }
+            objects.toast("Lauf beendet 🐾", 160);
+            lifecycle.onGameOver?.({ score: game.score, mice: game.mice });
         }
     }
 

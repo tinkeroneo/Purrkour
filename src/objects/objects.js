@@ -55,6 +55,22 @@ export function createObjects() {
     }
   }
 
+  function reflowVertical(deltaY, terrain) {
+    if (!Number.isFinite(deltaY)) return;
+
+    for (const object of list) {
+      if (!object) continue;
+      if (object.yMode === "ground") {
+        object.y = terrain.surfaceAt(object.x) + (object.yOffset ?? 0);
+      } else if (Number.isFinite(object.y)) {
+        object.y += deltaY;
+      }
+    }
+    for (const pawprint of pawprints) pawprint.y = terrain.surfaceAt(pawprint.x) - 6;
+    for (const bubble of bubbles) bubble.y += deltaY;
+    for (const puff of puffs) puff.y += deltaY;
+  }
+
   function toastState() {
     return { toastTimer, toastText };
   }
@@ -63,12 +79,14 @@ export function createObjects() {
     list,
     pawprints,
     bubbles,
+    puffs,
     add,
     addBubble,
     toast,
     updateBubbles,
     maybeAddPawprint,
     updatePawprints,
+    reflowVertical,
     toastState
   };
 }

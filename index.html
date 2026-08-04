@@ -46,6 +46,19 @@
       text-shadow:0 1px 10px rgba(0,0,0,0.35); padding:0 10px;
     }
     #hint.minimal{ display:none; }
+    dialog{
+      width:min(390px, calc(100vw - 32px)); box-sizing:border-box;
+      border:1px solid rgba(255,255,255,0.28); border-radius:22px;
+      padding:26px; color:#fff; text-align:center;
+      background:rgba(12,22,32,0.96); box-shadow:0 24px 80px rgba(0,0,0,0.48);
+    }
+    dialog::backdrop{ background:rgba(3,8,14,0.72); backdrop-filter:blur(5px); }
+    dialog h1{ margin:0 0 8px; font-size:clamp(26px, 8vw, 38px); }
+    dialog p{ margin:8px 0; }
+    .result{ display:flex; justify-content:center; gap:20px; margin:20px 0; }
+    .result strong{ display:block; font-size:28px; font-variant-numeric:tabular-nums; }
+    #gameOverBestLabel{ color:#ffd56a; font-weight:900; }
+    #restartBtn{ width:100%; font-size:16px; background:#f3c55e; color:#17202a; }
     #ui.minimal .mice, #ui.minimal .theme, #ui.minimal .controls{ display:none; }
     #ui.minimal{ grid-template-columns:auto auto; gap:6px 8px; }
     #ui.minimal .score{ grid-column:1 / span 1; }
@@ -88,6 +101,17 @@
   <div id="hint">
     Tippen: springen · ↓ halten: ducken · A/D oder Pfeile: bewegen
   </div>
+
+  <dialog id="gameOverDialog" aria-labelledby="gameOverTitle" aria-describedby="gameOverDescription">
+    <h1 id="gameOverTitle">Lauf beendet</h1>
+    <p id="gameOverDescription">Gute Jagd. Noch eine Runde?</p>
+    <div class="result">
+      <p>Score<strong id="gameOverScore">0</strong></p>
+      <p>Bestwert<strong id="gameOverBest">0</strong></p>
+    </div>
+    <p id="gameOverBestLabel" hidden>Neuer Bestwert! 🎉</p>
+    <button class="btn" id="restartBtn" type="button">Erneut spielen</button>
+  </dialog>
 
   <canvas id="game"></canvas>
 
