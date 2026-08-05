@@ -34,6 +34,11 @@ function simulate() {
                 hud.sync(game, cat.cat ?? cat);
                 return;
             }
+            tickPresentation(game.presentation);
+            if (game.presentation?.blocking) {
+                hud.sync(game, cat.cat ?? cat);
+                return;
+            }
             // dx: letzter effSpeed (wird in collider.update() neu berechnet)
             const dx = collider.effSpeed();
             // advance theme crossfade
@@ -46,7 +51,10 @@ function simulate() {
 
             // central dramaturgy (beats -> speed/theme/night/setpieces)
             progression.update();
-            tickPresentation(game.presentation);
+            if (game.presentation?.blocking) {
+                hud.sync(game, cat.cat ?? cat);
+                return;
+            }
 
             const theme = getTheme(game.theme);
 

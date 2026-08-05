@@ -8,11 +8,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("mobile controls expose crouch semantics and browser zoom", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const input = fs.readFileSync(path.join(root, "src/core/input.js"), "utf8");
   assert.match(html, /id="crouchBtn"[^>]*aria-label="Ducken"[^>]*aria-pressed="false"/);
+  assert.match(html, /id="moveLeftBtn"[^>]*aria-label="Nach links laufen"/);
+  assert.match(html, /id="moveRightBtn"[^>]*aria-label="Nach rechts laufen"/);
   assert.match(html, /min-width:44px; min-height:44px/);
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   assert.match(html, /Tippen: Sprung/);
   assert.match(html, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(input, /\.touch-controls, #presentationSkip/);
 });
 
 test("discoverable help, theme and compact-view controls replace hidden gestures", () => {
@@ -69,4 +73,6 @@ test("chapter, travel and route presentation previews are browser-verifiable", (
   assert.match(main, /route: \{ kind: "route"/);
   assert.match(draw, /function drawPresentation\(\)/);
   assert.match(draw, /getPresentationFrame\(presentation\)/);
+  assert.match(main, /dismissPresentation\(game\.presentation\)/);
+  assert.match(main, /setupMoveButtons\(game/);
 });

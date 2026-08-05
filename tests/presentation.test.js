@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   beginPresentation,
   createPresentationState,
+  dismissPresentation,
   getPresentationFrame,
   tickPresentation,
 } from "../src/game/presentation.js";
@@ -23,6 +24,25 @@ test("presentation cues have deterministic enter, hold and exit phases", () => {
   assert.ok(getPresentationFrame(state).alpha < 1);
   for (let i = 0; i < 2; i++) tickPresentation(state);
   assert.equal(state.active, false);
+});
+
+test("blocking chapter cards unlock safely and can consume the first jump", () => {
+  const state = beginPresentation(createPresentationState(), {
+    title: "Neue Welt",
+    blocking: true,
+    lockFrames: 3,
+  });
+  assert.equal(state.blocking, true);
+  tickPresentation(state);
+  tickPresentation(state);
+  assert.equal(state.blocking, true);
+  tickPresentation(state);
+  assert.equal(state.blocking, false);
+
+  beginPresentation(state, { blocking: true });
+  assert.equal(dismissPresentation(state), true);
+  assert.equal(state.active, false);
+  assert.equal(dismissPresentation(state), false);
 });
 
 test("reduced motion removes long entrance and exit animation", () => {

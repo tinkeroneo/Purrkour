@@ -157,6 +157,8 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
 
   function enterBeat(idx, reason = "") {
     const beat = BEATS[idx] ?? BEATS[0];
+    const previousBeat = BEATS[game.progression.beatIdx] ?? null;
+    const cinematic = reason === "boot" || reason === "reset" || !!beat.setpiece || previousBeat?.theme !== beat.theme;
     game.progression.beatIdx = idx;
     game.progression.beatId = beat.id;
     game.progression.beatLabel = beat.label;
@@ -166,13 +168,18 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     game.progression._forcedBreath = (reason === "checkpoint");
     const cue = BEAT_PRESENTATION[beat.id] || {};
     beginPresentation(game.presentation, {
-      kind: "chapter",
+      kind: cinematic ? "chapter" : "milestone",
       kicker: cue.kicker || `ETAPPE ${idx + 1}`,
       title: beat.label,
       subtitle: cue.subtitle || "Die Reise geht weiter",
       accent: cue.accent,
       reducedMotion: game.reducedMotion,
       pinned: game.presentationPreview === "chapter" && idx === 0,
+      blocking: cinematic,
+      lockFrames: 28,
+      enter: cinematic ? undefined : 10,
+      hold: cinematic ? undefined : 34,
+      exit: cinematic ? undefined : 16,
     });
 
     // Theme switch (soft fade)

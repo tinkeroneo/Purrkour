@@ -5,7 +5,7 @@ export function setupInput({ onJump, onKey, onMove, onCrouch }) {
   function isUiEvent(e) {
     const target = e?.target;
     if (!target || !target.closest) return false;
-    return !!target.closest("#ui, dialog");
+    return !!target.closest("#ui, dialog, .touch-controls, #presentationSkip");
   }
 
   function triggerJump(e) {

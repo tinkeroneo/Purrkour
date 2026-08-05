@@ -8,7 +8,7 @@ import { createJourneyAlbum } from "./game/album.js";
 import { getFlowMultiplier } from "./game/flow.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
-import { beginPresentation } from "./game/presentation.js";
+import { beginPresentation, dismissPresentation } from "./game/presentation.js";
 import { setupDebugControls } from "./game/debug.js";
 import { recordScore } from "./game/records.js";
 
@@ -74,6 +74,9 @@ const ui = {
   gameOverFlow: document.getElementById("gameOverFlow"),
   gameOverBestLabel: document.getElementById("gameOverBestLabel"),
   restartBtn: document.getElementById("restartBtn"),
+  presentationSkip: document.getElementById("presentationSkip"),
+  moveLeftBtn: document.getElementById("moveLeftBtn"),
+  moveRightBtn: document.getElementById("moveRightBtn"),
 };
 
 
@@ -98,6 +101,7 @@ setupThemeControls(game, ui.themeBtn, ui.autoThemeBtn);
 setupHudMinimode(uiRoot, ui.minimalBtn);
 setupSpeedIndicator(ui.speedBtn);
 setupCrouchButton(game, ui.crouchBtn);
+setupMoveButtons(game, ui.moveLeftBtn, ui.moveRightBtn);
 setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage);
 setupAlbum(game, album, ui);
 
@@ -183,6 +187,37 @@ function setupHudMinimode(uiRoot, button) {
     button.setAttribute("aria-label", minimal ? "Vollständige Ansicht einschalten" : "Kompaktansicht einschalten");
   }
   button.addEventListener("click", toggleMinimode);
+}
+
+function setupMoveButtons(game, leftButton, rightButton) {
+  const activePointers = new Map();
+  function applyDirection() {
+    const directions = [...activePointers.values()];
+    const direction = directions.length ? directions[directions.length - 1] : 0;
+    if (!game.input) game.input = { moveDir: 0, crouch: false };
+    game.input.moveDir = direction;
+    leftButton?.classList.toggle("is-active", direction < 0);
+    rightButton?.classList.toggle("is-active", direction > 0);
+  }
+  function bind(button, direction) {
+    if (!button) return;
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      activePointers.set(event.pointerId, direction);
+      try { button.setPointerCapture(event.pointerId); } catch {
+        // Release events still clear the direction without pointer capture.
+      }
+      applyDirection();
+    }, { passive: false });
+    for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      button.addEventListener(eventName, (event) => {
+        activePointers.delete(event.pointerId);
+        applyDirection();
+      }, { passive: true });
+    }
+  }
+  bind(leftButton, -1);
+  bind(rightButton, 1);
 }
 
 function setupHelp(game, dialog, openButton, closeButton, storage) {
@@ -353,6 +388,7 @@ const debug = setupDebugControls({ game, cat, objects, terrain, bg, uiRoot });
 setupInput({
   onJump: () => {
     if (game.pause?.active || game.helpOpen) return;
+    if (dismissPresentation(game.presentation)) return;
     audio.ensure();
     cat.jump(audio);
   },
@@ -399,6 +435,8 @@ const loop = createLoop({
   drawer, hud, audio, canvas
   ,album
 });
+
+ui.presentationSkip?.addEventListener("click", () => dismissPresentation(game.presentation));
 const presentationPreviews = {
   travel: { kind: "travel", kicker: "LEINEN LOS", title: "Über das Meer", subtitle: "Der Horizont öffnet sich", accent: "#76ddf2" },
   route: { kind: "route", kicker: "FREIWILLIGE HÖHENROUTE", title: "Goldgrat", subtitle: "5 Goldmäuse · +80 Punkte", accent: "#ffd166" },

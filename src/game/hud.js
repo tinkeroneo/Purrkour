@@ -12,6 +12,7 @@ export function createHUD(ui) {
   let lastJourney;
   let lastMission;
   let lastRiskRoute;
+  let lastPresentationBlock;
 
   const themeLabels = {
     forest: "Wald",
@@ -31,6 +32,13 @@ export function createHUD(ui) {
   }
 
   function sync(game, cat) {
+    const presentationBlocking = !!(game.presentation?.active && game.presentation?.blocking);
+    if (ui.presentationSkip && presentationBlocking !== lastPresentationBlock) {
+      ui.presentationSkip.hidden = !presentationBlocking;
+      ui.presentationSkip.setAttribute?.("aria-label", `${game.presentation?.title || "Etappe"} überspringen und loslaufen`);
+      lastPresentationBlock = presentationBlocking;
+    }
+
     const score = String(game.score);
     if (ui.score && score !== lastScore) {
       ui.score.textContent = score;

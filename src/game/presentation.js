@@ -24,6 +24,8 @@ export function createPresentationState() {
     hold: DEFAULT_TIMING.hold,
     exit: DEFAULT_TIMING.exit,
     pinned: false,
+    blocking: false,
+    lockFrames: 0,
   };
 }
 
@@ -42,6 +44,8 @@ export function beginPresentation(state, cue = {}) {
     hold: positiveFrames(cue.hold, timing.hold),
     exit: positiveFrames(cue.exit, timing.exit),
     pinned: !!cue.pinned,
+    blocking: cue.pinned ? false : cue.blocking === true,
+    lockFrames: cue.reducedMotion ? 0 : positiveFrames(cue.lockFrames, cue.blocking ? 28 : 0),
   });
   return target;
 }
@@ -49,8 +53,17 @@ export function beginPresentation(state, cue = {}) {
 export function tickPresentation(state) {
   if (!state?.active || state.pinned) return state;
   state.tick += 1;
+  if (state.blocking && state.tick >= state.lockFrames) state.blocking = false;
   if (state.tick >= state.enter + state.hold + state.exit) state.active = false;
   return state;
+}
+
+export function dismissPresentation(state) {
+  if (!state?.active || (!state.blocking && !state.pinned)) return false;
+  if (state.pinned) return false;
+  state.active = false;
+  state.blocking = false;
+  return true;
 }
 
 export function getPresentationFrame(state) {
