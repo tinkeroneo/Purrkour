@@ -12,9 +12,9 @@ export function createObjects() {
     bubbles.push({ text, x, y, life: 70 });
   }
 
-  function addPuff(x, y) {
-    // 3 soft circles drifting up/right
-    for (let i = 0; i < 3; i++) {
+  function addPuff(x, y, color = "#fff", count = 3) {
+    // Soft circles drifting up/right. Color lets gameplay rewards read at a glance.
+    for (let i = 0; i < count; i++) {
       puffs.push({
         x: x + (Math.random() * 10 - 5),
         y: y + (Math.random() * 6 - 3),
@@ -22,6 +22,7 @@ export function createObjects() {
         vy: -0.35 - Math.random() * 0.25,
         r: 5 + Math.random() * 5,
         life: 18 + Math.floor(Math.random() * 8),
+        color,
       });
     }
   }

@@ -1,10 +1,33 @@
 import { aabb, clamp } from "../core/util.js";
+import { breakFlow, createFlowState, rewardFlow, tickFlow } from "../game/flow.js";
 import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffectiveSpeed } from "../game/speed.js";
 import { resetGameState } from "../game/state.js";
 import { getOverlay } from "../world/overlays.js";
 
 export function createCollider(game, catApi, terrain, objects, audio, hud, canvas, lifecycle = {}) {
     const { cat } = catApi;
+
+    function awardFlow({ steps = 1, basePoints = 1, feedback = true } = {}) {
+        if (!game.flow) game.flow = createFlowState();
+        const result = rewardFlow(game.flow, { steps, basePoints });
+        game.score += result.points;
+        game.comboGlow = 36;
+
+        if (feedback) {
+            const colors = { 1: "#ffffff", 2: "#ffd166", 3: "#ff9f68", 4: "#ff70a6" };
+            objects.addPuff?.(
+                cat.x + cat.w * 0.58,
+                cat.y + cat.h * 0.46,
+                colors[result.multiplier],
+                2 + result.multiplier,
+            );
+        }
+        if (result.tierChanged) {
+            objects.toast(`Flow x${result.multiplier}! ✨`, 100);
+            audio?.SFX?.combo?.();
+        }
+        return result;
+    }
 
     function applyGroundY(o) {
         if (o.yMode !== "ground") return;
@@ -14,12 +37,15 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
     function loseLife() {
         if (game.invulnTimer > 0) return;
 
+        const lostFlow = breakFlow(game.flow);
+
         game.lives = Math.max(0, game.lives - 1);
         game.invulnTimer = 90;
         game.lastHitTick = game.tick;
 
         audio.SFX.hit();
         objects.addBubble("ouch", cat.x + cat.w * 0.55, cat.y - 8);
+        if (lostFlow.previousMultiplier > 1) objects.toast("Flow verloren 💨", 90);
 
         if (game.checkpointActive) {
             game.checkpointActive = false;
@@ -104,6 +130,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             game.chaseActive = false;
             dog.chasing = false;
             objects.toast("Puh… entkommen 😮‍💨", 120);
+            awardFlow({ steps: 2, basePoints: 3 });
         }
     }
 
@@ -138,6 +165,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         if (game.checkpointGlow > 0) game.checkpointGlow--;
         if (game.slowTimer > 0) game.slowTimer--;
         if (game.safeTimer > 0) game.safeTimer--;
+        if (game.comboGlow > 0) game.comboGlow--;
 
         // jump capacity
         cat.maxJumps = (game.tripleJumpTimer > 0) ? 3 : cat.baseMaxJumps;
@@ -179,6 +207,11 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
             objects.updateBubbles();
             return;
+        }
+
+        const flowTick = tickFlow(game.flow);
+        if (flowTick.expired && flowTick.previousMultiplier > 1) {
+            objects.toast("Flow abgekühlt", 75);
         }
 
         // manual horizontal control (forward/back)
@@ -342,6 +375,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                         game.tunnel.active = false;
                         game.tunnel.exitSpawned = false;
                         objects.addBubble("raus!", cat.x + cat.w * 0.55, cat.y - 8);
+                        awardFlow({ steps: 2, basePoints: 2 });
                     }
                     objects.list.splice(i, 1); i--;
                     continue;
@@ -379,6 +413,11 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                         if (audio?.SFX?.stomp) audio.SFX.stomp();
                         else if (audio?.SFX?.combo) audio.SFX.combo();
 
+                        if (!o._scored) {
+                            o._scored = true;
+                            awardFlow({ steps: 2, basePoints: 2 });
+                        }
+
                         continue; // IMPORTANT: don't treat as damage
                     }
 
@@ -403,16 +442,18 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
             if (o.type === "mouse") {
                 game.mice++;
-                game.score += 1;
+                awardFlow();
                 bumpBaseSpeed(game, 0.010);
                 if (Math.random() < 0.40) objects.addBubble("miau!", cat.x + cat.w * 0.55, cat.y - 8);
                 audio.SFX.mouse();
             } else if (o.type === "catnip") {
                 game.catnipTimer = 320;
+                awardFlow({ basePoints: 2 });
                 objects.addBubble("🌿", cat.x + cat.w * 0.55, cat.y - 8);
                 audio.SFX.catnip();
             } else if (o.type === "fish") {
                 game.tripleJumpTimer = 320;
+                awardFlow({ basePoints: 2 });
                 objects.toast("Snack! 3 Sprünge 🐟", 110);
                 audio.SFX.fish();
             } else if (o.type === "life") {
@@ -432,7 +473,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             if (o.x + o.w < cat.x - 10) {
                 if (o.kind === "obstacle" || o.kind === "platform") {
                     o._scored = true;
-                    game.score++;
+                    awardFlow({ feedback: false });
                 }
             }
         }

@@ -16,6 +16,7 @@ test("run reset restores the canonical initial state", () => {
   game.setpiece.active = true;
   game.progression = { beatIdx: 7, beatStartScore: 450 };
   game.nextBonusLifeScore = 540;
+  game.flow = { count: 12, multiplier: 4, timer: 1, best: 12 };
   game.unknownRunField = true;
 
   const reset = resetGameState(game);
@@ -31,6 +32,7 @@ test("run reset restores the canonical initial state", () => {
   assert.equal(game.setpiece.active, false);
   assert.equal(game.themeOverlay, null);
   assert.equal(game.nextBonusLifeScore, 60);
+  assert.deepEqual(game.flow, { count: 0, multiplier: 1, timer: 0, best: 0 });
   assert.equal(game.progressionApi, progressionApi);
   assert.equal("progression" in game, false);
   assert.equal("unknownRunField" in game, false);
