@@ -25,6 +25,7 @@ Stand: 2026-08-05
 | P1 | Laufaufträge | Mäusejagd, Flow-Ziel und Mutpfoten-Manöver rotieren deterministisch und vergeben eigene Boni | umgesetzt |
 | P1 | Routenentscheidungen | der sichere Bodenweg bleibt offen; sichtbare Höhenrouten belohnen fünf Goldmäuse separat | umgesetzt |
 | P1 | Reisealbum | Bestwerte, besuchte Welten, Etappen, Setpieces, Aufträge und Goldpfade bilden eine lokale Meta-Progression | umgesetzt |
+| P1 | Reiseinszenierung | Kapitelkarten, Abfahrt/Landung und Goldrouten-Hinweise geben großen und kleinen Wechseln einen klaren visuellen Rhythmus | umgesetzt |
 | P2 | Klangmotive pro Beat | kurze musikalische Signale markieren Flow-Tiers und neue Reiseabschnitte | benötigt Audioabnahme |
 | P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | Backlog |
 

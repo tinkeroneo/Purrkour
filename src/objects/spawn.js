@@ -7,6 +7,7 @@ import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
 import { beginRiskRoute, shouldStartRiskRoute } from "../game/risk-routes.js";
+import { beginPresentation } from "../game/presentation.js";
 
 
 export function createSpawner(game, terrain, objects, canvas) {
@@ -46,6 +47,17 @@ export function createSpawner(game, terrain, objects, canvas) {
 
     game.riskRoute = beginRiskRoute(game.riskRoute, game.score, 5);
     const routeId = game.riskRoute.id;
+    beginPresentation(game.presentation, {
+      kind: "route",
+      kicker: "FREIWILLIGE HÖHENROUTE",
+      title: game.riskRoute.label,
+      subtitle: `${game.riskRoute.total} Goldmäuse · +${game.riskRoute.bonus} Punkte`,
+      accent: "#ffd166",
+      enter: game.reducedMotion ? 1 : 12,
+      hold: game.reducedMotion ? 34 : 52,
+      exit: game.reducedMotion ? 1 : 18,
+      reducedMotion: game.reducedMotion,
+    });
 
     const w = 104;
     const h = 44;

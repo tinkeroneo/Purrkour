@@ -5,7 +5,7 @@ Geprüfter Branch: `main`
 
 ## Kurzurteil
 
-`purrkour` ist ein visuell eigenständiger, modular aufgebauter Reise-Runner mit prozeduralem Canvas-Rendering, mehreren Themen, Setpieces, Fahrzeugen und Sammelobjekten. Die technischen P0-Risiken des ersten Audits sind behoben. Flow, Abschnittsfortschritt, rotierende Laufaufträge, freiwillige Goldpfade und ein persistentes Reisealbum verbinden die lange Reise nun mit kurz- und mittelfristiger Motivation.
+`purrkour` ist ein visuell eigenständiger, modular aufgebauter Reise-Runner mit prozeduralem Canvas-Rendering, mehreren Themen, Setpieces, Fahrzeugen und Sammelobjekten. Die technischen P0-Risiken des ersten Audits sind behoben. Flow, Abschnittsfortschritt, rotierende Laufaufträge, freiwillige Goldpfade und ein persistentes Reisealbum verbinden die lange Reise nun mit kurz- und mittelfristiger Motivation. Kapitelkarten und eigene Abfahrts-, Lande- sowie Routenhinweise machen die Dramaturgie auch beim Wechsel zwischen Welten und Setpieces sichtbar.
 
 Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verbleibend sind vor einem öffentlichen Release vor allem manuelle Langstrecken-, Geräte-, Screenreader- und Rechteprüfungen.
 
@@ -18,7 +18,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen und `--max-warnings=0` verhindert neue Warnschulden |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
-| PURR-08 | erledigt | 30 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI, npm-10-kompatible Installation und reproduzierbarer Release-Build |
+| PURR-08 | erledigt | 34 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI, npm-10-kompatible Installation und reproduzierbarer Release-Build |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
 | PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | erledigt | First-run-Hilfe, kurze Mobile-Hilfe, semantische Theme-/Auto-/HUD-Aktionen, Zielgrößen, Fokus, Zoom und ARIA umgesetzt |
@@ -41,6 +41,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | PURR-25 | erledigt | scorebasierte Goldpfade bieten eine optionale Höhenroute mit fünf goldenen Zielen, separatem Bonus und sauberem Auslaufen bei Fehlschlag |
 | PURR-26 | erledigt | fehlertolerantes Reisealbum persistiert Welten, Etappen, Setpieces, Aufträge, Goldpfade, Läufe und Bestwerte |
 | PURR-27 | erledigt | das auf 390 px überlaufende Mobile-HUD nutzt ein geprüftes Vier-Spalten-Raster und hält alle Aktionen im Viewport |
+| PURR-28 | erledigt | getestete Canvas-Präsentation inszeniert alle Kapitel, Meer-/Raketenphasen und Goldrouten; Reduced Motion und feste Browservorschauen sichern die Varianten ab |
 
 ## Aktueller Aufbau
 
@@ -51,7 +52,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
 - Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint, 30 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
+- ESLint, Husky, Commitlint, 34 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
 
 ## Durchgeführte Prüfungen
 
@@ -59,9 +60,9 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
 | `npm ci` mit npm 10.8.2 | erfolgreich; Peer-Auflösung ist über `.npmrc` reproduzierbar |
-| `npm run check` | Logik/Lint erfolgreich mit 30/30 Tests; Browser-Smoke außerhalb der eingeschränkten Sandbox erfolgreich |
+| `npm run check` | Logik/Lint erfolgreich mit 34/34 Tests; Browser-Smoke außerhalb der eingeschränkten Sandbox erfolgreich |
 | `npm run test:browser` | erfolgreich; echter Modulstart, dynamisches HUD und geöffnete Hilfe in Headless Chrome |
-| `npm run build` | 51 Runtime-Dateien, 251.567 Bytes bei 750-KiB-Budget |
+| `npm run build` | 52 Runtime-Dateien, 261.285 Bytes bei 750-KiB-Budget |
 | `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
@@ -135,7 +136,7 @@ Maßnahme: Debugfunktionen nur über expliziten Query-Parameter oder Development
 
 `tests/smoke.test.js` liest Dateien und extrahiert Strukturen mit regulären Ausdrücken. Module werden nicht importiert, Zustände nicht simuliert und Browserabläufe nicht gestartet. Änderungen an Physik, Reset, Input, Audio oder Rendering bleiben unentdeckt.
 
-Umsetzung: Das ES-Modul-Paket besitzt 30 direkte Node-Tests für Audio, Flow, Laufaufträge, Goldpfade, Reisealbum, HUD, Storage, State, Resize, Timing und UI-Verträge. Ein dauerhafter Chrome-Smoke-Test startet einen isolierten lokalen Server und prüft echten Modulstart, Canvas, dynamisches HUD und Onboarding. GitHub Actions führt `npm ci`, das vollständige Gate und den Release-Build aus.
+Umsetzung: Das ES-Modul-Paket besitzt 34 direkte Node-Tests für Audio, Flow, Laufaufträge, Goldpfade, Reisealbum, Präsentation, HUD, Storage, State, Resize, Timing und UI-Verträge. Ein dauerhafter Chrome-Smoke-Test startet einen isolierten lokalen Server und prüft echten Modulstart, Canvas, dynamisches HUD und Onboarding. GitHub Actions führt `npm ci`, das vollständige Gate und den Release-Build aus.
 
 Akzeptanz: Tests decken mindestens Initialzustand, Reset, Progression, Frame-Raten-Unabhängigkeit, Input-Mapping und Audio-Unlock ab.
 
@@ -210,8 +211,8 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 ## Perspektiven
 
 - Entwickler: Flow, Aufträge, Goldpfade und Album besitzen getrennte, deterministische Module; aktive Gates schützen Logik, UI-Verträge und reale Browserinitialisierung.
-- UX: Reiseabschnitt, Laufauftrag, optionale Risikoroute und Album decken unmittelbare Aktion, aktuelle Runde und langfristige Entdeckung ab.
-- UI: Die gläserne Hierarchie priorisiert Spielsituation vor Einstellungen; das Vier-Spalten-Raster bleibt auf exakt 390 px vollständig sichtbar.
+- UX: Reiseabschnitt, Laufauftrag, optionale Risikoroute und Album decken unmittelbare Aktion, aktuelle Runde und langfristige Entdeckung ab; Kapitel- und Reisekarten vermitteln Wechsel, ohne die Spielwelt länger zu blockieren.
+- UI: Die gläserne Hierarchie priorisiert Spielsituation vor Einstellungen; Kapitelkarten dimmen bewusst, während kompakte Reise-/Routenkarten die Welt sichtbar lassen. Das Vier-Spalten-Raster bleibt auf exakt 390 px vollständig sichtbar.
 - Anwender: Der sichere Weg bleibt spielbar, während Goldmäuse eine verständliche freiwillige Herausforderung und das Album einen Wiederkehrgrund bieten.
 - Betrieb: CI, Browser-Smoke, Allowlist-Build mit 750-KiB-Budget, README, Asset-Inventar und Release-Checkliste schaffen einen reproduzierbaren statischen Releasepfad.
 
@@ -231,6 +232,14 @@ Aktuelle Desktopansicht mit Reise- und Flow-Hierarchie:
 Aktuelle Hochkantansicht mit kompakten, sichtbaren Basisaktionen:
 
 ![Purrkour Produktansicht Mobile](docs/audit/product-mobile.png)
+
+Neue Kapitel-, Reise- und Routeninszenierung:
+
+![Purrkour Kapitelkarte Desktop](docs/audit/presentation-desktop.png)
+
+![Purrkour Reisekarte Desktop](docs/audit/presentation-travel-desktop.png)
+
+![Purrkour Goldroute Mobile](docs/audit/presentation-route-mobile.png)
 
 Persistentes Reisealbum mit Entdeckungen und Laufwerten:
 

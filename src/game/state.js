@@ -1,6 +1,7 @@
 import { THEME_ORDER } from "../world/themes.js";
 import { createFlowState } from "./flow.js";
 import { createMissionState } from "./missions.js";
+import { createPresentationState } from "./presentation.js";
 import { createRiskRouteState } from "./risk-routes.js";
 import { getInitialBaseSpeed } from "./speed.js";
 
@@ -108,6 +109,7 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         comboGlow: 0,
         flow: createFlowState(),
         mission: createMissionState(),
+        presentation: createPresentationState(),
         riskRoute: createRiskRouteState(),
 
         lastHitTick: -99999
@@ -116,9 +118,13 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
 
 export function resetGameState(game) {
     const progressionApi = game.progressionApi;
+    const reducedMotion = !!game.reducedMotion;
+    const presentationPreview = game.presentationPreview || "";
     const initial = createGameState({ initialTheme: game.initialTheme || "forest" });
     for (const key of Object.keys(game)) delete game[key];
     Object.assign(game, initial);
     if (progressionApi) game.progressionApi = progressionApi;
+    game.reducedMotion = reducedMotion;
+    game.presentationPreview = presentationPreview;
     return game;
 }

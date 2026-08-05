@@ -19,6 +19,7 @@ test("run reset restores the canonical initial state", () => {
   game.flow = { count: 12, multiplier: 4, timer: 1, best: 12 };
   game.mission = { key: "moves", progress: 4, completed: 5 };
   game.riskRoute = { active: true, id: 4, completed: 2 };
+  game.presentation.active = true;
   game.unknownRunField = true;
 
   const reset = resetGameState(game);
@@ -39,6 +40,7 @@ test("run reset restores the canonical initial state", () => {
   assert.equal(game.mission.progress, 0);
   assert.equal(game.riskRoute.active, false);
   assert.equal(game.riskRoute.nextAt, 45);
+  assert.equal(game.presentation.active, false);
   assert.equal(game.progressionApi, progressionApi);
   assert.equal("progression" in game, false);
   assert.equal("unknownRunField" in game, false);

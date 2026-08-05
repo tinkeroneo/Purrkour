@@ -1,6 +1,7 @@
 import { getTheme } from "../world/themes.js";
 import { createSetpieceManager } from "./setpieces.js";
 import { createProgression } from "./progression.js";
+import { tickPresentation } from "./presentation.js";
 import { createFixedStepClock } from "./timestep.js";
 
 
@@ -45,6 +46,7 @@ function simulate() {
 
             // central dramaturgy (beats -> speed/theme/night/setpieces)
             progression.update();
+            tickPresentation(game.presentation);
 
             const theme = getTheme(game.theme);
 

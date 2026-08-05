@@ -8,6 +8,7 @@ import { createJourneyAlbum } from "./game/album.js";
 import { getFlowMultiplier } from "./game/flow.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
+import { beginPresentation } from "./game/presentation.js";
 import { setupDebugControls } from "./game/debug.js";
 import { recordScore } from "./game/records.js";
 
@@ -81,10 +82,13 @@ const config = window.__purrkourConfig || {};
 const THEME_STORAGE_KEY = "purrkour.initialTheme";
 const ONBOARDING_STORAGE_KEY = "purrkour.onboardingSeen.v1";
 const runStorage = createSafeStorage(getLocalStorage());
-const queryTheme = new URLSearchParams(window.location.search).get("theme");
+const query = new URLSearchParams(window.location.search);
+const queryTheme = query.get("theme");
 const storedTheme = runStorage.getItem(THEME_STORAGE_KEY);
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
+game.reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+game.presentationPreview = query.get("preview") || "";
 const album = createJourneyAlbum(runStorage);
 album.observe(game);
 const hud = createHUD(ui);
@@ -395,5 +399,12 @@ const loop = createLoop({
   drawer, hud, audio, canvas
   ,album
 });
+const presentationPreviews = {
+  travel: { kind: "travel", kicker: "LEINEN LOS", title: "Über das Meer", subtitle: "Der Horizont öffnet sich", accent: "#76ddf2" },
+  route: { kind: "route", kicker: "FREIWILLIGE HÖHENROUTE", title: "Goldgrat", subtitle: "5 Goldmäuse · +80 Punkte", accent: "#ffd166" },
+};
+if (presentationPreviews[game.presentationPreview]) {
+  beginPresentation(game.presentation, { ...presentationPreviews[game.presentationPreview], pinned: true });
+}
 loop.start();
 

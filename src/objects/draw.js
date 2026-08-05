@@ -3,6 +3,7 @@ import { getOverlay } from "../world/overlays.js";
 import { drawDog } from "../entities/dog.js";
 import { drawBird } from "../entities/bird.js";
 import { drawVehicle } from "../game/vehicles/index.js";
+import { getPresentationFrame } from "../game/presentation.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
@@ -496,6 +497,74 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         ctx.restore();
     }
 
+    function drawPresentation() {
+        const presentation = game.presentation;
+        const frame = getPresentationFrame(presentation);
+        if (!presentation?.active || frame.alpha <= 0) return;
+
+        const compact = presentation.kind !== "chapter";
+        const narrow = canvas.W <= 560;
+        const cardW = Math.min(compact ? 540 : 620, canvas.W - (narrow ? 28 : 64));
+        const cardH = compact ? (narrow ? 104 : 112) : (narrow ? 126 : 142);
+        const cardX = (canvas.W - cardW) / 2;
+        const cardY = compact
+            ? Math.max(narrow ? 252 : 154, canvas.H * 0.27)
+            : Math.max(narrow ? 252 : 176, canvas.H * 0.34);
+        const shift = (1 - frame.reveal) * (compact ? 28 : 44);
+        const accent = presentation.accent || "#8fe3bc";
+
+        ctx.save();
+        if (!compact) {
+            ctx.globalAlpha = 0.42 * frame.veil;
+            ctx.fillStyle = "#071423";
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+
+            const barH = Math.round((narrow ? 20 : 30) * frame.reveal);
+            ctx.globalAlpha = 0.86 * frame.alpha;
+            ctx.fillStyle = "#06101c";
+            ctx.fillRect(0, 0, canvas.W, barH);
+            ctx.fillRect(0, canvas.H - barH, canvas.W, barH);
+        }
+
+        ctx.translate(compact ? shift : 0, compact ? 0 : shift * 0.35);
+        ctx.globalAlpha = frame.alpha;
+        ctx.shadowColor = "rgba(0,0,0,0.28)";
+        ctx.shadowBlur = 28;
+        ctx.shadowOffsetY = 12;
+        const cardGradient = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+        cardGradient.addColorStop(0, "rgba(11,27,43,0.94)");
+        cardGradient.addColorStop(1, "rgba(24,51,71,0.90)");
+        ctx.fillStyle = cardGradient;
+        roundRect(ctx, cardX, cardY, cardW, cardH, narrow ? 18 : 22);
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        roundRect(ctx, cardX, cardY, cardW, cardH, narrow ? 18 : 22);
+        ctx.stroke();
+
+        ctx.fillStyle = accent;
+        roundRect(ctx, cardX + (narrow ? 18 : 24), cardY + 18, narrow ? 4 : 5, cardH - 36, 3);
+        ctx.fill();
+
+        const textX = cardX + (narrow ? 36 : 48);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = accent;
+        ctx.font = `800 ${narrow ? 10 : 11}px system-ui, sans-serif`;
+        ctx.fillText(presentation.kicker, textX, cardY + (narrow ? 31 : 36), cardW - 68);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `900 ${compact ? (narrow ? 24 : 30) : (narrow ? 30 : 40)}px system-ui, sans-serif`;
+        ctx.fillText(presentation.title, textX, cardY + (compact ? (narrow ? 62 : 70) : (narrow ? 72 : 84)), cardW - 68);
+
+        ctx.fillStyle = "rgba(235,246,255,0.78)";
+        ctx.font = `700 ${narrow ? 12 : 14}px system-ui, sans-serif`;
+        ctx.fillText(presentation.subtitle, textX, cardY + cardH - (narrow ? 17 : 20), cardW - 68);
+        ctx.restore();
+    }
+
 
     function draw(objects) {
         const palette = bg.palette();
@@ -548,6 +617,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             ctx.restore();
             drawHeartWave();
             drawToast(objects);
+            drawPresentation();
             return;
         }
 
@@ -706,6 +776,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
 
         drawHeartWave();
         drawToast(objects);
+        drawPresentation();
 
 
 

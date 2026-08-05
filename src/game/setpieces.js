@@ -3,6 +3,7 @@
 // Goal: flow over stress — visible prep, slow-down, boarding, then travel + landing.
 
 import { clamp, smoothstep, lerp } from "../core/util.js";
+import { beginPresentation } from "./presentation.js";
 
 export function createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio }) {
   const SETPIECE_TIMINGS = {
@@ -18,6 +19,17 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     rocket: [
       { at: "arrive", theme: "target", fallback: "mars", fade: 240 },
     ],
+  };
+
+  const PHASE_CUES = {
+    ocean: {
+      travel: { kicker: "LEINEN LOS", title: "Über das Meer", subtitle: "Der Horizont öffnet sich", accent: "#76ddf2" },
+      arrive: { kicker: "LAND IN SICHT", title: "Neue Küste", subtitle: "Gleich wieder Boden unter den Pfoten", accent: "#ffd783" },
+    },
+    rocket: {
+      travel: { kicker: "ZÜNDUNG", title: "Zu den Sternen", subtitle: "Schwerkraft war gestern", accent: "#ff9b86" },
+      arrive: { kicker: "LANDEANFLUG", title: "Pfoten voraus", subtitle: "Das nächste Kapitel beginnt", accent: "#b9c7ff" },
+    },
   };
 
   const APPROACH_DUR = SETPIECE_TIMINGS.ocean.APPROACH;
@@ -189,6 +201,17 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     sp.phase = nextPhase;
     sp.phaseT = 0;
     applyThemePlan(sp, nextPhase);
+    const cue = PHASE_CUES[sp.mode]?.[nextPhase];
+    if (cue) {
+      beginPresentation(game.presentation, {
+        ...cue,
+        kind: "travel",
+        enter: game.reducedMotion ? 1 : 14,
+        hold: game.reducedMotion ? 34 : 46,
+        exit: game.reducedMotion ? 1 : 20,
+        reducedMotion: game.reducedMotion,
+      });
+    }
   }
 
   function clearWorldForBeat() {
@@ -411,4 +434,3 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
 return { update, triggerOceanCrossing, finishOceanCrossing, triggerRocketFlight, finishRocketFlight };
 }
-

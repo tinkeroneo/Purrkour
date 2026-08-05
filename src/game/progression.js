@@ -3,6 +3,7 @@
 // Beats statt Zufall. Spawner/Background/Audio lesen nur game.progression.*
 
 import { clamp } from "../core/util.js";
+import { beginPresentation } from "./presentation.js";
 import { setBaseSpeed } from "./speed.js";
 
 // --- Tuning (hier feinjustieren, ohne suchen) ---
@@ -103,6 +104,23 @@ const BEATS = [
   { id: "RETURN_JOURNEY", label: "Heimreise", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
 ];
 
+const BEAT_PRESENTATION = Object.freeze({
+  FOREST_INTRO: { kicker: "KAPITEL 01", subtitle: "Der erste Pfotenabdruck", accent: "#8fe3bc" },
+  CHECKPOINT_BREATH: { kicker: "RUHEPUNKT", subtitle: "Durchatmen. Dann weiter.", accent: "#ffc5da" },
+  OCEAN_JOURNEY: { kicker: "REISE-SETPIECE", subtitle: "Eine neue Küste wartet", accent: "#76ddf2" },
+  ISLAND_REST: { kicker: "KAPITEL 02", subtitle: "Warmer Sand unter den Pfoten", accent: "#ffd783" },
+  ROCKET_FLIGHT: { kicker: "REISE-SETPIECE", subtitle: "Kurs auf den roten Planeten", accent: "#ff9b86" },
+  MARS_RUN: { kicker: "KAPITEL 03", subtitle: "Leichte Pfoten, weiter Horizont", accent: "#ff9d75" },
+  ROCKET_RETURN: { kicker: "RÜCKREISE", subtitle: "Die Erde ruft", accent: "#b9c7ff" },
+  MOUNTAIN_FOCUS: { kicker: "KAPITEL 04", subtitle: "Hoch hinaus", accent: "#d6e2ff" },
+  NIGHT_PASSAGE: { kicker: "NACHTETAPPE", subtitle: "Folge dem Mondlicht", accent: "#a9b8ff" },
+  JUNGLE_RUN: { kicker: "KAPITEL 05", subtitle: "Zwischen Blättern und Lianen", accent: "#88e39a" },
+  CLIFF_RUN: { kicker: "KAPITEL 06", subtitle: "Der Wind zeigt den Weg", accent: "#cfd6df" },
+  CITY_RUN: { kicker: "KAPITEL 07", subtitle: "Über den Dächern", accent: "#f3a6db" },
+  DESERT_RUN: { kicker: "KAPITEL 08", subtitle: "Spuren im Abendgold", accent: "#ffc26e" },
+  RETURN_JOURNEY: { kicker: "HEIMREISE", subtitle: "Zurück zum ersten Pfad", accent: "#75d8ea" },
+});
+
 function clearWorld(objects) {
   objects.list.length = 0;
   objects.pawprints.length = 0;
@@ -146,7 +164,16 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     game.progression.beatStartScore = game.score;
     game.progression.beatTick = 0;
     game.progression._forcedBreath = (reason === "checkpoint");
-    if (reason !== "boot" && reason !== "reset") objects.toast(`${beat.label} · neue Etappe`, 120);
+    const cue = BEAT_PRESENTATION[beat.id] || {};
+    beginPresentation(game.presentation, {
+      kind: "chapter",
+      kicker: cue.kicker || `ETAPPE ${idx + 1}`,
+      title: beat.label,
+      subtitle: cue.subtitle || "Die Reise geht weiter",
+      accent: cue.accent,
+      reducedMotion: game.reducedMotion,
+      pinned: game.presentationPreview === "chapter" && idx === 0,
+    });
 
     // Theme switch (soft fade)
     startThemeFade?.(beat.theme, beat.setpiece ? 110 : 80);

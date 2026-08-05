@@ -60,3 +60,13 @@ test("journey, flow and run summary expose the new reward loop", () => {
   assert.match(hud, /beste Kette/);
   assert.match(main, /getFlowMultiplier\(game\.flow\?\.best\)/);
 });
+
+test("chapter, travel and route presentation previews are browser-verifiable", () => {
+  const main = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
+  const draw = fs.readFileSync(path.join(root, "src/objects/draw.js"), "utf8");
+  assert.match(main, /presentationPreviews/);
+  assert.match(main, /travel: \{ kind: "travel"/);
+  assert.match(main, /route: \{ kind: "route"/);
+  assert.match(draw, /function drawPresentation\(\)/);
+  assert.match(draw, /getPresentationFrame\(presentation\)/);
+});
