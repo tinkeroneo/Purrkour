@@ -4,6 +4,7 @@ import { setupInput } from "./core/input.js";
 import { createSafeStorage } from "./core/storage.js";
 
 import { createGameState } from "./game/state.js";
+import { createJourneyAlbum } from "./game/album.js";
 import { getFlowMultiplier } from "./game/flow.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
@@ -36,6 +37,17 @@ const ui = {
   journeyLabel: document.getElementById("journeyLabel"),
   journeyProgress: document.getElementById("journeyProgress"),
   journeyFill: document.getElementById("journeyFill"),
+  albumBtn: document.getElementById("albumBtn"),
+  albumDialog: document.getElementById("albumDialog"),
+  albumWorlds: document.getElementById("albumWorlds"),
+  albumStops: document.getElementById("albumStops"),
+  albumRuns: document.getElementById("albumRuns"),
+  albumMissions: document.getElementById("albumMissions"),
+  albumRoutes: document.getElementById("albumRoutes"),
+  albumFlow: document.getElementById("albumFlow"),
+  albumBest: document.getElementById("albumBest"),
+  albumDiscoveries: document.getElementById("albumDiscoveries"),
+  closeAlbumBtn: document.getElementById("closeAlbumBtn"),
   goals: document.getElementById("goals"),
   missionDisplay: document.getElementById("missionDisplay"),
   missionLabel: document.getElementById("missionLabel"),
@@ -73,6 +85,8 @@ const queryTheme = new URLSearchParams(window.location.search).get("theme");
 const storedTheme = runStorage.getItem(THEME_STORAGE_KEY);
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
+const album = createJourneyAlbum(runStorage);
+album.observe(game);
 const hud = createHUD(ui);
 if (initialTheme) game.userTheme = initialTheme;
 
@@ -81,6 +95,7 @@ setupHudMinimode(uiRoot, ui.minimalBtn);
 setupSpeedIndicator(ui.speedBtn);
 setupCrouchButton(game, ui.crouchBtn);
 setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage);
+setupAlbum(game, album, ui);
 
 function getLocalStorage() {
   try {
@@ -208,6 +223,54 @@ function setupSpeedIndicator(el) {
   el.title = "Pace steigt automatisch mit der Progression";
 }
 
+function setupAlbum(game, album, ui) {
+  if (!ui.albumDialog || !ui.albumBtn || !ui.closeAlbumBtn) return;
+  const worldLabels = {
+    forest: "Wald", ocean: "Ozean", island: "Insel", mars: "Mars", mountain: "Berge",
+    jungle: "Dschungel", cliff: "Klippen", city: "Stadt", desert: "Wüste",
+  };
+  const setpieceLabels = { ocean: "Meerfahrt", rocket: "Raketenflug" };
+
+  function renderAlbum() {
+    const data = album.snapshot();
+    if (ui.albumWorlds) ui.albumWorlds.textContent = `${data.themes.length}/${getThemeOrder().length}`;
+    if (ui.albumStops) ui.albumStops.textContent = String(data.beats.length);
+    if (ui.albumRuns) ui.albumRuns.textContent = String(data.runs);
+    if (ui.albumMissions) ui.albumMissions.textContent = String(data.missions);
+    if (ui.albumRoutes) ui.albumRoutes.textContent = String(data.routes);
+    if (ui.albumFlow) ui.albumFlow.textContent = `x${data.bestFlow}`;
+    if (ui.albumBest) ui.albumBest.textContent = String(data.bestScore);
+    if (ui.albumDiscoveries) {
+      const worlds = data.themes.map((key) => worldLabels[key] || key);
+      const journeys = data.setpieces.map((key) => setpieceLabels[key] || key);
+      ui.albumDiscoveries.textContent = [...worlds, ...journeys].join(" · ") || "Der erste Pfotenabdruck wartet.";
+    }
+  }
+
+  function openAlbum() {
+    if (ui.albumDialog.open) return;
+    album.observe(game);
+    renderAlbum();
+    game.helpOpen = true;
+    if (typeof ui.albumDialog.showModal === "function") ui.albumDialog.showModal();
+    else ui.albumDialog.setAttribute("open", "");
+  }
+
+  function closeAlbum() {
+    game.helpOpen = false;
+    game.safeTimer = Math.max(game.safeTimer ?? 0, 30);
+    if (typeof ui.albumDialog.close === "function") ui.albumDialog.close();
+    else ui.albumDialog.removeAttribute("open");
+  }
+
+  ui.albumBtn.addEventListener("click", openAlbum);
+  ui.closeAlbumBtn.addEventListener("click", closeAlbum);
+  ui.albumDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeAlbum();
+  });
+}
+
 
 
 const audio = createAudio(ui.soundBtn, runStorage);
@@ -226,6 +289,7 @@ const collider = createCollider(game, cat, terrain, objects, audio, hud, canvas,
 });
 
 function showGameOver({ score }) {
+  album.finishRun(game);
   const result = recordScore(runStorage, score);
   if (ui.gameOverScore) ui.gameOverScore.textContent = String(score);
   if (ui.gameOverBest) ui.gameOverBest.textContent = String(result.best);
@@ -328,6 +392,7 @@ const loop = createLoop({
   game, cat, terrain, lakes, bg,
   objects, spawner, collider,
   drawer, hud, audio, canvas
+  ,album
 });
 loop.start();
 

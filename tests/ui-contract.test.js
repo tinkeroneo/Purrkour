@@ -23,10 +23,13 @@ test("discoverable help, theme and compact-view controls replace hidden gestures
   assert.match(html, /id="autoThemeBtn"[^>]*aria-label="Automatischen Themenwechsel verwenden"/);
   assert.match(html, /id="minimalBtn"[^>]*aria-label="Kompaktansicht einschalten"/);
   assert.match(html, /id="helpBtn"[^>]*aria-label="Spielhilfe öffnen"/);
+  assert.match(html, /id="albumBtn"[^>]*aria-label="Reisealbum öffnen"/);
+  assert.match(html, /<dialog id="albumDialog"/);
   assert.doesNotMatch(main, /longPress|setPointerCapture\(e\.pointerId\)/);
   assert.match(main, /purrkour\.onboardingSeen\.v1/);
   assert.match(main, /game\.helpOpen = true/);
   assert.match(main, /game\.helpOpen = false/);
+  assert.match(main, /createJourneyAlbum/);
 });
 
 test("game over remains visible until the player requests a restart", () => {

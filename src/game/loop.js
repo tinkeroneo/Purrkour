@@ -5,7 +5,7 @@ import { createFixedStepClock } from "./timestep.js";
 
 
 // src/game/loop.js
-export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio, canvas }) {
+export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio, album, canvas }) {
     const setpieces = createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio });
     const clock = createFixedStepClock();
 
@@ -175,6 +175,7 @@ if (game.setpiece?.active) {
 
 
             // 4) HUD
+            album?.observe?.(game);
             hud.sync(game, cat.cat ?? cat); // je nachdem ob createCat {cat,...} zurückgibt
         }
 

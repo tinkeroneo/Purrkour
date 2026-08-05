@@ -17,7 +17,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         if (!result.completion) return;
 
         game.score += result.completion.reward;
-        game.missionCompletions = (game.missionCompletions || 0) + 1;
         objects.toast(`${result.completion.label} erfüllt · +${result.completion.reward} ✨`, 150);
         objects.addPuff?.(cat.x + cat.w * 0.5, cat.y + cat.h * 0.3, "#c8f58a", 8);
         audio?.SFX?.combo?.();
@@ -470,7 +469,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                 game.riskRoute = routeResult.state;
                 if (routeResult.completion) {
                     game.score += routeResult.completion.bonus;
-                    game.riskRouteCompletions = (game.riskRouteCompletions || 0) + 1;
                     objects.toast(`${routeResult.completion.label} geschafft · +${routeResult.completion.bonus} 🏆`, 170);
                     objects.addPuff?.(cat.x + cat.w * 0.5, cat.y + cat.h * 0.3, "#ffd166", 12);
                     audio?.SFX?.combo?.();
