@@ -1,5 +1,7 @@
 import { THEME_ORDER } from "../world/themes.js";
 import { createFlowState } from "./flow.js";
+import { createMissionState } from "./missions.js";
+import { createRiskRouteState } from "./risk-routes.js";
 import { getInitialBaseSpeed } from "./speed.js";
 
 export function createGameState({ initialTheme: initialThemeOverride } = {}) {
@@ -105,6 +107,8 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         calmTimer: 0,
         comboGlow: 0,
         flow: createFlowState(),
+        mission: createMissionState(),
+        riskRoute: createRiskRouteState(),
 
         lastHitTick: -99999
     };

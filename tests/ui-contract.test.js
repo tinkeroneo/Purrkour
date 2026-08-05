@@ -49,6 +49,8 @@ test("journey, flow and run summary expose the new reward loop", () => {
   assert.match(html, /id="journeyProgress"[^>]*role="progressbar"/);
   assert.match(html, /id="flowDisplay"[^>]*aria-label="Flow x1/);
   assert.match(html, /id="gameOverFlow"/);
+  assert.match(html, /id="missionDisplay"[^>]*aria-label=/);
+  assert.match(html, /id="riskDisplay"[^>]*aria-label=/);
   assert.match(hud, /getFlowProgress/);
   assert.match(hud, /beste Kette/);
   assert.match(main, /getFlowMultiplier\(game\.flow\?\.best\)/);

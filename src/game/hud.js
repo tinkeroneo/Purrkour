@@ -10,6 +10,8 @@ export function createHUD(ui) {
   let lastPaused;
   let lastFlow;
   let lastJourney;
+  let lastMission;
+  let lastRiskRoute;
 
   const themeLabels = {
     forest: "Wald",
@@ -79,6 +81,30 @@ export function createHUD(ui) {
       ui.journeyProgress?.setAttribute?.("aria-valuenow", String(beatPercent));
       ui.journeyProgress?.setAttribute?.("aria-label", `${beatLabel}: ${beatPercent} Prozent`);
       lastJourney = journeyKey;
+    }
+
+    const mission = game.mission || {};
+    const missionProgress = Math.max(0, Math.min(mission.target || 1, mission.progress || 0));
+    const missionPercent = Math.round((missionProgress / Math.max(1, mission.target || 1)) * 100);
+    const missionKey = `${mission.key}/${missionProgress}/${mission.target}`;
+    if (missionKey !== lastMission) {
+      if (ui.missionLabel) ui.missionLabel.textContent = mission.hint || "Laufauftrag";
+      if (ui.missionProgress) ui.missionProgress.textContent = `${missionProgress}/${mission.target || 0}`;
+      if (ui.missionFill?.style) ui.missionFill.style.width = `${missionPercent}%`;
+      ui.missionDisplay?.setAttribute?.("aria-label", `${mission.label || "Laufauftrag"}: ${missionProgress} von ${mission.target || 0}`);
+      lastMission = missionKey;
+    }
+
+    const route = game.riskRoute || {};
+    const routeKey = `${route.active}/${route.id}/${route.collected}/${route.total}/${route.bonus}`;
+    if (routeKey !== lastRiskRoute) {
+      const active = !!route.active;
+      if (ui.riskDisplay) ui.riskDisplay.hidden = !active;
+      ui.goals?.classList?.toggle("has-risk", active);
+      if (ui.riskLabel) ui.riskLabel.textContent = route.label || "Goldpfad";
+      if (ui.riskProgress) ui.riskProgress.textContent = `${route.collected || 0}/${route.total || 0} · +${route.bonus || 0}`;
+      ui.riskDisplay?.setAttribute?.("aria-label", `${route.label || "Goldpfad"}: ${route.collected || 0} von ${route.total || 0} Goldmäusen`);
+      lastRiskRoute = routeKey;
     }
 
     const speed = `Pace ${(game.progressionSpeedMul ?? 1.0).toFixed(1)}x`;

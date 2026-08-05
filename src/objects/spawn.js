@@ -6,6 +6,7 @@ import { createGoat } from "../entities/goat.js";
 import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
+import { beginRiskRoute, shouldStartRiskRoute } from "../game/risk-routes.js";
 
 
 export function createSpawner(game, terrain, objects, canvas) {
@@ -40,10 +41,11 @@ export function createSpawner(game, terrain, objects, canvas) {
     if (platformOnScreen > 9) return false;
     const skyOnScreen = objects.list.some(o => o && o.kind === "platform" && o.skyPath && o.x > -200 && o.x < (canvas.W + 200));
     if (skyOnScreen) return false;
-    if (safeMode) return false;
-    if (game.setpiece?.active) return false;
-    if (game.score < 40) return false;
-    if (Math.random() > 0.045) return false;
+    const blocked = !!game.setpiece?.active;
+    if (!shouldStartRiskRoute(game.riskRoute, game.score, { safeMode, blocked })) return false;
+
+    game.riskRoute = beginRiskRoute(game.riskRoute, game.score, 5);
+    const routeId = game.riskRoute.id;
 
     const w = 104;
     const h = 44;
@@ -53,10 +55,11 @@ export function createSpawner(game, terrain, objects, canvas) {
     const entryGap = 220 + Math.floor(Math.random() * 90);
     const baseLift = 150 + Math.floor(Math.random() * 44);
     const peakLift = 420 + Math.floor(Math.random() * 140);
+    const tokenIndices = new Set([1, 4, 7, 10, count - 3]);
 
     for (let i = 0; i < count; i++) {
       // intentionally skip occasional segments to avoid a "continuous runway"
-      if (i > 2 && i < count - 2 && i % 7 === 0 && Math.random() < 0.65) continue;
+      if (!tokenIndices.has(i) && i > 2 && i < count - 2 && i % 7 === 0 && Math.random() < 0.65) continue;
 
       const x = spawnX + entryGap + i * stepX;
       const phase = (count > 1) ? (i / (count - 1)) : 0;
@@ -65,8 +68,17 @@ export function createSpawner(game, terrain, objects, canvas) {
       const wave = Math.sin(i * 0.82) * 14;
       const lift = baseLift + (arc * peakLift) + wave;
       const topY = terrain.surfaceAt(x) - lift;
-      objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0, skyPath: true });
+      objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0, skyPath: true, routeId });
+      if (tokenIndices.has(i)) {
+        objects.add({
+          kind: "collectible", type: "route_mouse", routeId,
+          x: x + w * 0.5 - 12, y: topY - 30,
+          w: 24, h: 18, taken: false, yMode: "fixed",
+        });
+      }
     }
+    nextSpawnIn = 360;
+    objects.toast(`${game.riskRoute.label} voraus · 5 Goldmäuse`, 150);
     return true;
   }
 

@@ -365,9 +365,12 @@ if (themeKey === "mountain" || themeKey === "cliff") {
 
     function drawMouse(o) {
         if (o.taken) return;
-        ctx.save(); ctx.translate(o.x, o.y);
-        ctx.fillStyle = "#666"; roundRect(ctx, 2, 4, o.w - 4, o.h - 4, 6); ctx.fill();
-        ctx.fillStyle = "#888"; ctx.beginPath(); ctx.arc(4, 6, 4, 0, Math.PI * 2); ctx.fill();
+        const golden = o.type === "route_mouse";
+        const pulse = golden ? 1 + Math.sin(game.tick * 0.14) * 0.08 : 1;
+        ctx.save(); ctx.translate(o.x + o.w / 2, o.y + o.h / 2); ctx.scale(pulse, pulse); ctx.translate(-o.w / 2, -o.h / 2);
+        if (golden) { ctx.shadowColor = "#ffd166"; ctx.shadowBlur = 14; }
+        ctx.fillStyle = golden ? "#f7b733" : "#666"; roundRect(ctx, 2, 4, o.w - 4, o.h - 4, 6); ctx.fill();
+        ctx.fillStyle = golden ? "#ffe29a" : "#888"; ctx.beginPath(); ctx.arc(4, 6, 4, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(o.w * 0.75, o.h * 0.45, 2.2, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
     }
@@ -591,7 +594,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
                 else if (o.type === "tunnel") drawTunnel(o);
                 else drawYarn(o);
             } else if (o.kind === "collectible") {
-                if (o.type === "mouse") drawMouse(o);
+                if (o.type === "mouse" || o.type === "route_mouse") drawMouse(o);
                 else if (o.type === "catnip") drawCatnip(o);
                 else if (o.type === "fish") drawFish(o);
                 else if (o.type === "life") drawLife(o);

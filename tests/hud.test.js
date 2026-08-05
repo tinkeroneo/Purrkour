@@ -43,6 +43,14 @@ test("HUD skips DOM writes while visible state is unchanged", () => {
     journeyLabel: trackedElement(),
     journeyProgress: trackedElement(),
     journeyFill: trackedElement(),
+    missionDisplay: trackedElement(),
+    missionLabel: trackedElement(),
+    missionProgress: trackedElement(),
+    missionFill: trackedElement(),
+    riskDisplay: trackedElement(),
+    riskLabel: trackedElement(),
+    riskProgress: trackedElement(),
+    goals: trackedElement(),
     speedBtn: trackedElement(),
     catnip: trackedElement(),
     restBtn: trackedElement()
@@ -58,6 +66,8 @@ test("HUD skips DOM writes while visible state is unchanged", () => {
     pause: { active: false },
     flow: { count: 2, multiplier: 1, timer: 240, best: 2 },
     progression: { beatLabel: "Waldpfade", beatProgress: 0.25 }
+    ,mission: { key: "mice", label: "Mäusejagd", hint: "Sammle 4 Mäuse", progress: 1, target: 4 }
+    ,riskRoute: { active: false, id: 0, collected: 0, total: 0, bonus: 0 }
   };
 
   hud.sync(game, {});
@@ -80,4 +90,11 @@ test("HUD skips DOM writes while visible state is unchanged", () => {
   assert.equal(ui.flowValue.textContent, "Flow x2");
   assert.equal(ui.flowFill.style.width, "100%");
   assert.equal(ui.journeyFill.style.width, "50%");
+
+  game.mission.progress = 2;
+  game.riskRoute = { active: true, id: 1, label: "Goldgrat", collected: 2, total: 5, bonus: 80 };
+  hud.sync(game, {});
+  assert.equal(ui.missionFill.style.width, "50%");
+  assert.equal(ui.riskLabel.textContent, "Goldgrat");
+  assert.equal(ui.riskProgress.textContent, "2/5 · +80");
 });
