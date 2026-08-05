@@ -13,6 +13,8 @@ export function createHUD(ui) {
   let lastMission;
   let lastRiskRoute;
   let lastPresentationBlock;
+  let lastRiskOffer;
+  let lastSetpieceAction;
 
   const themeLabels = {
     forest: "Wald",
@@ -37,6 +39,31 @@ export function createHUD(ui) {
       ui.presentationSkip.hidden = !presentationBlocking;
       ui.presentationSkip.setAttribute?.("aria-label", `${game.presentation?.title || "Etappe"} überspringen und loslaufen`);
       lastPresentationBlock = presentationBlocking;
+    }
+
+    const offer = game.riskRouteOffer || {};
+    const offerVisible = !!(offer.active && offer.decision == null && offer.preview);
+    const offerKey = `${offerVisible}/${offer.preview?.id || 0}/${offer.preview?.bonus || 0}`;
+    if (ui.routeChoice && offerKey !== lastRiskOffer) {
+      ui.routeChoice.hidden = !offerVisible;
+      if (ui.routeChoiceTitle) ui.routeChoiceTitle.textContent = `${offer.preview?.label || "Goldpfad"} voraus`;
+      if (ui.routeChoiceDetail) {
+        ui.routeChoiceDetail.textContent = `${offer.preview?.total || 5} Goldmäuse · +${offer.preview?.bonus || 0} Punkte`;
+      }
+      lastRiskOffer = offerKey;
+    }
+
+    const setpiece = game.setpiece || {};
+    const maneuvers = setpiece.maneuvers || 0;
+    const maneuverLimit = setpiece.maneuverLimit || 3;
+    const actionVisible = !!(setpiece.active && setpiece.phase === "travel" && maneuvers < maneuverLimit);
+    const actionKey = `${actionVisible}/${maneuvers}/${maneuverLimit}/${(setpiece.maneuverCooldown || 0) > 0}`;
+    if (ui.setpieceActionBtn && actionKey !== lastSetpieceAction) {
+      ui.setpieceActionBtn.hidden = !actionVisible;
+      ui.setpieceActionBtn.disabled = (setpiece.maneuverCooldown || 0) > 0;
+      ui.setpieceActionBtn.textContent = `✨ Reisemanöver ${maneuvers}/${maneuverLimit}`;
+      ui.setpieceActionBtn.setAttribute?.("aria-label", `Reisemanöver, ${maneuvers} von ${maneuverLimit} genutzt`);
+      lastSetpieceAction = actionKey;
     }
 
     const score = String(game.score);

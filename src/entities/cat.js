@@ -32,7 +32,8 @@ export function createCat(game, hud) {
     const jumpBoost = (game.catnipTimer > 0) ? 1.08 : 1.0;
     const overlay = getOverlay(game.themeOverlay);
     const overlayJump = overlay?.jumpMul ?? 1.0;
-    cat.vy = BASE_JUMP_VY * jumpBoost * overlayJump;
+    const worldJump = game.worldRule?.jumpMul ?? 1.0;
+    cat.vy = BASE_JUMP_VY * jumpBoost * overlayJump * worldJump;
     cat.jumpsLeft--;
 
     audio?.SFX?.jump?.();
@@ -43,7 +44,8 @@ export function createCat(game, hud) {
     if (cat.squashTimer > 0) cat.squashTimer--;
     const overlay = getOverlay(game.themeOverlay);
     const overlayGrav = overlay?.gravityMul ?? 1.0;
-    cat.vy += BASE_GRAVITY * (game.catnipTimer > 0 ? 0.95 : 1.0) * overlayGrav;
+    const worldGravity = game.worldRule?.gravityMul ?? 1.0;
+    cat.vy += BASE_GRAVITY * (game.catnipTimer > 0 ? 0.95 : 1.0) * overlayGrav * worldGravity;
     cat.y += cat.vy;
   }
 

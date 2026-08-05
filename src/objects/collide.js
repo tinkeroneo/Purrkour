@@ -233,7 +233,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         // manual horizontal control (forward/back)
         if (game.input?.moveDir) {
             const overlay = getOverlay(game.themeOverlay);
-            const controlMul = overlay?.controlMul ?? 1.0;
+            const controlMul = (overlay?.controlMul ?? 1.0) * (game.worldRule?.controlMul ?? 1.0);
             const moveSpeed = (2.8 + (eff * 0.18)) * controlMul;
             cat.x += game.input.moveDir * moveSpeed;
         }

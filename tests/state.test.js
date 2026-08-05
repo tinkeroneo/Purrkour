@@ -40,6 +40,9 @@ test("run reset restores the canonical initial state", () => {
   assert.equal(game.mission.progress, 0);
   assert.equal(game.riskRoute.active, false);
   assert.equal(game.riskRoute.nextAt, 45);
+  assert.equal(game.riskRouteOffer.active, false);
+  assert.equal(game.worldRule.label, "Schnelle Dächer");
+  assert.equal(game.setpiece.totalManeuvers, 0);
   assert.equal(game.presentation.active, false);
   assert.equal(game.progressionApi, progressionApi);
   assert.equal("progression" in game, false);

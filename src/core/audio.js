@@ -369,6 +369,12 @@ function chime(vol = 0.045) {
         magic: () => { tone({ freq: 520, dur: 0.10, type: "sine", vol: 0.038, slideTo: 760 }); setTimeout(() => tone({ freq: 860, dur: 0.10, type: "sine", vol: 0.032, slideTo: 980 }), 90); },
         home: () => { tone({ freq: 330, dur: 0.12, type: "triangle", vol: 0.045, slideTo: 440 }); setTimeout(() => tone({ freq: 520, dur: 0.14, type: "sine", vol: 0.03, slideTo: 520 }), 140); },
         dash: () => tone({ freq: 520, dur: 0.05, type: "triangle", vol: 0.03, slideTo: 640 }),
+        chapter: (theme = "forest") => {
+            const roots = { forest: 392, ocean: 330, island: 440, mars: 247, mountain: 349, jungle: 415, cliff: 294, city: 466, desert: 370 };
+            const root = roots[theme] || roots.forest;
+            tone({ freq: root, dur: 0.09, type: "sine", vol: 0.034, slideTo: root * 1.08 });
+            setTimeout(() => tone({ freq: root * 1.5, dur: 0.12, type: "triangle", vol: 0.027, slideTo: root * 1.62 }), 85);
+        },
     };
 
     if (soundBtnEl) {

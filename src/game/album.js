@@ -22,6 +22,7 @@ export function createEmptyAlbum() {
     runs: 0,
     bestScore: 0,
     bestFlow: 1,
+    maneuvers: 0,
   };
 }
 
@@ -44,6 +45,7 @@ export function readJourneyAlbum(storage) {
     runs: naturalNumber(parsed.runs),
     bestScore: naturalNumber(parsed.bestScore),
     bestFlow: Math.max(1, Math.min(4, naturalNumber(parsed.bestFlow))),
+    maneuvers: naturalNumber(parsed.maneuvers),
   };
 }
 
@@ -58,6 +60,7 @@ export function createJourneyAlbum(storage) {
   let lastTick = -1;
   let lastMissions = 0;
   let lastRoutes = 0;
+  let lastManeuvers = 0;
   let finishedTick = null;
 
   function persist() {
@@ -70,6 +73,7 @@ export function createJourneyAlbum(storage) {
     if (tick < lastTick) {
       lastMissions = 0;
       lastRoutes = 0;
+      lastManeuvers = 0;
       finishedTick = null;
     }
 
@@ -80,12 +84,17 @@ export function createJourneyAlbum(storage) {
 
     const currentMissions = naturalNumber(game.mission?.completed);
     const currentRoutes = naturalNumber(game.riskRoute?.completed);
+    const currentManeuvers = naturalNumber(game.setpiece?.totalManeuvers);
     if (currentMissions > lastMissions) {
       album.missions += currentMissions - lastMissions;
       changed = true;
     }
     if (currentRoutes > lastRoutes) {
       album.routes += currentRoutes - lastRoutes;
+      changed = true;
+    }
+    if (currentManeuvers > lastManeuvers) {
+      album.maneuvers += currentManeuvers - lastManeuvers;
       changed = true;
     }
 
@@ -97,6 +106,7 @@ export function createJourneyAlbum(storage) {
     lastTick = tick;
     lastMissions = currentMissions;
     lastRoutes = currentRoutes;
+    lastManeuvers = currentManeuvers;
     if (changed) persist();
     return snapshot();
   }
@@ -123,4 +133,3 @@ export function createJourneyAlbum(storage) {
 
   return { observe, finishRun, snapshot };
 }
-

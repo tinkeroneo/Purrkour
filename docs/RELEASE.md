@@ -10,9 +10,10 @@
 ## Manuell
 
 - [ ] Desktop und Hochkantansicht starten ohne Konsolenfehler.
-- [ ] Erststart-Hilfe, Pause, Ducken, Sound, Thema, Auto-Thema, Reisealbum und Kompaktansicht funktionieren per Pointer und Tastatur.
-- [ ] Alle drei Laufaufträge wechseln korrekt; ein Goldpfad kann vollständig abgeschlossen und auch folgenlos verpasst werden.
-- [ ] Reisealbum behält Welten, Etappen, Aufträge, Goldpfade und Bestwerte nach Reload sowie neuem Lauf.
+- [ ] Erststart-Hilfe, Pause, Links/Rechts, Ducken, Sound, Thema, Auto-Thema, Reisealbum und Kompaktansicht funktionieren per Pointer und Tastatur.
+- [ ] Alle drei Laufaufträge wechseln korrekt; Goldpfad und sicherer Weg sind auswählbar, ein Goldpfad kann abgeschlossen und auch folgenlos verpasst werden.
+- [ ] Reisealbum behält Welten, Etappen, Aufträge, Goldpfade, Reisemanöver und Bestwerte nach Reload sowie neuem Lauf.
+- [ ] Meer- und Raketenreise erlauben jeweils höchstens drei sichtbare Reisemanöver.
 - [ ] Resize/Rotation erhält Score, Leben, Weltobjekte und Position plausibel.
 - [ ] Game over zeigt Score/Bestwert und wartet auf „Erneut spielen“.
 - [ ] Sound startet erst nach einer Nutzergeste und respektiert die gespeicherte Auswahl.

@@ -9,12 +9,14 @@ import { getFlowMultiplier } from "./game/flow.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
 import { beginPresentation, dismissPresentation } from "./game/presentation.js";
+import { PRESENTATION_PREVIEWS } from "./game/presentation-cues.js";
 import { setupDebugControls } from "./game/debug.js";
 import { recordScore } from "./game/records.js";
 
 import { createTerrain } from "./world/terrain.js";
 import { createBackground } from "./world/background.js";
 import { getThemeOrder } from "./world/themes.js";
+import { getWorldRule } from "./game/world-rules.js";
 
 import { createCat } from "./entities/cat.js";
 
@@ -48,6 +50,8 @@ const ui = {
   albumFlow: document.getElementById("albumFlow"),
   albumBest: document.getElementById("albumBest"),
   albumDiscoveries: document.getElementById("albumDiscoveries"),
+  albumManeuvers: document.getElementById("albumManeuvers"),
+  albumJourneyMap: document.getElementById("albumJourneyMap"),
   closeAlbumBtn: document.getElementById("closeAlbumBtn"),
   goals: document.getElementById("goals"),
   missionDisplay: document.getElementById("missionDisplay"),
@@ -77,6 +81,12 @@ const ui = {
   presentationSkip: document.getElementById("presentationSkip"),
   moveLeftBtn: document.getElementById("moveLeftBtn"),
   moveRightBtn: document.getElementById("moveRightBtn"),
+  routeChoice: document.getElementById("routeChoice"),
+  routeChoiceTitle: document.getElementById("routeChoiceTitle"),
+  routeChoiceDetail: document.getElementById("routeChoiceDetail"),
+  declineRouteBtn: document.getElementById("declineRouteBtn"),
+  acceptRouteBtn: document.getElementById("acceptRouteBtn"),
+  setpieceActionBtn: document.getElementById("setpieceActionBtn"),
 };
 
 
@@ -104,6 +114,8 @@ setupCrouchButton(game, ui.crouchBtn);
 setupMoveButtons(game, ui.moveLeftBtn, ui.moveRightBtn);
 setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage);
 setupAlbum(game, album, ui);
+setupRouteChoice(game, ui);
+setupSetpieceAction(game, ui.setpieceActionBtn);
 
 function getLocalStorage() {
   try {
@@ -220,12 +232,30 @@ function setupMoveButtons(game, leftButton, rightButton) {
   bind(rightButton, 1);
 }
 
+function setupRouteChoice(game, ui) {
+  ui.acceptRouteBtn?.addEventListener("click", () => {
+    if (game.riskRouteOffer?.active) game.riskRouteOffer.decision = true;
+  });
+  ui.declineRouteBtn?.addEventListener("click", () => {
+    if (game.riskRouteOffer?.active) game.riskRouteOffer.decision = false;
+  });
+}
+
+function setupSetpieceAction(game, button) {
+  button?.addEventListener("click", () => {
+    if (game.setpiece?.active && game.setpiece.phase === "travel") {
+      game.setpiece.actionRequested = true;
+    }
+  });
+}
+
 function setupHelp(game, dialog, openButton, closeButton, storage) {
   if (!dialog || !openButton || !closeButton) return;
 
   function openHelp() {
     if (dialog.open) return;
     game.helpOpen = true;
+    if (game.input) { game.input.moveDir = 0; game.input.crouch = false; }
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   }
@@ -279,6 +309,21 @@ function setupAlbum(game, album, ui) {
     if (ui.albumRoutes) ui.albumRoutes.textContent = String(data.routes);
     if (ui.albumFlow) ui.albumFlow.textContent = `x${data.bestFlow}`;
     if (ui.albumBest) ui.albumBest.textContent = String(data.bestScore);
+    if (ui.albumManeuvers) ui.albumManeuvers.textContent = String(data.maneuvers);
+    if (ui.albumJourneyMap) {
+      ui.albumJourneyMap.replaceChildren();
+      getThemeOrder().forEach((key, index) => {
+        const visited = data.themes.includes(key);
+        const world = document.createElement("div");
+        world.className = `album-world${visited ? " is-visited" : ""}`;
+        const title = document.createElement("strong");
+        title.textContent = `${visited ? "✓" : "○"} ${index + 1}. ${worldLabels[key] || key}`;
+        const detail = document.createElement("small");
+        detail.textContent = visited ? getWorldRule(key).label : "Noch unentdeckt";
+        world.append(title, detail);
+        ui.albumJourneyMap.append(world);
+      });
+    }
     if (ui.albumDiscoveries) {
       const worlds = data.themes.map((key) => worldLabels[key] || key);
       const journeys = data.setpieces.map((key) => setpieceLabels[key] || key);
@@ -291,6 +336,7 @@ function setupAlbum(game, album, ui) {
     album.observe(game);
     renderAlbum();
     game.helpOpen = true;
+    if (game.input) { game.input.moveDir = 0; game.input.crouch = false; }
     if (typeof ui.albumDialog.showModal === "function") ui.albumDialog.showModal();
     else ui.albumDialog.setAttribute("open", "");
   }
@@ -389,16 +435,20 @@ setupInput({
   onJump: () => {
     if (game.pause?.active || game.helpOpen) return;
     if (dismissPresentation(game.presentation)) return;
+    if (game.setpiece?.active && game.setpiece.phase === "travel") {
+      game.setpiece.actionRequested = true;
+      return;
+    }
     audio.ensure();
     cat.jump(audio);
   },
   onMove: (dir) => {
-    if (game.helpOpen) return;
+    if (game.helpOpen && dir !== 0) return;
     if (!game.input) game.input = { moveDir: 0, crouch: false };
     game.input.moveDir = dir;
   },
   onCrouch: (active) => {
-    if (game.helpOpen) return;
+    if (game.helpOpen && active) return;
     if (!game.input) game.input = { moveDir: 0, crouch: false };
     game.input.crouch = !!active;
   },
@@ -437,12 +487,8 @@ const loop = createLoop({
 });
 
 ui.presentationSkip?.addEventListener("click", () => dismissPresentation(game.presentation));
-const presentationPreviews = {
-  travel: { kind: "travel", kicker: "LEINEN LOS", title: "Über das Meer", subtitle: "Der Horizont öffnet sich", accent: "#76ddf2" },
-  route: { kind: "route", kicker: "FREIWILLIGE HÖHENROUTE", title: "Goldgrat", subtitle: "5 Goldmäuse · +80 Punkte", accent: "#ffd166" },
-};
-if (presentationPreviews[game.presentationPreview]) {
-  beginPresentation(game.presentation, { ...presentationPreviews[game.presentationPreview], pinned: true });
+if (PRESENTATION_PREVIEWS[game.presentationPreview]) {
+  beginPresentation(game.presentation, { ...PRESENTATION_PREVIEWS[game.presentationPreview], pinned: true });
 }
 loop.start();
 

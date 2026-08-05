@@ -2,8 +2,9 @@ import { THEME_ORDER } from "../world/themes.js";
 import { createFlowState } from "./flow.js";
 import { createMissionState } from "./missions.js";
 import { createPresentationState } from "./presentation.js";
-import { createRiskRouteState } from "./risk-routes.js";
+import { createRiskRouteOfferState, createRiskRouteState } from "./risk-routes.js";
 import { getInitialBaseSpeed } from "./speed.js";
+import { getWorldRule } from "./world-rules.js";
 
 export function createGameState({ initialTheme: initialThemeOverride } = {}) {
     const initialTheme = initialThemeOverride || "forest";
@@ -25,6 +26,7 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         heartWave: { active: false, startTick: 0, dur: 90 },
         invulnTimer: 0,
         theme: initialTheme,
+        worldRule: getWorldRule(initialTheme),
         themeOverlay: null,
         overlayCycle: { order: ["spring", "summer", "autumn", "winter"], idx: 0, nextAt: 160, step: 220 },
         themeCycle: { order: THEME_ORDER.slice(), idx: initialThemeIdx, nextAt: 999999, step: 240 },
@@ -67,6 +69,11 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
             scroll: 1,
             oceanMaskX: 0,
             oceanFromX: 0,
+            actionRequested: false,
+            maneuverCooldown: 0,
+            maneuvers: 0,
+            totalManeuvers: 0,
+            maneuverLimit: 3,
         },
 
         // tunnel/bonus area
@@ -111,6 +118,7 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         mission: createMissionState(),
         presentation: createPresentationState(),
         riskRoute: createRiskRouteState(),
+        riskRouteOffer: createRiskRouteOfferState(),
 
         lastHitTick: -99999
     };

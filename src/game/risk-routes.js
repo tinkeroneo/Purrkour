@@ -13,6 +13,30 @@ export function createRiskRouteState(completed = 0) {
   };
 }
 
+export function createRiskRouteOfferState() {
+  return { active: false, decision: null, preview: null };
+}
+
+export function createRiskRouteOffer(route, score, total = 5) {
+  return {
+    active: true,
+    decision: null,
+    preview: beginRiskRoute(route, score, total),
+  };
+}
+
+export function resolveRiskRouteOffer(offer, route, score) {
+  if (!offer?.active || offer.decision == null) return { offer, route, accepted: null };
+  if (offer.decision === true && offer.preview) {
+    return { offer: createRiskRouteOfferState(), route: offer.preview, accepted: true };
+  }
+  return {
+    offer: createRiskRouteOfferState(),
+    route: { ...route, nextAt: Math.max(route?.nextAt || 0, Math.floor(Number(score) || 0) + 120) },
+    accepted: false,
+  };
+}
+
 export function shouldStartRiskRoute(route, score, { safeMode = false, blocked = false } = {}) {
   if (!route || route.active || safeMode || blocked) return false;
   return (Number(score) || 0) >= route.nextAt;
@@ -56,4 +80,3 @@ export function expireRiskRoute(route) {
   if (!route?.active) return route;
   return { ...route, active: false };
 }
-

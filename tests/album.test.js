@@ -17,7 +17,7 @@ function gameState(overrides = {}) {
     score: 10,
     theme: "forest",
     progression: { beatId: "FOREST_INTRO" },
-    setpiece: { active: false, mode: "ocean" },
+    setpiece: { active: false, mode: "ocean", totalManeuvers: 0 },
     mission: { completed: 0 },
     riskRoute: { completed: 0 },
     flow: { best: 0 },
@@ -40,7 +40,13 @@ test("journey album falls back safely when stored data is malformed", () => {
 test("album records discoveries and run achievements without duplicates", () => {
   const album = createJourneyAlbum(memoryStorage());
   album.observe(gameState());
-  album.observe(gameState({ tick: 2, mission: { completed: 2 }, riskRoute: { completed: 1 }, flow: { best: 7 } }));
+  album.observe(gameState({
+    tick: 2,
+    mission: { completed: 2 },
+    riskRoute: { completed: 1 },
+    setpiece: { active: true, mode: "ocean", totalManeuvers: 2 },
+    flow: { best: 7 },
+  }));
   const snapshot = album.observe(gameState({ tick: 3, theme: "island", progression: { beatId: "ISLAND_REST" } }));
 
   assert.deepEqual(snapshot.themes, ["forest", "island"]);
@@ -48,6 +54,7 @@ test("album records discoveries and run achievements without duplicates", () => 
   assert.equal(snapshot.missions, 2);
   assert.equal(snapshot.routes, 1);
   assert.equal(snapshot.bestFlow, 3);
+  assert.equal(snapshot.maneuvers, 2);
 });
 
 test("album counts achievements across resets and each finished run once", () => {
@@ -64,4 +71,3 @@ test("album counts achievements across resets and each finished run once", () =>
   assert.equal(snapshot.runs, 2);
   assert.equal(snapshot.bestScore, 120);
 });
-

@@ -6,7 +6,11 @@ import { createGoat } from "../entities/goat.js";
 import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
-import { beginRiskRoute, shouldStartRiskRoute } from "../game/risk-routes.js";
+import {
+  createRiskRouteOffer,
+  resolveRiskRouteOffer,
+  shouldStartRiskRoute,
+} from "../game/risk-routes.js";
 import { beginPresentation } from "../game/presentation.js";
 
 
@@ -42,22 +46,39 @@ export function createSpawner(game, terrain, objects, canvas) {
     if (platformOnScreen > 9) return false;
     const skyOnScreen = objects.list.some(o => o && o.kind === "platform" && o.skyPath && o.x > -200 && o.x < (canvas.W + 200));
     if (skyOnScreen) return false;
-    const blocked = !!game.setpiece?.active;
-    if (!shouldStartRiskRoute(game.riskRoute, game.score, { safeMode, blocked })) return false;
+    if (game.riskRouteOffer?.active) {
+      const resolution = resolveRiskRouteOffer(game.riskRouteOffer, game.riskRoute, game.score);
+      if (resolution.accepted == null) {
+        nextSpawnIn = 80;
+        return true;
+      }
+      game.riskRouteOffer = resolution.offer;
+      game.riskRoute = resolution.route;
+      if (!resolution.accepted) {
+        objects.toast("Sicherer Pfad gewählt", 90);
+        return false;
+      }
+    } else {
+      const blocked = !!game.setpiece?.active;
+      if (!shouldStartRiskRoute(game.riskRoute, game.score, { safeMode, blocked })) return false;
+      game.riskRouteOffer = createRiskRouteOffer(game.riskRoute, game.score, 5);
+      game.safeTimer = Math.max(game.safeTimer || 0, 180);
+      beginPresentation(game.presentation, {
+        kind: "route",
+        kicker: "DEINE ROUTENWAHL",
+        title: game.riskRouteOffer.preview.label,
+        subtitle: "Sicher bleiben oder fünf Goldmäuse jagen?",
+        accent: "#ffd166",
+        enter: game.reducedMotion ? 1 : 12,
+        hold: game.reducedMotion ? 34 : 52,
+        exit: game.reducedMotion ? 1 : 18,
+        reducedMotion: game.reducedMotion,
+      });
+      nextSpawnIn = 80;
+      return true;
+    }
 
-    game.riskRoute = beginRiskRoute(game.riskRoute, game.score, 5);
     const routeId = game.riskRoute.id;
-    beginPresentation(game.presentation, {
-      kind: "route",
-      kicker: "FREIWILLIGE HÖHENROUTE",
-      title: game.riskRoute.label,
-      subtitle: `${game.riskRoute.total} Goldmäuse · +${game.riskRoute.bonus} Punkte`,
-      accent: "#ffd166",
-      enter: game.reducedMotion ? 1 : 12,
-      hold: game.reducedMotion ? 34 : 52,
-      exit: game.reducedMotion ? 1 : 18,
-      reducedMotion: game.reducedMotion,
-    });
 
     const w = 104;
     const h = 44;

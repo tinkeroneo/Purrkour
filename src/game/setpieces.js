@@ -4,6 +4,7 @@
 
 import { clamp, smoothstep, lerp } from "../core/util.js";
 import { beginPresentation } from "./presentation.js";
+import { getSetpiecePresentationCue } from "./presentation-cues.js";
 
 export function createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio }) {
   const SETPIECE_TIMINGS = {
@@ -21,17 +22,6 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     ],
   };
 
-  const PHASE_CUES = {
-    ocean: {
-      travel: { kicker: "LEINEN LOS", title: "Über das Meer", subtitle: "Der Horizont öffnet sich", accent: "#76ddf2" },
-      arrive: { kicker: "LAND IN SICHT", title: "Neue Küste", subtitle: "Gleich wieder Boden unter den Pfoten", accent: "#ffd783" },
-    },
-    rocket: {
-      travel: { kicker: "ZÜNDUNG", title: "Zu den Sternen", subtitle: "Schwerkraft war gestern", accent: "#ff9b86" },
-      arrive: { kicker: "LANDEANFLUG", title: "Pfoten voraus", subtitle: "Das nächste Kapitel beginnt", accent: "#b9c7ff" },
-    },
-  };
-
   const APPROACH_DUR = SETPIECE_TIMINGS.ocean.APPROACH;
   const BOARD_DUR = SETPIECE_TIMINGS.ocean.BOARD;
   const TRAVEL_DUR = SETPIECE_TIMINGS.ocean.TRAVEL;
@@ -42,6 +32,23 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
   const R_BOARD_DUR = SETPIECE_TIMINGS.rocket.BOARD;
   const R_TRAVEL_DUR = SETPIECE_TIMINGS.rocket.TRAVEL;
   const R_ARRIVE_DUR = SETPIECE_TIMINGS.rocket.ARRIVE;
+
+  function updateTravelManeuver(sp) {
+    if (sp.maneuverCooldown > 0) sp.maneuverCooldown--;
+    sp.maneuverLift = (sp.maneuverLift || 0) * 0.88;
+    if (!sp.actionRequested) return;
+    sp.actionRequested = false;
+    if (sp.phase !== "travel" || sp.maneuverCooldown > 0 || sp.maneuvers >= sp.maneuverLimit) return;
+    sp.maneuvers++;
+    sp.totalManeuvers = (sp.totalManeuvers || 0) + 1;
+    sp.maneuverCooldown = 54;
+    sp.maneuverLift = -18;
+    const reward = 4 + sp.maneuvers * 2;
+    game.score += reward;
+    objects.addBubble?.("whoosh!", sp.vehicle?.x || canvas.W * 0.5, (sp.vehicle?.y || canvas.H * 0.4) - 24);
+    objects.toast?.(`Reisemanöver ${sp.maneuvers}/${sp.maneuverLimit} · +${reward} ✨`, 80);
+    audio?.SFX?.dash?.();
+  }
 
   const OCEAN_PHASES = {
     approach({ sp, surf }) {
@@ -95,7 +102,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
       // drift vehicle slightly (draw module uses sp.t too)
       sp.vehicle.x = canvas.W * (0.28 + 0.16 * Math.sin((sp.t + sp.motion.phase) * 0.006));
-      sp.vehicle.y = canvas.H * 0.28 + Math.sin((sp.t + sp.motion.phase) * 0.02) * 6;
+      sp.vehicle.y = canvas.H * 0.28 + Math.sin((sp.t + sp.motion.phase) * 0.02) * 6 + (sp.maneuverLift || 0);
 
       if (sp.phaseT >= TRAVEL_DUR) {
         transitionPhase(sp, "arrive");
@@ -160,7 +167,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
       // fly through space: gentle forward drift + bob
       sp.scroll = 0.18;
       sp.vehicle.x = canvas.W * 0.58 + Math.sin(game.tick * 0.02) * 6;
-      sp.vehicle.y = canvas.H * 0.32 + Math.sin(game.tick * 0.06) * 4;
+      sp.vehicle.y = canvas.H * 0.32 + Math.sin(game.tick * 0.06) * 4 + (sp.maneuverLift || 0);
 
       if (sp.phaseT >= R_TRAVEL_DUR) {
         transitionPhase(sp, "arrive");
@@ -201,7 +208,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     sp.phase = nextPhase;
     sp.phaseT = 0;
     applyThemePlan(sp, nextPhase);
-    const cue = PHASE_CUES[sp.mode]?.[nextPhase];
+    const cue = getSetpiecePresentationCue(sp.mode, nextPhase);
     if (cue) {
       beginPresentation(game.presentation, {
         ...cue,
@@ -261,6 +268,10 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
     // ambience helper
     sp._whooshed = false;
+    sp.actionRequested = false;
+    sp.maneuverCooldown = 0;
+    sp.maneuvers = 0;
+    sp.maneuverLift = 0;
 
     // keep deterministic drift for the whole setpiece
     sp.motion = sp.motion || { phase: Math.random() * 1000, dx: 0, dy: 0, vx: 0, vy: 0 };
@@ -350,6 +361,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     // active scripted beat
     sp.t++;
     sp.phaseT++;
+    updateTravelManeuver(sp);
 
     const vx = sp.vehicle?.x ?? (canvas.W * 0.76);
     const surf = terrain.surfaceAt(vx);
@@ -390,6 +402,10 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
     sp.scroll = 1;
     sp.catInVehicle = false;
+    sp.actionRequested = false;
+    sp.maneuverCooldown = 0;
+    sp.maneuvers = 0;
+    sp.maneuverLift = 0;
 
     // place rocket to the right, then move to cat
     sp.vehicle = {

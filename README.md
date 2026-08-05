@@ -16,8 +16,9 @@ Danach läuft das Spiel unter `http://127.0.0.1:4173`. Der Server bindet absicht
 ## Steuerung
 
 - Tippen oder Leertaste/W/Pfeil hoch: springen
-- A/D oder Pfeile links/rechts: bewegen
+- A/D, Pfeile links/rechts oder die sichtbaren ◀/▶-Touchflächen: bewegen
 - S, Pfeil runter oder sichtbarer ↓-Button: ducken
+- Während Meer- und Raketenreisen: Sprung oder „Reisemanöver“ löst bis zu drei Bonusmanöver aus
 - Hütte: Pause; Sound, Thema, Themenautomatik, Reisealbum, HUD und Hilfe besitzen eigene Buttons
 
 Die Hilfe erscheint beim ersten Start und kann über `?` erneut geöffnet werden.
@@ -25,7 +26,7 @@ Die Hilfe erscheint beim ersten Start und kann über `?` erneut geöffnet werden
 ## Entwicklung und Qualität
 
 ```powershell
-npm run check   # ESLint, 30 Node-Tests und Headless-Chrome-Smoke-Test
+npm run check   # ESLint, Node-Tests und Headless-Chrome-Smoke-Test
 npm run build   # erzeugt ein geprüftes statisches Artefakt in dist/
 ```
 
@@ -36,7 +37,7 @@ Nützliche Query-Parameter:
 - `?help=1` öffnet die Hilfe; `?help=0` unterdrückt nur das automatische Öffnen.
 - `?album=1` öffnet das Reisealbum direkt, etwa für visuelle Prüfungen.
 
-Die Laufzeit besteht aus nativen ES-Modulen. `src/main.js` komponiert Core-, Game-, World-, Object- und Entity-Module. Präferenzen, Bestwert und Reisealbum verbleiben ausschließlich im lokalen Browserspeicher.
+Die Laufzeit besteht aus nativen ES-Modulen. `src/main.js` komponiert Core-, Game-, World-, Object- und Entity-Module. Weltregeln, Präsentationshinweise und Routenwahl besitzen eigene testbare Module. Präferenzen, Bestwert und Reisealbum verbleiben ausschließlich im lokalen Browserspeicher.
 
 ## Release
 

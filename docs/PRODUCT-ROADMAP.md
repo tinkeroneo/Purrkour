@@ -1,6 +1,6 @@
 # Produktrichtung: Purrkour
 
-Stand: 2026-08-05
+Stand: 2026-08-06
 
 ## Zielbild
 
@@ -23,16 +23,20 @@ Stand: 2026-08-05
 | P0 | HUD-Hierarchie | Score, Flow und Reise stehen vor Einstellungen; Mobile benötigt weniger Höhe | umgesetzt |
 | P0 | Aktionsfeedback | Funken, Flow-Puls und klare Tier-Meldungen machen Können sichtbar | umgesetzt |
 | P1 | Laufaufträge | Mäusejagd, Flow-Ziel und Mutpfoten-Manöver rotieren deterministisch und vergeben eigene Boni | umgesetzt |
-| P1 | Routenentscheidungen | der sichere Bodenweg bleibt offen; sichtbare Höhenrouten belohnen fünf Goldmäuse separat | umgesetzt |
-| P1 | Reisealbum | Bestwerte, besuchte Welten, Etappen, Setpieces, Aufträge und Goldpfade bilden eine lokale Meta-Progression | umgesetzt |
-| P1 | Reiseinszenierung | Kapitelkarten, Abfahrt/Landung und Goldrouten-Hinweise geben großen und kleinen Wechseln einen klaren visuellen Rhythmus | umgesetzt |
-| P2 | Klangmotive pro Beat | kurze musikalische Signale markieren Flow-Tiers und neue Reiseabschnitte | benötigt Audioabnahme |
+| P1 | Routenentscheidungen | eine explizite Wahl zwischen sicherem Weg und Goldpfad geht dem Höhenpfad voraus; fünf Goldmäuse bilden das separate Ziel | umgesetzt |
+| P1 | Reisealbum | eine persistente Neun-Welten-Karte zeigt Entdeckung und Bewegungscharakter sowie Bestwerte, Aufträge, Routen und Reisemanöver | umgesetzt |
+| P1 | Reiseinszenierung | sichere Kapitelkarten blockieren nur kurz und sind quittierbar; Wiederholungen bleiben kompakt, Setpiece-Wechsel eigenständig | umgesetzt |
+| P1 | Weltcharakter | jede Welt besitzt eigene, sicher begrenzte Werte für Schwerkraft, Sprung, Kontrolle und Pace | umgesetzt |
+| P1 | Aktive Setpieces | bis zu drei klar sichtbare Reisemanöver machen Meer- und Raketenfahrt spielbar statt rein passiv | umgesetzt |
+| P2 | Klangmotive pro Beat | kurze weltabhängige Zweitonmotive markieren neue Reiseabschnitte über die bestehende WebAudio-Schicht | technisch umgesetzt; Audioabnahme offen |
 | P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | Backlog |
 
 ## Erfolgskriterien dieser Iteration
 
 - Auftrag, Fortschritt und Bonus sind ohne Hilfe verständlich und wechseln deterministisch.
 - Der Goldpfad ist als freiwillige, riskantere Route lesbar und blockiert den Bodenweg nicht.
+- Meer- und Raketenreisen bieten eine begrenzte, belohnte Aktion mit sichtbarem Zustand.
+- Alle neun Weltregeln liegen in sicheren Tuning-Grenzen und drei simulierte Gesamtreisen bleiben stabil.
 - Das Reisealbum überlebt Neustarts und bleibt bei beschädigtem oder gesperrtem Storage sicher.
 - HUD und alle Aktionen bleiben bei exakt 390 × 844 vollständig sichtbar.
 - Automatische Tests, Browser-Smoke und Release-Budget bleiben grün.

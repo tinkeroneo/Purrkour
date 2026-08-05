@@ -1,13 +1,13 @@
 # Projektstatus und technisches Audit
 
-Stand: 2026-08-05
+Stand: 2026-08-06
 Geprüfter Branch: `main`
 
 ## Kurzurteil
 
 `purrkour` ist ein visuell eigenständiger, modular aufgebauter Reise-Runner mit prozeduralem Canvas-Rendering, mehreren Themen, Setpieces, Fahrzeugen und Sammelobjekten. Die technischen P0-Risiken des ersten Audits sind behoben. Flow, Abschnittsfortschritt, rotierende Laufaufträge, freiwillige Goldpfade und ein persistentes Reisealbum verbinden die lange Reise nun mit kurz- und mittelfristiger Motivation. Kapitelkarten und eigene Abfahrts-, Lande- sowie Routenhinweise machen die Dramaturgie auch beim Wechsel zwischen Welten und Setpieces sichtbar.
 
-Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verbleibend sind vor einem öffentlichen Release vor allem manuelle Langstrecken-, Geräte-, Screenreader- und Rechteprüfungen.
+Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Goldpfade beginnen nun mit einer echten Wahl, alle neun Welten verändern das Bewegungsgefühl kontrolliert, Meer-/Raketenreisen besitzen eigene Manöver und das Album visualisiert die vollständige Route. Verbleibend sind vor einem öffentlichen Release vor allem manuelle Geräte-, Screenreader-, Audioabnahme- und Rechteprüfungen.
 
 ## Umsetzungsstand nach dem ersten Maßnahmenblock
 
@@ -42,6 +42,12 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | PURR-26 | erledigt | fehlertolerantes Reisealbum persistiert Welten, Etappen, Setpieces, Aufträge, Goldpfade, Läufe und Bestwerte |
 | PURR-27 | erledigt | das auf 390 px überlaufende Mobile-HUD nutzt ein geprüftes Vier-Spalten-Raster und hält alle Aktionen im Viewport |
 | PURR-28 | erledigt | getestete Canvas-Präsentation inszeniert alle Kapitel, Meer-/Raketenphasen und Goldrouten; Reduced Motion und feste Browservorschauen sichern die Varianten ab |
+| PURR-29 | erledigt | Kapitelkarten pausieren die Simulation kurz, akzeptieren Sprung oder sichtbaren Startbutton und laufen bei Reduced Motion ohne Sperrzeit |
+| PURR-30 | erledigt | große gehaltene Links-/Rechts-Touchflächen teilen keinen Pointer mit der Sprungfläche |
+| PURR-31 | erledigt | der Goldpfad wird erst nach einer sichtbaren Entscheidung erzeugt; Ablehnung verschiebt das nächste Angebot ohne Nachteil |
+| PURR-32 | erledigt | zentrale Weltregeln verändern Schwerkraft, Sprung, Kontrolle und Pace aller neun Welten innerhalb getesteter Sicherheitsgrenzen |
+| PURR-33 | erledigt | Meer- und Raketenreisen bieten bis zu drei belohnte Reisemanöver mit Button, Sprungeingabe, Bewegung und Klangfeedback |
+| PURR-34 | erledigt | zentrale Präsentationshinweise, Weltkarte im Album, Welt-Klangmotive und ein Dreifach-Langzeittest schließen die Reise-Metadaten zusammen |
 
 ## Aktueller Aufbau
 
@@ -50,9 +56,9 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 - Kein Buildschritt; `index.html` lädt `src/main.js` direkt.
 - Reise-Runner mit scorebasierter Progression, Themenwechseln, saisonalen Overlays, Ocean-/Rocket-Setpieces, sieben Leben und einer zeitbasierten Flow-Kette.
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
-- Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
+- Touch: freie Canvas-Fläche löst Sprung aus; große ◀/▶-Flächen bewegen, ein sichtbarer Button duckt und Reisemanöver erscheinen nur im passenden Setpiece.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint, 34 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
+- ESLint, Husky, Commitlint, 39 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
 
 ## Durchgeführte Prüfungen
 
@@ -60,9 +66,9 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
 | `npm ci` mit npm 10.8.2 | erfolgreich; Peer-Auflösung ist über `.npmrc` reproduzierbar |
-| `npm run check` | Logik/Lint erfolgreich mit 34/34 Tests; Browser-Smoke außerhalb der eingeschränkten Sandbox erfolgreich |
+| `npm run check` | Logik/Lint erfolgreich mit 39/39 Tests; Browser-Smoke außerhalb der eingeschränkten Sandbox erfolgreich |
 | `npm run test:browser` | erfolgreich; echter Modulstart, dynamisches HUD und geöffnete Hilfe in Headless Chrome |
-| `npm run build` | 52 Runtime-Dateien, 261.285 Bytes bei 750-KiB-Budget |
+| `npm run build` | 54 Runtime-Dateien, 278.040 Bytes bei 750-KiB-Budget |
 | `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
@@ -210,15 +216,15 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 
 ## Perspektiven
 
-- Entwickler: Flow, Aufträge, Goldpfade und Album besitzen getrennte, deterministische Module; aktive Gates schützen Logik, UI-Verträge und reale Browserinitialisierung.
-- UX: Reiseabschnitt, Laufauftrag, optionale Risikoroute und Album decken unmittelbare Aktion, aktuelle Runde und langfristige Entdeckung ab; Kapitel- und Reisekarten vermitteln Wechsel, ohne die Spielwelt länger zu blockieren.
-- UI: Die gläserne Hierarchie priorisiert Spielsituation vor Einstellungen; Kapitelkarten dimmen bewusst, während kompakte Reise-/Routenkarten die Welt sichtbar lassen. Das Vier-Spalten-Raster bleibt auf exakt 390 px vollständig sichtbar.
-- Anwender: Der sichere Weg bleibt spielbar, während Goldmäuse eine verständliche freiwillige Herausforderung und das Album einen Wiederkehrgrund bieten.
+- Entwickler: Flow, Aufträge, Routenangebot, Weltregeln, Präsentationshinweise und Album besitzen getrennte, deterministische Module; der simulierte Langzeittest durchläuft drei vollständige Reisen.
+- UX: Reiseabschnitt, explizite Routenwahl, aktive Reisemanöver und Album decken unmittelbare Aktion, aktuelle Runde und langfristige Entdeckung ab; Kapitelkarten sichern den Einstieg ohne langen Kontrollverlust.
+- UI: Die gläserne Hierarchie priorisiert Spielsituation vor Einstellungen; Wahlkarte und Setpiece-Button erscheinen kontextuell. Das Vier-Spalten-Raster samt Daumensteuerung bleibt auf exakt 390 px vollständig sichtbar.
+- Anwender: Der sichere Weg ist eine echte Entscheidung, Welten fühlen sich unterschiedlich an und vormals passive Reisen bieten eine kurze Bonusaktion.
 - Betrieb: CI, Browser-Smoke, Allowlist-Build mit 750-KiB-Budget, README, Asset-Inventar und Release-Checkliste schaffen einen reproduzierbaren statischen Releasepfad.
 
 ## Verbleibende Releaseprüfungen
 
-1. Vollständigen Progressionszyklus inklusive Ocean-/Rocket-Setpieces manuell durchspielen.
+1. Einen vollständigen Progressionszyklus inklusive beider Routenentscheidungen und Ocean-/Rocket-Setpieces manuell durchspielen; drei Zyklen sind automatisiert stabil.
 2. Physisches Touchgerät, reale Rotation, Screenreader und mindestens Firefox/Safari prüfen.
 3. Urheber und Freigabe des Favicons dokumentieren; das technische Inventar liegt in `docs/ASSETS.md`.
 4. Nach dem Deployment einen Smoke-Test gegen die veröffentlichte `dist/`-Version durchführen.
@@ -244,6 +250,18 @@ Neue Kapitel-, Reise- und Routeninszenierung:
 Persistentes Reisealbum mit Entdeckungen und Laufwerten:
 
 ![Purrkour Reisealbum](docs/audit/album-desktop.png)
+
+Explizite Goldpfadentscheidung, aktive Meerreise und erweiterte Neun-Welten-Karte:
+
+![Purrkour Routenwahl Mobile](docs/audit/route-choice-mobile.png)
+
+![Purrkour Reisemanöver Mobile](docs/audit/travel-maneuver-mobile.png)
+
+![Purrkour Weltkarte Desktop](docs/audit/album-world-map-desktop.png)
+
+Vollständige Daumensteuerung im normalen Lauf:
+
+![Purrkour Touchsteuerung Mobile](docs/audit/touch-controls-mobile.png)
 
 First-run-Hilfe in der schmalen Hochkantansicht:
 

@@ -4,7 +4,9 @@
 
 import { clamp } from "../core/util.js";
 import { beginPresentation } from "./presentation.js";
+import { getBeatPresentationCue } from "./presentation-cues.js";
 import { setBaseSpeed } from "./speed.js";
+import { getWorldRule } from "./world-rules.js";
 
 // --- Tuning (hier feinjustieren, ohne suchen) ---
 export const SAFE_AFTER_CHECKPOINT = 180; // 2–3s @60fps
@@ -104,22 +106,9 @@ const BEATS = [
   { id: "RETURN_JOURNEY", label: "Heimreise", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
 ];
 
-const BEAT_PRESENTATION = Object.freeze({
-  FOREST_INTRO: { kicker: "KAPITEL 01", subtitle: "Der erste Pfotenabdruck", accent: "#8fe3bc" },
-  CHECKPOINT_BREATH: { kicker: "RUHEPUNKT", subtitle: "Durchatmen. Dann weiter.", accent: "#ffc5da" },
-  OCEAN_JOURNEY: { kicker: "REISE-SETPIECE", subtitle: "Eine neue Küste wartet", accent: "#76ddf2" },
-  ISLAND_REST: { kicker: "KAPITEL 02", subtitle: "Warmer Sand unter den Pfoten", accent: "#ffd783" },
-  ROCKET_FLIGHT: { kicker: "REISE-SETPIECE", subtitle: "Kurs auf den roten Planeten", accent: "#ff9b86" },
-  MARS_RUN: { kicker: "KAPITEL 03", subtitle: "Leichte Pfoten, weiter Horizont", accent: "#ff9d75" },
-  ROCKET_RETURN: { kicker: "RÜCKREISE", subtitle: "Die Erde ruft", accent: "#b9c7ff" },
-  MOUNTAIN_FOCUS: { kicker: "KAPITEL 04", subtitle: "Hoch hinaus", accent: "#d6e2ff" },
-  NIGHT_PASSAGE: { kicker: "NACHTETAPPE", subtitle: "Folge dem Mondlicht", accent: "#a9b8ff" },
-  JUNGLE_RUN: { kicker: "KAPITEL 05", subtitle: "Zwischen Blättern und Lianen", accent: "#88e39a" },
-  CLIFF_RUN: { kicker: "KAPITEL 06", subtitle: "Der Wind zeigt den Weg", accent: "#cfd6df" },
-  CITY_RUN: { kicker: "KAPITEL 07", subtitle: "Über den Dächern", accent: "#f3a6db" },
-  DESERT_RUN: { kicker: "KAPITEL 08", subtitle: "Spuren im Abendgold", accent: "#ffc26e" },
-  RETURN_JOURNEY: { kicker: "HEIMREISE", subtitle: "Zurück zum ersten Pfad", accent: "#75d8ea" },
-});
+export function getProgressionBeatIds() {
+  return BEATS.map((beat) => beat.id);
+}
 
 function clearWorld(objects) {
   objects.list.length = 0;
@@ -166,12 +155,13 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     game.progression.beatStartScore = game.score;
     game.progression.beatTick = 0;
     game.progression._forcedBreath = (reason === "checkpoint");
-    const cue = BEAT_PRESENTATION[beat.id] || {};
+    const cue = getBeatPresentationCue(beat.id) || {};
+    const worldRule = getWorldRule(beat.theme);
     beginPresentation(game.presentation, {
       kind: cinematic ? "chapter" : "milestone",
       kicker: cue.kicker || `ETAPPE ${idx + 1}`,
       title: beat.label,
-      subtitle: cue.subtitle || "Die Reise geht weiter",
+      subtitle: `${cue.subtitle || "Die Reise geht weiter"} · ${worldRule.label}`,
       accent: cue.accent,
       reducedMotion: game.reducedMotion,
       pinned: game.presentationPreview === "chapter" && idx === 0,
@@ -181,6 +171,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       hold: cinematic ? undefined : 34,
       exit: cinematic ? undefined : 16,
     });
+    audio?.SFX?.chapter?.(beat.theme);
 
     // Theme switch (soft fade)
     startThemeFade?.(beat.theme, beat.setpiece ? 110 : 80);
@@ -276,6 +267,8 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
   function applyOutputs() {
     const beat = currentBeat();
     if (beat.theme && !game.userTheme) game.theme = beat.theme;
+    const worldRule = getWorldRule(game.theme);
+    game.worldRule = worldRule;
 
     // speed curve (score-based for non-setpiece, time-based for setpiece)
     const u = beat.setpiece
@@ -285,7 +278,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     game.progression.beatLabel = beat.label;
     game.progression.beatProgress = u;
 
-    setBaseSpeed(game, speedForBeat(beat.id, u));
+    setBaseSpeed(game, speedForBeat(beat.id, u) * worldRule.paceMul);
     game.progressionSpeedMul = progressionSpeedMulForScore(game.score);
 
     // night smoothing (owned by progression)
