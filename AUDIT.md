@@ -57,7 +57,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | `npm ci` mit npm 10.8.2 | erfolgreich; Peer-Auflösung ist über `.npmrc` reproduzierbar |
 | `npm run check` | erfolgreich; aktiver Linter plus 21/21 Tests und Browser-Smoke |
 | `npm run test:browser` | erfolgreich; echter Modulstart, dynamisches HUD und geöffnete Hilfe in Headless Chrome |
-| `npm run build` | 48 Runtime-Dateien, 232.244 Bytes bei 750-KiB-Budget |
+| `npm run build` | 48 Runtime-Dateien, 232.308 Bytes bei 750-KiB-Budget |
 | `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
