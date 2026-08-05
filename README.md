@@ -1,6 +1,6 @@
 # Purrkour
 
-Purrkour ist ein browserbasierter Reise-Runner mit prozedural gezeichneter Canvas-Welt, wechselnden Themen, Sammelobjekten und Setpieces. Saubere Aktionen bauen einen Flow-Multiplikator auf; das HUD zeigt den aktuellen Reiseabschnitt und dessen Fortschritt.
+Purrkour ist ein browserbasierter Reise-Runner mit prozedural gezeichneter Canvas-Welt, wechselnden Themen, Sammelobjekten und Setpieces. Saubere Aktionen bauen einen Flow-Multiplikator auf; rotierende Laufaufträge und freiwillige Goldpfade setzen kurzfristige Ziele. Das lokale Reisealbum hält Entdeckungen und Bestwerte über mehrere Läufe fest.
 
 ## Lokal starten
 
@@ -18,14 +18,14 @@ Danach läuft das Spiel unter `http://127.0.0.1:4173`. Der Server bindet absicht
 - Tippen oder Leertaste/W/Pfeil hoch: springen
 - A/D oder Pfeile links/rechts: bewegen
 - S, Pfeil runter oder sichtbarer ↓-Button: ducken
-- Hütte: Pause; Sound, Thema, Themenautomatik, HUD und Hilfe besitzen eigene Buttons
+- Hütte: Pause; Sound, Thema, Themenautomatik, Reisealbum, HUD und Hilfe besitzen eigene Buttons
 
 Die Hilfe erscheint beim ersten Start und kann über `?` erneut geöffnet werden.
 
 ## Entwicklung und Qualität
 
 ```powershell
-npm run check   # ESLint, 21 Node-Tests und Headless-Chrome-Smoke-Test
+npm run check   # ESLint, 30 Node-Tests und Headless-Chrome-Smoke-Test
 npm run build   # erzeugt ein geprüftes statisches Artefakt in dist/
 ```
 
@@ -34,8 +34,9 @@ Nützliche Query-Parameter:
 - `?debug=1` aktiviert die Entwicklungssteuerung.
 - `?theme=city` setzt ein Startthema.
 - `?help=1` öffnet die Hilfe; `?help=0` unterdrückt nur das automatische Öffnen.
+- `?album=1` öffnet das Reisealbum direkt, etwa für visuelle Prüfungen.
 
-Die Laufzeit besteht aus nativen ES-Modulen. `src/main.js` komponiert Core-, Game-, World-, Object- und Entity-Module. Präferenzen und Bestwert verbleiben ausschließlich im lokalen Browserspeicher.
+Die Laufzeit besteht aus nativen ES-Modulen. `src/main.js` komponiert Core-, Game-, World-, Object- und Entity-Module. Präferenzen, Bestwert und Reisealbum verbleiben ausschließlich im lokalen Browserspeicher.
 
 ## Release
 

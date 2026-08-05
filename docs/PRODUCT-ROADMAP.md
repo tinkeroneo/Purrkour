@@ -22,16 +22,16 @@ Stand: 2026-08-05
 | P0 | Reiseanzeige | benannter Abschnitt und Fortschrittsbalken machen die Dramaturgie verständlich | umgesetzt |
 | P0 | HUD-Hierarchie | Score, Flow und Reise stehen vor Einstellungen; Mobile benötigt weniger Höhe | umgesetzt |
 | P0 | Aktionsfeedback | Funken, Flow-Puls und klare Tier-Meldungen machen Können sichtbar | umgesetzt |
-| P1 | Laufaufträge | wechselnde Ziele wie Mäuseketten, Duck-Passagen oder fehlerfreie Abschnitte schaffen Varianz | nächste Iteration |
-| P1 | Routenentscheidungen | sichere und riskante Objekt-Packs bieten bewusst unterschiedliche Belohnungen | Backlog |
-| P1 | Reisealbum | Bestwerte, besuchte Welten und Setpieces bilden eine kleine Meta-Progression | Backlog |
+| P1 | Laufaufträge | Mäusejagd, Flow-Ziel und Mutpfoten-Manöver rotieren deterministisch und vergeben eigene Boni | umgesetzt |
+| P1 | Routenentscheidungen | der sichere Bodenweg bleibt offen; sichtbare Höhenrouten belohnen fünf Goldmäuse separat | umgesetzt |
+| P1 | Reisealbum | Bestwerte, besuchte Welten, Etappen, Setpieces, Aufträge und Goldpfade bilden eine lokale Meta-Progression | umgesetzt |
 | P2 | Klangmotive pro Beat | kurze musikalische Signale markieren Flow-Tiers und neue Reiseabschnitte | benötigt Audioabnahme |
 | P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | Backlog |
 
 ## Erfolgskriterien dieser Iteration
 
-- Ein sauberer Lauf erzeugt innerhalb weniger Aktionen einen sichtbaren Multiplikator.
-- Score-Belohnung und Flow-Verlust sind deterministisch und direkt getestet.
-- Aktueller Reiseabschnitt und Fortschritt sind ohne Debugfunktionen erkennbar.
-- HUD und Spielfläche bleiben auf schmalen Viewports ausgewogen.
+- Auftrag, Fortschritt und Bonus sind ohne Hilfe verständlich und wechseln deterministisch.
+- Der Goldpfad ist als freiwillige, riskantere Route lesbar und blockiert den Bodenweg nicht.
+- Das Reisealbum überlebt Neustarts und bleibt bei beschädigtem oder gesperrtem Storage sicher.
+- HUD und alle Aktionen bleiben bei exakt 390 × 844 vollständig sichtbar.
 - Automatische Tests, Browser-Smoke und Release-Budget bleiben grün.

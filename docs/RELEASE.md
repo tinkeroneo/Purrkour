@@ -10,7 +10,9 @@
 ## Manuell
 
 - [ ] Desktop und Hochkantansicht starten ohne Konsolenfehler.
-- [ ] Erststart-Hilfe, Pause, Ducken, Sound, Thema, Auto-Thema und Kompaktansicht funktionieren per Pointer und Tastatur.
+- [ ] Erststart-Hilfe, Pause, Ducken, Sound, Thema, Auto-Thema, Reisealbum und Kompaktansicht funktionieren per Pointer und Tastatur.
+- [ ] Alle drei Laufaufträge wechseln korrekt; ein Goldpfad kann vollständig abgeschlossen und auch folgenlos verpasst werden.
+- [ ] Reisealbum behält Welten, Etappen, Aufträge, Goldpfade und Bestwerte nach Reload sowie neuem Lauf.
 - [ ] Resize/Rotation erhält Score, Leben, Weltobjekte und Position plausibel.
 - [ ] Game over zeigt Score/Bestwert und wartet auf „Erneut spielen“.
 - [ ] Sound startet erst nach einer Nutzergeste und respektiert die gespeicherte Auswahl.

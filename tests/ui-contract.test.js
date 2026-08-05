@@ -12,6 +12,7 @@ test("mobile controls expose crouch semantics and browser zoom", () => {
   assert.match(html, /min-width:44px; min-height:44px/);
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   assert.match(html, /Tippen: Sprung/);
+  assert.match(html, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
 test("discoverable help, theme and compact-view controls replace hidden gestures", () => {
@@ -30,6 +31,7 @@ test("discoverable help, theme and compact-view controls replace hidden gestures
   assert.match(main, /game\.helpOpen = true/);
   assert.match(main, /game\.helpOpen = false/);
   assert.match(main, /createJourneyAlbum/);
+  assert.match(main, /get\("album"\) === "1"/);
 });
 
 test("game over remains visible until the player requests a restart", () => {

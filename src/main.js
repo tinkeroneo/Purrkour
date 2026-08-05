@@ -269,6 +269,7 @@ function setupAlbum(game, album, ui) {
     event.preventDefault();
     closeAlbum();
   });
+  if (new URLSearchParams(window.location.search).get("album") === "1") openAlbum();
 }
 
 
