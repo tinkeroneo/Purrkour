@@ -4,6 +4,7 @@ import { setupInput } from "./core/input.js";
 import { createSafeStorage } from "./core/storage.js";
 
 import { createGameState } from "./game/state.js";
+import { getFlowMultiplier } from "./game/flow.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
 import { setupDebugControls } from "./game/debug.js";
@@ -220,7 +221,7 @@ function showGameOver({ score }) {
   const result = recordScore(runStorage, score);
   if (ui.gameOverScore) ui.gameOverScore.textContent = String(score);
   if (ui.gameOverBest) ui.gameOverBest.textContent = String(result.best);
-  if (ui.gameOverFlow) ui.gameOverFlow.textContent = `x${game.flow?.best || 1}`;
+  if (ui.gameOverFlow) ui.gameOverFlow.textContent = `x${getFlowMultiplier(game.flow?.best)}`;
   if (ui.gameOverBestLabel) ui.gameOverBestLabel.hidden = !result.isNewBest;
   if (!ui.gameOverDialog) return;
 
