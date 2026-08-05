@@ -7,106 +7,163 @@
 
   <title>Purrkour</title>
   <style>
-    :root { color-scheme: dark; }
-    body { margin:0; overflow:hidden; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:#0b1520; }
-    canvas { display:block; width:100vw; height:100vh; touch-action:manipulation; }
+    :root { color-scheme:dark; --glass:rgba(9,19,30,.78); --line:rgba(255,255,255,.17); --gold:#ffd166; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; overflow:hidden; color:#fff;
+      font-family:Inter,ui-rounded,"Segoe UI",system-ui,-apple-system,sans-serif;
+      background:radial-gradient(circle at 50% -10%,#24455d 0,#0b1520 48%,#060b11 100%);
+    }
+    body::after{
+      content:""; position:fixed; inset:0; pointer-events:none; z-index:5;
+      box-shadow:inset 0 0 90px rgba(2,7,12,.35);
+    }
+    canvas{ display:block; width:100vw; height:100vh; touch-action:manipulation; }
 
     #ui{
-      position:fixed; top:10px; left:50%; transform:translateX(-50%);
-      display:grid; grid-template-columns:repeat(6, auto); grid-auto-rows:auto; gap:8px 10px;
-      align-items:center;
-      padding:8px 10px; border-radius:14px;
-      background:rgba(20,30,40,0.72); backdrop-filter:blur(8px);
-      z-index:10; max-width:calc(100vw - 16px);
+      position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10;
+      width:min(760px,calc(100vw - 20px)); display:grid;
+      grid-template-columns:1.1fr 1fr 1.4fr 1fr 1.8fr auto; gap:7px 9px; align-items:center;
+      padding:10px; border:1px solid var(--line); border-radius:20px;
+      background:linear-gradient(135deg,rgba(20,38,54,.88),var(--glass));
+      box-shadow:0 18px 50px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter:blur(14px) saturate(1.2);
     }
-    #ui>div{ color:#fff; font-weight:800; font-variant-numeric:tabular-nums; }
+    #ui>div{ font-weight:800; font-variant-numeric:tabular-nums; }
     .pill{
-      padding:4px 9px; border-radius:999px;
-      background:rgba(255,255,255,0.10); color:#fff; font-weight:900; white-space:nowrap;
+      min-height:36px; display:flex; align-items:center; justify-content:center;
+      padding:6px 10px; border:1px solid rgba(255,255,255,.1); border-radius:12px;
+      background:rgba(255,255,255,.09); color:#fff; white-space:nowrap;
     }
-    .theme-button{ border:0; cursor:pointer; min-height:44px; }
-    .theme-button:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
-    .btn{
-      min-width:44px; min-height:44px;
-      border:0; padding:7px 11px; border-radius:999px;
-      background:rgba(255,255,255,0.16); color:#fff; font-weight:900; cursor:pointer;
-      touch-action:none;
+    .journey{ grid-column:1 / span 5; min-width:0; display:grid; grid-template-columns:auto 1fr; align-items:center; gap:12px; }
+    .journey-copy{ display:flex; align-items:baseline; gap:9px; min-width:0; }
+    .brand{ color:var(--gold); font-size:10px; letter-spacing:.18em; }
+    #journeyLabel{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+    .journey-track,.flow-track{
+      display:block; overflow:hidden; height:6px; border-radius:999px;
+      background:rgba(255,255,255,.12); box-shadow:inset 0 1px 2px rgba(0,0,0,.3);
     }
-    .btn:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
-    .btn.is-active{ background:rgba(145,220,255,0.42); transform:translateY(1px); }
+    #journeyFill,#flowFill{
+      display:block; width:0; height:100%; border-radius:inherit;
+      background:linear-gradient(90deg,#77d7ff,#c8f58a); transition:width .18s linear;
+    }
+    #ui .mice{ grid-column:6; }
+    #ui .score{ grid-column:1 / span 1; justify-content:space-between; gap:8px; }
+    #ui .score .label{ color:rgba(255,255,255,.62); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+    #score{ color:#fff; font-size:18px; }
+    #ui .flow{ grid-column:2 / span 2; display:grid; grid-template-columns:auto 1fr; gap:9px; }
+    #flowValue{ min-width:60px; color:rgba(255,255,255,.76); font-size:12px; }
+    #flowDisplay.is-active{ border-color:rgba(255,209,102,.5); box-shadow:0 0 22px rgba(255,209,102,.14); }
+    #flowDisplay.is-active #flowValue{ color:var(--gold); }
+    #flowDisplay.is-active #flowFill{ background:linear-gradient(90deg,#ffd166,#ff70a6); box-shadow:0 0 12px rgba(255,112,166,.55); }
+    #ui .lives{ grid-column:4 / span 3; }
     #lives{ display:flex; gap:2px; }
-    #lives .heart{ display:inline-block; width:1.05em; text-align:center; opacity:1; }
-    #lives .heart.off{ opacity:0.22; filter:grayscale(1); }
-    #ui .score{ grid-column:1 / span 2; }
-    #ui .lives{ grid-column:3 / span 2; }
-    #ui .mice{ grid-column:5 / span 1; }
-    #ui .theme{ grid-column:6 / span 1; }
-    #ui .controls{ grid-column:1 / span 6; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+    #lives .heart{ display:inline-block; width:1.05em; text-align:center; opacity:1; transition:opacity .18s,transform .18s; }
+    #lives .heart.off{ opacity:.2; filter:grayscale(1); transform:scale(.86); }
+    #ui .controls{ grid-column:1 / span 6; display:flex; flex-wrap:nowrap; gap:6px; justify-content:center; }
+    .btn{
+      min-width:44px; min-height:44px; border:1px solid rgba(255,255,255,.11); padding:7px 11px;
+      border-radius:13px; background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.09));
+      color:#fff; font-weight:900; cursor:pointer; touch-action:none; box-shadow:0 3px 9px rgba(0,0,0,.12);
+    }
+    .btn:hover:not(:disabled){ background:rgba(255,255,255,.22); }
+    .btn:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+    .btn.is-active{ background:rgba(117,208,255,.35); border-color:rgba(173,230,255,.55); transform:translateY(1px); }
+    .theme-button{ cursor:pointer; min-width:76px; }
+    .theme-button:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+    #speedBtn{ min-width:88px; color:rgba(255,255,255,.7); }
     #hint{
-      position:fixed; left:0; right:0; bottom:10px; text-align:center;
-      color:rgba(255,255,255,0.65); font-size:13px; z-index:10; pointer-events:none;
-      text-shadow:0 1px 10px rgba(0,0,0,0.35); padding:0 10px;
+      position:fixed; left:0; right:0; bottom:10px; z-index:10; padding:0 10px;
+      color:rgba(255,255,255,.72); font-size:13px; text-align:center; pointer-events:none;
+      text-shadow:0 2px 12px rgba(0,0,0,.55);
     }
     #hint.minimal{ display:none; }
     dialog{
-      width:min(390px, calc(100vw - 32px)); box-sizing:border-box;
-      border:1px solid rgba(255,255,255,0.28); border-radius:22px;
-      padding:26px; color:#fff; text-align:center;
-      background:rgba(12,22,32,0.96); box-shadow:0 24px 80px rgba(0,0,0,0.48);
+      width:min(420px,calc(100vw - 32px)); border:1px solid rgba(255,255,255,.22); border-radius:24px;
+      padding:28px; color:#fff; text-align:center;
+      background:linear-gradient(145deg,rgba(24,42,58,.98),rgba(8,17,26,.98));
+      box-shadow:0 28px 90px rgba(0,0,0,.58),inset 0 1px 0 rgba(255,255,255,.08);
     }
-    dialog::backdrop{ background:rgba(3,8,14,0.72); backdrop-filter:blur(5px); }
-    dialog h1{ margin:0 0 8px; font-size:clamp(26px, 8vw, 38px); }
+    dialog::backdrop{ background:rgba(3,8,14,.76); backdrop-filter:blur(7px); }
+    dialog h1{ margin:0 0 8px; font-size:clamp(26px,8vw,38px); }
     dialog p{ margin:8px 0; }
-    .result{ display:flex; justify-content:center; gap:20px; margin:20px 0; }
-    .result strong{ display:block; font-size:28px; font-variant-numeric:tabular-nums; }
-    #gameOverBestLabel{ color:#ffd56a; font-weight:900; }
-    #restartBtn{ width:100%; font-size:16px; background:#f3c55e; color:#17202a; }
+    .result{ display:flex; justify-content:center; gap:10px; margin:20px 0; }
+    .result p{ flex:1; padding:11px 8px; border-radius:14px; background:rgba(255,255,255,.07); color:rgba(255,255,255,.7); font-size:12px; }
+    .result strong{ display:block; color:#fff; font-size:27px; font-variant-numeric:tabular-nums; }
+    #gameOverFlow{ color:var(--gold); }
+    #gameOverBestLabel{ color:var(--gold); font-weight:900; }
+    #restartBtn,#closeHelpBtn{ width:100%; font-size:16px; background:var(--gold); color:#17202a; }
     #helpDialog{ text-align:left; }
-    #helpDialog h1, #helpDialog>p{ text-align:center; }
+    #helpDialog h1,#helpDialog>p{ text-align:center; }
     #helpDialog ul{ display:grid; gap:10px; padding-left:22px; line-height:1.35; }
-    #helpDialog kbd{ padding:2px 6px; border-radius:5px; background:rgba(255,255,255,0.14); font:inherit; }
-    #closeHelpBtn{ width:100%; background:#f3c55e; color:#17202a; font-size:16px; }
+    #helpDialog kbd{ padding:2px 6px; border-radius:5px; background:rgba(255,255,255,.14); font:inherit; }
     .hint-mobile{ display:none; }
-    #ui.minimal .mice, #ui.minimal .theme, #ui.minimal .controls>*:not(#minimalBtn){ display:none; }
-    #ui.minimal{ grid-template-columns:auto auto auto; gap:6px 8px; }
-    #ui.minimal .score{ grid-column:1 / span 1; }
-    #ui.minimal .lives{ grid-column:2 / span 1; }
-    #ui.minimal .controls{ display:flex; grid-column:3 / span 1; }
-    #ui.minimal .score .label{ display:none; }
-    @media (max-width: 700px){
+
+    #ui.minimal{ width:auto; grid-template-columns:auto minmax(150px,220px) auto auto; }
+    #ui.minimal .journey,#ui.minimal .mice,#ui.minimal .controls>*:not(#minimalBtn){ display:none; }
+    #ui.minimal .score{ grid-column:1; }
+    #ui.minimal .flow{ grid-column:2; }
+    #ui.minimal .lives{ grid-column:3; }
+    #ui.minimal .controls{ display:flex; grid-column:4; }
+
+    @media (max-width:700px){
       #ui{
-        top:6px; gap:6px 8px; padding:6px 8px; border-radius:12px;
-        width:calc(100vw - 12px); max-width:none; box-sizing:border-box;
-        grid-template-columns:repeat(4, minmax(0, 1fr));
+        top:6px; width:calc(100vw - 12px); grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:6px; padding:7px; border-radius:16px;
       }
       #ui>div{ font-size:12px; }
-      .pill{ padding:3px 8px; }
-      .btn{ padding:6px 9px; font-size:12px; }
-      #hint{ display:block; font-size:11px; bottom:6px; }
-      #ui .score{ grid-column:1 / span 2; }
-      #ui .lives{ grid-column:3 / span 2; }
-      #ui .mice{ grid-column:1 / span 2; }
-      #ui .theme{ grid-column:3 / span 2; }
-      #ui .controls{ grid-column:1 / span 4; }
-      #ui .controls>.btn{ flex:1 1 44px; }
+      .journey{ grid-column:1 / span 3; gap:7px; }
+      .journey-copy{ display:block; }
+      .brand{ display:block; font-size:8px; }
+      #journeyLabel{ display:block; font-size:11px; }
+      #ui .mice{ grid-column:4; padding-inline:5px; }
+      #ui .score{ grid-column:1; }
+      #ui .flow{ grid-column:2 / span 2; padding-inline:7px; }
+      #ui .lives{ grid-column:4; padding-inline:4px; }
+      #lives{ gap:0; font-size:10px; }
+      #ui .controls{ grid-column:1 / span 4; gap:5px; }
+      #ui .controls>.btn{ flex:1 1 44px; padding:6px; font-size:11px; }
+      #speedBtn{ display:none; }
+      .theme-button{ min-width:56px; }
+      #hint{ font-size:11px; bottom:6px; }
       .hint-desktop{ display:none; }
       .hint-mobile{ display:inline; }
+      #ui.minimal{ width:calc(100vw - 12px); grid-template-columns:auto minmax(120px,1fr) auto auto; }
+    }
+    @media (max-width:400px){
+      #ui .controls{ gap:4px; }
+      .theme-button{ min-width:44px; }
+      #catnip{ display:none; }
+    }
+    @media (max-width:350px){
+      #ui .controls{ flex-wrap:wrap; }
+      #ui .controls>.btn{ flex:1 1 40px; }
+    }
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{ scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; }
     }
   </style>
 </head>
 <body>
   <div id="ui">
-    <div class="score"><span class="label">Score: </span><span id="score">0</span></div>
-    <div class="pill lives" id="lives" aria-label="7 von 7 Leben">❤️❤️❤️❤️❤️❤️❤️</div>
-
+    <div class="journey">
+      <div class="journey-copy"><span class="brand">PURRKOUR</span><span id="journeyLabel">Waldpfade</span></div>
+      <span class="journey-track" id="journeyProgress" role="progressbar" aria-label="Fortschritt der Etappe" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="journeyFill"></span></span>
+    </div>
     <div class="pill mice" id="miceDisplay">🐭 × 0</div>
-    <button class="pill theme theme-button" id="themeBtn" type="button" aria-label="Nächstes Thema" title="Nächstes Thema"><span id="catnip">wald</span></button>
+    <div class="pill score"><span class="label">Punkte</span><span id="score">0</span></div>
+    <div class="pill flow" id="flowDisplay" aria-label="Flow x1, beste Kette 0">
+      <span id="flowValue">Flow x1</span>
+      <span class="flow-track"><span id="flowFill"></span></span>
+    </div>
+    <div class="pill lives" id="lives" aria-label="7 von 7 Leben">❤️❤️❤️❤️❤️❤️❤️</div>
 
     <div class="controls">
       <button class="btn" id="restBtn" type="button" aria-label="Pause an der Hütte" aria-pressed="false" title="Zur Hütte (Pause)">🏠</button>
       <button class="btn" id="crouchBtn" type="button" aria-label="Ducken" aria-pressed="false" title="Zum Ducken gedrückt halten">↓</button>
       <button class="btn" id="soundBtn" type="button" aria-label="Sound ausschalten" aria-pressed="true" title="Sound an/aus">🔊</button>
       <button class="btn" id="speedBtn" type="button" aria-label="Pace steigt automatisch" title="Pace steigt automatisch" disabled>Pace 1.0x</button>
+      <button class="btn theme theme-button" id="themeBtn" type="button" aria-label="Nächstes Thema" title="Nächstes Thema">🌍 <span id="catnip">wald</span></button>
       <button class="btn" id="autoThemeBtn" type="button" aria-label="Automatischen Themenwechsel verwenden" aria-pressed="true" title="Themen automatisch wechseln">Auto</button>
       <button class="btn" id="minimalBtn" type="button" aria-label="Kompaktansicht einschalten" aria-pressed="false" title="HUD kompakter anzeigen">HUD</button>
       <button class="btn" id="helpBtn" type="button" aria-label="Spielhilfe öffnen" title="Spielhilfe">❓</button>
@@ -120,11 +177,12 @@
 
   <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpIntro">
     <h1 id="helpTitle">So spielst du</h1>
-    <p id="helpIntro">Sammle Mäuse, weiche Hindernissen aus und entdecke neue Welten.</p>
+    <p id="helpIntro">Sammle Mäuse, verbinde saubere Manöver zu Flow und entdecke neue Welten.</p>
     <ul>
       <li><strong>Springen:</strong> Tippe ins Spiel oder drücke <kbd>Leertaste</kbd>.</li>
       <li><strong>Bewegen:</strong> Nutze <kbd>A</kbd>/<kbd>D</kbd> oder die Pfeiltasten.</li>
       <li><strong>Ducken:</strong> Halte <kbd>↓</kbd>, <kbd>S</kbd> oder den ↓-Button.</li>
+      <li><strong>Flow:</strong> Sammeln, Ausweichen und besondere Manöver füllen die Kette. Bei x2 bis x4 zählen Aktionen mehr.</li>
       <li><strong>Pause:</strong> Die Hütte hält den Lauf an. Thema, Automatik und HUD haben eigene Buttons.</li>
     </ul>
     <button class="btn" id="closeHelpBtn" type="button">Loslaufen</button>
@@ -134,8 +192,9 @@
     <h1 id="gameOverTitle">Lauf beendet</h1>
     <p id="gameOverDescription">Gute Jagd. Noch eine Runde?</p>
     <div class="result">
-      <p>Score<strong id="gameOverScore">0</strong></p>
+      <p>Punkte<strong id="gameOverScore">0</strong></p>
       <p>Bestwert<strong id="gameOverBest">0</strong></p>
+      <p>Bester Flow<strong id="gameOverFlow">x1</strong></p>
     </div>
     <p id="gameOverBestLabel" hidden>Neuer Bestwert! 🎉</p>
     <button class="btn" id="restartBtn" type="button">Erneut spielen</button>

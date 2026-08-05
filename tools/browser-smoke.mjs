@@ -69,6 +69,8 @@ try {
   assert.match(stdout, /id="helpDialog"[^>]*open/);
   assert.match(stdout, /class="heart"/);
   assert.match(stdout, /id="minimalBtn"/);
+  assert.match(stdout, /id="journeyProgress"/);
+  assert.match(stdout, /id="flowDisplay"/);
   process.stdout.write("Browser smoke passed.\n");
 } finally {
   await new Promise((resolve) => server.close(resolve));

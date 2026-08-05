@@ -31,7 +31,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         for (const p of (objects.puffs || [])) {
             const a = clamp(p.life / 24, 0, 1) * 0.35;
             ctx.globalAlpha = a;
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.fillStyle = p.color || "rgba(255,255,255,0.9)";
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
             ctx.fill();
@@ -60,13 +60,14 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         const t = objects.toastState();
         if (t.toastTimer > 0) {
             const a = clamp(t.toastTimer / 60, 0, 1);
+            const top = canvas.W <= 700 ? 156 : 112;
             ctx.globalAlpha = 0.85 * a;
             ctx.fillStyle = "rgba(0,0,0,0.22)";
-            roundRect(ctx, canvas.W * 0.10, 18, canvas.W * 0.80, 26, 10); ctx.fill();
+            roundRect(ctx, canvas.W * 0.10, top, canvas.W * 0.80, 28, 10); ctx.fill();
             ctx.fillStyle = "#fff";
             ctx.font = "13px system-ui, sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(t.toastText, canvas.W / 2, 37);
+            ctx.fillText(t.toastText, canvas.W / 2, top + 19);
             ctx.globalAlpha = 1;
         }
     }

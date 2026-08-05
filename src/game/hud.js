@@ -1,3 +1,5 @@
+import { getFlowProgress } from "./flow.js";
+
 export function createHUD(ui) {
   let biomeLabel = "wald";
   let lastScore;
@@ -6,6 +8,20 @@ export function createHUD(ui) {
   let lastSpeed;
   let lastTheme;
   let lastPaused;
+  let lastFlow;
+  let lastJourney;
+
+  const themeLabels = {
+    forest: "Wald",
+    ocean: "Ozean",
+    island: "Insel",
+    mars: "Mars",
+    mountain: "Berge",
+    jungle: "Dschungel",
+    cliff: "Klippen",
+    city: "Stadt",
+    desert: "Wüste",
+  };
 
   function setBiome(label) {
     biomeLabel = label;
@@ -39,6 +55,32 @@ export function createHUD(ui) {
       lastMice = mice;
     }
 
+    const flow = game.flow || {};
+    const flowPercent = Math.round(getFlowProgress(flow) * 40) * 2.5;
+    const flowKey = `${flow.count || 0}/${flow.multiplier || 1}/${flow.best || 0}/${flowPercent}`;
+    if (flowKey !== lastFlow) {
+      const multiplier = flow.multiplier || 1;
+      if (ui.flowValue) ui.flowValue.textContent = `Flow x${multiplier}`;
+      if (ui.flowFill?.style) ui.flowFill.style.width = `${flowPercent}%`;
+      ui.flowDisplay?.classList?.toggle("is-active", multiplier > 1);
+      ui.flowDisplay?.setAttribute?.(
+        "aria-label",
+        `Flow x${multiplier}, Kette ${flow.count || 0}, beste Kette ${flow.best || 0}`,
+      );
+      lastFlow = flowKey;
+    }
+
+    const beatLabel = game.progression?.beatLabel || themeLabels[game.theme] || "Reise";
+    const beatPercent = Math.round(Math.max(0, Math.min(1, game.progression?.beatProgress || 0)) * 100);
+    const journeyKey = `${beatLabel}/${beatPercent}`;
+    if (journeyKey !== lastJourney) {
+      if (ui.journeyLabel) ui.journeyLabel.textContent = beatLabel;
+      if (ui.journeyFill?.style) ui.journeyFill.style.width = `${beatPercent}%`;
+      ui.journeyProgress?.setAttribute?.("aria-valuenow", String(beatPercent));
+      ui.journeyProgress?.setAttribute?.("aria-label", `${beatLabel}: ${beatPercent} Prozent`);
+      lastJourney = journeyKey;
+    }
+
     const speed = `Pace ${(game.progressionSpeedMul ?? 1.0).toFixed(1)}x`;
     if (ui.speedBtn && speed !== lastSpeed) {
       ui.speedBtn.textContent = speed;
@@ -46,7 +88,7 @@ export function createHUD(ui) {
     }
 
     // Debug/info slot (was catnip status): show current theme key
-    const theme = String(game.theme || "");
+    const theme = themeLabels[game.theme] || String(game.theme || "");
     if (ui.catnip && theme !== lastTheme) {
       ui.catnip.textContent = theme;
       lastTheme = theme;

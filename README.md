@@ -1,6 +1,6 @@
 # Purrkour
 
-Purrkour ist ein browserbasierter Endless Runner mit prozedural gezeichneter Canvas-Welt, wechselnden Themen, Sammelobjekten, Setpieces und zugänglichen Touch-/Tastaturaktionen.
+Purrkour ist ein browserbasierter Reise-Runner mit prozedural gezeichneter Canvas-Welt, wechselnden Themen, Sammelobjekten und Setpieces. Saubere Aktionen bauen einen Flow-Multiplikator auf; das HUD zeigt den aktuellen Reiseabschnitt und dessen Fortschritt.
 
 ## Lokal starten
 
@@ -25,7 +25,7 @@ Die Hilfe erscheint beim ersten Start und kann über `?` erneut geöffnet werden
 ## Entwicklung und Qualität
 
 ```powershell
-npm run check   # ESLint, 16 Node-Tests und Headless-Chrome-Smoke-Test
+npm run check   # ESLint, 21 Node-Tests und Headless-Chrome-Smoke-Test
 npm run build   # erzeugt ein geprüftes statisches Artefakt in dist/
 ```
 

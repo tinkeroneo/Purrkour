@@ -5,7 +5,7 @@ Geprüfter Branch: `main`
 
 ## Kurzurteil
 
-`purrkour` ist ein visuell eigenständiger, modular aufgebauter Endless-Runner mit prozeduralem Canvas-Rendering, mehreren Themen, Setpieces, Fahrzeugen und Sammelobjekten. Die Modulaufteilung ist deutlich besser als beim Schwesterprojekt. Der Audit fand jedoch vier unmittelbar spielrelevante Risiken sowie wirkungslose Qualitätsgates; diese P0-Punkte sind im ersten Maßnahmenblock behoben und automatisiert abgesichert worden.
+`purrkour` ist ein visuell eigenständiger, modular aufgebauter Reise-Runner mit prozeduralem Canvas-Rendering, mehreren Themen, Setpieces, Fahrzeugen und Sammelobjekten. Die technischen P0-Risiken des ersten Audits sind behoben. Ein zweiter Produktblock macht die lange Reise nun auch kurzfristig motivierend: Flow, Abschnittsfortschritt, Aktionsfeedback und HUD-Hierarchie sind umgesetzt und automatisiert abgesichert.
 
 Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verbleibend sind vor einem öffentlichen Release vor allem manuelle Langstrecken-, Geräte-, Screenreader- und Rechteprüfungen.
 
@@ -18,7 +18,7 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | PURR-03 | erledigt | ESLint-Glob aktiv; echte Regeln greifen und `--max-warnings=0` verhindert neue Warnschulden |
 | PURR-04 | erledigt | semantischer 44-px-Touchbutton für Ducken nutzt denselben Input-State wie die Tastatur |
 | PURR-05 bis PURR-07 | erledigt | kanonischer Reset, funktionierender Theme-Fade und Debug-Gating über `?debug=1` |
-| PURR-08 | erledigt | 16 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI, npm-10-kompatible Installation und reproduzierbarer Release-Build |
+| PURR-08 | erledigt | 21 Node-Tests, dauerhafter Headless-Chrome-Smoke-Test, CI, npm-10-kompatible Installation und reproduzierbarer Release-Build |
 | PURR-09, PURR-10 | erledigt | ES-Modul-Paket und zustandsabhängige HUD-Updates |
 | PURR-11 | erledigt | Resize migriert Terrain, Katze, Objekte und Effekte, ohne Progression oder Spawner zurückzusetzen |
 | PURR-12, PURR-13 | erledigt | First-run-Hilfe, kurze Mobile-Hilfe, semantische Theme-/Auto-/HUD-Aktionen, Zielgrößen, Fokus, Zoom und ARIA umgesetzt |
@@ -29,16 +29,25 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 | PURR-18 | erledigt | Hook reicht `$1` weiter; gültige Nachricht endet 0, ungültige 1 |
 | PURR-19 | erledigt | durch aktiven Linter entdeckten undefinierten City-Renderer entfernt |
 
+## Umsetzungsstand des Produktblocks
+
+| ID | Status | Ergebnis |
+|---|---|---|
+| PURR-20 | erledigt | deterministischer Flow x1–x4 für Sammeln, Ausweichen und besondere Manöver; Treffer und Zeitablauf lösen ihn nachvollziehbar auf |
+| PURR-21 | erledigt | alle Progressionsbeats besitzen lesbare Namen und einen sichtbaren Etappenfortschritt |
+| PURR-22 | erledigt | neue HUD-Hierarchie priorisiert Reise, Flow, Punkte und Leben; Einstellungen bleiben nachgeordnet erreichbar |
+| PURR-23 | erledigt | farbige Aktionspartikel, Flow-Puls, Tier-Meldungen und bester Flow im Run-Ergebnis schließen die Feedbackschleife |
+
 ## Aktueller Aufbau
 
 - Statische Webanwendung mit nativen ES-Modulen und Canvas-2D-Rendering.
 - Funktionale Modulstruktur für Core, Game, World, Objects, Entities und Vehicles.
 - Kein Buildschritt; `index.html` lädt `src/main.js` direkt.
-- Endless-Runner mit scorebasierter Progression, Themenwechseln, saisonalen Overlays, Ocean-/Rocket-Setpieces und sieben Leben.
+- Reise-Runner mit scorebasierter Progression, Themenwechseln, saisonalen Overlays, Ocean-/Rocket-Setpieces, sieben Leben und einer zeitbasierten Flow-Kette.
 - Desktop: Sprung, Links/Rechts und Ducken; Debug-Hotkeys sind nur mit `?debug=1` aktiv.
 - Touch: Pointer löst Sprung aus, ein sichtbarer Button erlaubt Ducken. Eine explizite Touch-Aktion für Links/Rechts fehlt weiterhin.
 - Soundstatus und manuelle Themenwahl werden fehlertolerant persistiert.
-- ESLint, Husky, Commitlint, 16 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
+- ESLint, Husky, Commitlint, 21 Node-Tests und ein echter Headless-Chrome-Smoke-Test sind wirksam; CI führt Check und Release-Build mit der eingecheckten npm-Konfiguration reproduzierbar aus.
 
 ## Durchgeführte Prüfungen
 
@@ -46,9 +55,9 @@ Die bestätigten technischen und produktbezogenen Befunde sind umgesetzt. Verble
 |---|---|
 | Git-Status und Upstream | sauber, `main` folgt `origin/main` |
 | `npm ci` mit npm 10.8.2 | erfolgreich; Peer-Auflösung ist über `.npmrc` reproduzierbar |
-| `npm run check` | erfolgreich; aktiver Linter plus 16/16 Tests |
+| `npm run check` | erfolgreich; aktiver Linter plus 21/21 Tests und Browser-Smoke |
 | `npm run test:browser` | erfolgreich; echter Modulstart, dynamisches HUD und geöffnete Hilfe in Headless Chrome |
-| `npm run build` | 47 Runtime-Dateien, 221.696 Bytes bei 750-KiB-Budget |
+| `npm run build` | 48 Runtime-Dateien, 232.244 Bytes bei 750-KiB-Budget |
 | `npm run lint` | 0 Fehler, 0 Warnungen; Warnbudget ist null |
 | ESLint `--print-config` | `no-undef` aktiv auf Fehler-, `no-unused-vars` auf Warnstufe |
 | Desktop-Laufzeit, 1440 × 1000 | nach Änderungen erneut geladen und gerendert |
@@ -122,7 +131,7 @@ Maßnahme: Debugfunktionen nur über expliziten Query-Parameter oder Development
 
 `tests/smoke.test.js` liest Dateien und extrahiert Strukturen mit regulären Ausdrücken. Module werden nicht importiert, Zustände nicht simuliert und Browserabläufe nicht gestartet. Änderungen an Physik, Reset, Input, Audio oder Rendering bleiben unentdeckt.
 
-Umsetzung: Das ES-Modul-Paket besitzt 16 direkte Node-Tests für Audio, HUD, Storage, State, Resize und Timing. Ein dauerhafter Chrome-Smoke-Test startet einen isolierten lokalen Server und prüft echten Modulstart, Canvas, dynamisches HUD und Onboarding. GitHub Actions führt `npm ci`, das vollständige Gate und den Release-Build aus.
+Umsetzung: Das ES-Modul-Paket besitzt 21 direkte Node-Tests für Audio, Flow, HUD, Storage, State, Resize, Timing und UI-Verträge. Ein dauerhafter Chrome-Smoke-Test startet einen isolierten lokalen Server und prüft echten Modulstart, Canvas, dynamisches HUD und Onboarding. GitHub Actions führt `npm ci`, das vollständige Gate und den Release-Build aus.
 
 Akzeptanz: Tests decken mindestens Initialzustand, Reset, Progression, Frame-Raten-Unabhängigkeit, Input-Mapping und Audio-Unlock ab.
 
@@ -196,10 +205,10 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 
 ## Perspektiven
 
-- Entwickler: Gute Modulrichtung, aber wirkungslose Gates und framegebundener State verhindern sichere Weiterentwicklung.
-- UX: Der Runner startet schnell, erklärt aber weder Basis- noch Spezialinteraktionen; Game over und Reset wirken unfertig.
-- UI: Atmosphäre und Themen funktionieren, HUD und Controls sind auf großen Screens sehr klein und auf Mobile nicht ausreichend bedienbar.
-- Anwender: Springen ist sofort verständlich, Ducken und versteckte Funktionen dagegen nicht; Verhalten variiert je nach Display-Hz.
+- Entwickler: Flow und HUD sind getrennte, deterministische Module; aktive Gates schützen Logik, UI-Verträge und reale Browserinitialisierung.
+- UX: Reiseabschnitt, Fortschritt und Flow geben lang- und kurzfristige Ziele; Hilfe und Run-Ergebnis erklären die neue Schleife.
+- UI: Die gläserne Hierarchie priorisiert Spielsituation vor Einstellungen und bleibt auf Desktop sowie schmalen Viewports kompakt.
+- Anwender: Springen bleibt sofort verständlich; Ducken, Pause, Themenwahl, Flow-Verlust und die nächste Etappe sind sichtbar nachvollziehbar.
 - Betrieb: CI, Browser-Smoke, Allowlist-Build mit 750-KiB-Budget, README, Asset-Inventar und Release-Checkliste schaffen einen reproduzierbaren statischen Releasepfad.
 
 ## Verbleibende Releaseprüfungen
@@ -211,13 +220,13 @@ Umsetzung: Die tote Abfrage wurde entfernt und der vorhandene City-Renderer dire
 
 ## Browser-Nachweise
 
-Desktopansicht nach Fixes:
+Aktuelle Desktopansicht mit Reise- und Flow-Hierarchie:
 
-![Purrkour Desktop](docs/audit/desktop.png)
+![Purrkour Produktansicht Desktop](docs/audit/product-desktop.png)
 
-Aktuelle schmale Hochkantansicht mit allen sichtbaren Basisaktionen:
+Aktuelle Hochkantansicht mit kompakten, sichtbaren Basisaktionen:
 
-![Purrkour Mobile](docs/audit/mobile.png)
+![Purrkour Produktansicht Mobile](docs/audit/product-mobile.png)
 
 First-run-Hilfe in der schmalen Hochkantansicht:
 

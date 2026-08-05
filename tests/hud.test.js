@@ -6,9 +6,18 @@ import { createHUD } from "../src/game/hud.js";
 function trackedElement() {
   let text = "";
   let html = "";
-  const writes = { text: 0, html: 0, attributes: 0 };
+  let width = "";
+  const writes = { text: 0, html: 0, attributes: 0, styles: 0, classes: 0 };
   return {
     writes,
+    style: {
+      set width(value) {
+        width = value;
+        writes.styles++;
+      },
+      get width() { return width; }
+    },
+    classList: { toggle() { writes.classes++; } },
     set textContent(value) {
       text = value;
       writes.text++;
@@ -28,6 +37,12 @@ test("HUD skips DOM writes while visible state is unchanged", () => {
     score: trackedElement(),
     lives: trackedElement(),
     miceDisplay: trackedElement(),
+    flowDisplay: trackedElement(),
+    flowValue: trackedElement(),
+    flowFill: trackedElement(),
+    journeyLabel: trackedElement(),
+    journeyProgress: trackedElement(),
+    journeyFill: trackedElement(),
     speedBtn: trackedElement(),
     catnip: trackedElement(),
     restBtn: trackedElement()
@@ -40,7 +55,9 @@ test("HUD skips DOM writes while visible state is unchanged", () => {
     mice: 2,
     speedMul: 1,
     theme: "forest",
-    pause: { active: false }
+    pause: { active: false },
+    flow: { count: 2, multiplier: 1, timer: 240, best: 2 },
+    progression: { beatLabel: "Waldpfade", beatProgress: 0.25 }
   };
 
   hud.sync(game, {});
@@ -56,4 +73,11 @@ test("HUD skips DOM writes while visible state is unchanged", () => {
   game.lives = 5;
   hud.sync(game, {});
   assert.equal(ui.lives.writes.html, firstWrites.lives.html + 1);
+
+  game.flow = { count: 3, multiplier: 2, timer: 240, best: 3 };
+  game.progression.beatProgress = 0.5;
+  hud.sync(game, {});
+  assert.equal(ui.flowValue.textContent, "Flow x2");
+  assert.equal(ui.flowFill.style.width, "100%");
+  assert.equal(ui.journeyFill.style.width, "50%");
 });

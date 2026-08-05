@@ -18,10 +18,10 @@ Stand: 2026-08-05
 
 | Priorität | Thema | Konkreter Nutzen | Status |
 |---|---|---|---|
-| P0 | Flow-System | sichere Aktionen bauen x2–x4 auf, Treffer oder Zeitablauf brechen die Serie | diese Iteration |
-| P0 | Reiseanzeige | benannter Abschnitt und Fortschrittsbalken machen die Dramaturgie verständlich | diese Iteration |
-| P0 | HUD-Hierarchie | Score, Flow und Reise stehen vor Einstellungen; Mobile benötigt weniger Höhe | diese Iteration |
-| P0 | Aktionsfeedback | Funken, Flow-Puls und klare Tier-Meldungen machen Können sichtbar | diese Iteration |
+| P0 | Flow-System | sichere Aktionen bauen x2–x4 auf, Treffer oder Zeitablauf brechen die Serie | umgesetzt |
+| P0 | Reiseanzeige | benannter Abschnitt und Fortschrittsbalken machen die Dramaturgie verständlich | umgesetzt |
+| P0 | HUD-Hierarchie | Score, Flow und Reise stehen vor Einstellungen; Mobile benötigt weniger Höhe | umgesetzt |
+| P0 | Aktionsfeedback | Funken, Flow-Puls und klare Tier-Meldungen machen Können sichtbar | umgesetzt |
 | P1 | Laufaufträge | wechselnde Ziele wie Mäuseketten, Duck-Passagen oder fehlerfreie Abschnitte schaffen Varianz | nächste Iteration |
 | P1 | Routenentscheidungen | sichere und riskante Objekt-Packs bieten bewusst unterschiedliche Belohnungen | Backlog |
 | P1 | Reisealbum | Bestwerte, besuchte Welten und Setpieces bilden eine kleine Meta-Progression | Backlog |

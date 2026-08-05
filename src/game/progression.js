@@ -72,35 +72,35 @@ function ambienceForBeat(beatId, night) {
 
 // Beat table (score lengths are intentionally simple; tweak freely)
 const BEATS = [
-  { id: "FOREST_INTRO", theme: "forest", lenScore: 220, night: false, safeOnEnter: 0 },
+  { id: "FOREST_INTRO", label: "Waldpfade", theme: "forest", lenScore: 220, night: false, safeOnEnter: 0 },
   // Breath is usually triggered by checkpoint pickup; we keep a fallback scheduled beat too.
-  { id: "CHECKPOINT_BREATH", theme: "forest", lenScore: 20, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "CHECKPOINT_BREATH", label: "Schnurrpause", theme: "forest", lenScore: 20, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Story setpiece: ocean crossing (zeppelin/balloon/raft)
-  { id: "OCEAN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "island" },
+  { id: "OCEAN_JOURNEY", label: "Über das Meer", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "island" },
 
   // Land & breathe
-  { id: "ISLAND_REST", theme: "island", lenScore: 230, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "ISLAND_REST", label: "Inselrast", theme: "island", lenScore: 230, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Rocket cutscene to Mars
-  { id: "ROCKET_FLIGHT", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mars" },
+  { id: "ROCKET_FLIGHT", label: "Start zu den Sternen", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mars" },
 
   // Actual Mars gameplay segment
-  { id: "MARS_RUN", theme: "mars", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "MARS_RUN", label: "Marslauf", theme: "mars", lenScore: 230, night: false, safeOnEnter: 0 },
 
   // Rocket cutscene back from Mars
-  { id: "ROCKET_RETURN", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mountain" },
+  { id: "ROCKET_RETURN", label: "Rückflug", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mountain" },
 
-  { id: "MOUNTAIN_FOCUS", theme: "mountain", lenScore: 200, night: false, safeOnEnter: 0 },
-  { id: "NIGHT_PASSAGE", theme: "mountain", lenScore: 200, night: true, safeOnEnter: 0 },
+  { id: "MOUNTAIN_FOCUS", label: "Bergpfade", theme: "mountain", lenScore: 200, night: false, safeOnEnter: 0 },
+  { id: "NIGHT_PASSAGE", label: "Nachtpassage", theme: "mountain", lenScore: 200, night: true, safeOnEnter: 0 },
 
-  { id: "JUNGLE_RUN", theme: "jungle", lenScore: 230, night: false, safeOnEnter: 0 },
-  { id: "CLIFF_RUN", theme: "cliff", lenScore: 230, night: false, safeOnEnter: 0 },
-  { id: "CITY_RUN", theme: "city", lenScore: 230, night: false, safeOnEnter: 0 },
-  { id: "DESERT_RUN", theme: "desert", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "JUNGLE_RUN", label: "Dschungellauf", theme: "jungle", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "CLIFF_RUN", label: "Klippenpfad", theme: "cliff", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "CITY_RUN", label: "Dächer der Stadt", theme: "city", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "DESERT_RUN", label: "Wüstenwind", theme: "desert", lenScore: 230, night: false, safeOnEnter: 0 },
 
   // Return journey back to forest loop
-  { id: "RETURN_JOURNEY", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
+  { id: "RETURN_JOURNEY", label: "Heimreise", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
 ];
 
 function clearWorld(objects) {
@@ -115,6 +115,8 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       controlsSpeed: true,
       beatIdx: 0,
       beatId: BEATS[0].id,
+      beatLabel: BEATS[0].label,
+      beatProgress: 0,
       beatStartScore: 0,
       beatTick: 0,
       night: 0,
@@ -139,9 +141,12 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     const beat = BEATS[idx] ?? BEATS[0];
     game.progression.beatIdx = idx;
     game.progression.beatId = beat.id;
+    game.progression.beatLabel = beat.label;
+    game.progression.beatProgress = 0;
     game.progression.beatStartScore = game.score;
     game.progression.beatTick = 0;
     game.progression._forcedBreath = (reason === "checkpoint");
+    if (reason !== "boot" && reason !== "reset") objects.toast(`${beat.label} · neue Etappe`, 120);
 
     // Theme switch (soft fade)
     startThemeFade?.(beat.theme, beat.setpiece ? 110 : 80);
@@ -242,6 +247,9 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     const u = beat.setpiece
       ? clamp((game.setpiece?.t ?? 0) / Math.max(1, game.setpiece?.dur ?? 1), 0, 1)
       : scoreU(game, game.progression.beatStartScore, beat.lenScore);
+
+    game.progression.beatLabel = beat.label;
+    game.progression.beatProgress = u;
 
     setBaseSpeed(game, speedForBeat(beat.id, u));
     game.progressionSpeedMul = progressionSpeedMulForScore(game.score);

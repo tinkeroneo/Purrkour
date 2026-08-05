@@ -40,3 +40,14 @@ test("game over remains visible until the player requests a restart", () => {
   assert.doesNotMatch(collider, /setTimeout\(resetAll/);
   assert.match(collider, /game\.finished = true/);
 });
+
+test("journey, flow and run summary expose the new reward loop", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const hud = fs.readFileSync(path.join(root, "src/game/hud.js"), "utf8");
+
+  assert.match(html, /id="journeyProgress"[^>]*role="progressbar"/);
+  assert.match(html, /id="flowDisplay"[^>]*aria-label="Flow x1/);
+  assert.match(html, /id="gameOverFlow"/);
+  assert.match(hud, /getFlowProgress/);
+  assert.match(hud, /beste Kette/);
+});

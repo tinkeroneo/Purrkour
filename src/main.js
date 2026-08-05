@@ -29,6 +29,12 @@ const ui = {
   score: document.getElementById("score"),
   lives: document.getElementById("lives"),
   miceDisplay: document.getElementById("miceDisplay"),
+  flowDisplay: document.getElementById("flowDisplay"),
+  flowValue: document.getElementById("flowValue"),
+  flowFill: document.getElementById("flowFill"),
+  journeyLabel: document.getElementById("journeyLabel"),
+  journeyProgress: document.getElementById("journeyProgress"),
+  journeyFill: document.getElementById("journeyFill"),
   catnip: document.getElementById("catnip"),
   restBtn: document.getElementById("restBtn"),
   crouchBtn: document.getElementById("crouchBtn"),
@@ -43,6 +49,7 @@ const ui = {
   gameOverDialog: document.getElementById("gameOverDialog"),
   gameOverScore: document.getElementById("gameOverScore"),
   gameOverBest: document.getElementById("gameOverBest"),
+  gameOverFlow: document.getElementById("gameOverFlow"),
   gameOverBestLabel: document.getElementById("gameOverBestLabel"),
   restartBtn: document.getElementById("restartBtn"),
 };
@@ -213,6 +220,7 @@ function showGameOver({ score }) {
   const result = recordScore(runStorage, score);
   if (ui.gameOverScore) ui.gameOverScore.textContent = String(score);
   if (ui.gameOverBest) ui.gameOverBest.textContent = String(result.best);
+  if (ui.gameOverFlow) ui.gameOverFlow.textContent = `x${game.flow?.best || 1}`;
   if (ui.gameOverBestLabel) ui.gameOverBestLabel.hidden = !result.isNewBest;
   if (!ui.gameOverDialog) return;
 
