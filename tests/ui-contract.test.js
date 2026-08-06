@@ -60,9 +60,8 @@ test("journey, flow and run summary expose the new reward loop", () => {
   assert.match(html, /id="gameOverFlow"/);
   assert.match(html, /id="missionDisplay"[^>]*aria-label=/);
   assert.match(html, /id="riskDisplay"[^>]*aria-label=/);
-  assert.match(html, /id="routeChoice"[^>]*aria-live="polite"/);
-  assert.match(html, /id="acceptRouteBtn"/);
-  assert.match(html, /id="declineRouteBtn"/);
+  assert.match(html, /id="riskKicker">Abzweig/);
+  assert.doesNotMatch(html, /id="routeChoice"|id="acceptRouteBtn"|id="declineRouteBtn"/);
   assert.match(html, /id="setpieceActionBtn"/);
   assert.match(html, /id="albumJourneyMap"[^>]*aria-label="Entdeckte Welten"/);
   assert.match(hud, /getFlowProgress/);
@@ -70,13 +69,16 @@ test("journey, flow and run summary expose the new reward loop", () => {
   assert.match(main, /getFlowMultiplier\(game\.flow\?\.best\)/);
 });
 
-test("chapter, travel and route presentation previews are browser-verifiable", () => {
+test("chapter, travel and in-world route previews are browser-verifiable", () => {
   const main = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
   const cues = fs.readFileSync(path.join(root, "src/game/presentation-cues.js"), "utf8");
   const draw = fs.readFileSync(path.join(root, "src/objects/draw.js"), "utf8");
   assert.match(main, /PRESENTATION_PREVIEWS/);
   assert.match(cues, /travel: SETPIECE_CUES\.ocean\.travel/);
-  assert.match(cues, /route: \{ kind: "route"/);
+  assert.doesNotMatch(cues, /DEINE ROUTENWAHL/);
+  assert.match(main, /game\.presentationPreview === "route"/);
+  assert.match(draw, /function drawSkyPathPlatform\(o\)/);
+  assert.match(draw, /o\.routeEntry/);
   assert.match(draw, /function drawPresentation\(\)/);
   assert.match(draw, /getPresentationFrame\(presentation\)/);
   assert.match(main, /dismissPresentation\(game\.presentation\)/);

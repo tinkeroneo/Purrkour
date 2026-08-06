@@ -28,7 +28,6 @@ const SETPIECE_CUES = Object.freeze({
 
 export const PRESENTATION_PREVIEWS = Object.freeze({
   travel: SETPIECE_CUES.ocean.travel,
-  route: { kind: "route", kicker: "DEINE ROUTENWAHL", title: "Goldgrat", subtitle: "5 Goldmäuse · +80 Punkte", accent: "#ffd166" },
 });
 
 export function getBeatPresentationCue(beatId) {

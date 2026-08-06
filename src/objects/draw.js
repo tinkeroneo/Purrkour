@@ -141,7 +141,74 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.restore();
     }
 
+    function drawSkyPathPlatform(o) {
+        const x = o.x, y = o.y, w = o.w, h = o.h;
+        const pulse = 0.5 + Math.sin(game.tick * 0.08 + o.routeId) * 0.5;
+        ctx.save();
+
+        ctx.globalAlpha = 0.18 + pulse * 0.08;
+        ctx.fillStyle = "#ffd166";
+        ctx.shadowColor = "#ffd166";
+        ctx.shadowBlur = 20;
+        roundRect(ctx, x - 3, y + 3, w + 6, h - 2, 14);
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        const body = ctx.createLinearGradient(x, y, x, y + h);
+        body.addColorStop(0, "#ffe7a1");
+        body.addColorStop(0.16, "#e6ad3f");
+        body.addColorStop(1, "#8b5724");
+        ctx.fillStyle = body;
+        roundRect(ctx, x, y + 5, w, h - 5, 11);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff1bd";
+        roundRect(ctx, x, y, w, 10, 6);
+        ctx.fill();
+        ctx.fillStyle = "rgba(92,52,22,.48)";
+        for (let px = x + 13; px < x + w - 8; px += 24) {
+            ctx.beginPath();
+            ctx.arc(px, y + 25, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px - 4, y + 20, 1.7, 0, Math.PI * 2);
+            ctx.arc(px, y + 18.5, 1.7, 0, Math.PI * 2);
+            ctx.arc(px + 4, y + 20, 1.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        if (o.routeEntry) {
+            const signW = Math.max(116, Math.min(156, w + 42));
+            const signX = x - 8;
+            const signY = y - 48;
+            ctx.strokeStyle = "#8b5724";
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(x + 12, y + 7);
+            ctx.lineTo(x + 12, signY + 29);
+            ctx.stroke();
+
+            ctx.fillStyle = "rgba(32,38,42,.94)";
+            ctx.strokeStyle = "#ffd166";
+            ctx.lineWidth = 2;
+            roundRect(ctx, signX, signY, signW, 31, 9);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#ffe29a";
+            ctx.font = "900 12px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(`↑ ${String(o.routeLabel || "Goldpfad").toUpperCase()} · 5`, signX + signW / 2, signY + 16, signW - 14);
+        }
+        ctx.restore();
+    }
+
     function drawFence(o) {
+        if (o.skyPath) {
+            drawSkyPathPlatform(o);
+            return;
+        }
         const topY = o.y;
         const groundYAtLeft = terrain.surfaceAt(o.x + 6);
         const groundYAtRight = terrain.surfaceAt(o.x + o.w - 6);

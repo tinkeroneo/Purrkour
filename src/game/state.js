@@ -2,7 +2,7 @@ import { THEME_ORDER } from "../world/themes.js";
 import { createFlowState } from "./flow.js";
 import { createMissionState } from "./missions.js";
 import { createPresentationState } from "./presentation.js";
-import { createRiskRouteOfferState, createRiskRouteState } from "./risk-routes.js";
+import { createRiskRouteState } from "./risk-routes.js";
 import { getInitialBaseSpeed } from "./speed.js";
 import { getWorldRule } from "./world-rules.js";
 
@@ -118,7 +118,6 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
         mission: createMissionState(),
         presentation: createPresentationState(),
         riskRoute: createRiskRouteState(),
-        riskRouteOffer: createRiskRouteOfferState(),
 
         lastHitTick: -99999
     };

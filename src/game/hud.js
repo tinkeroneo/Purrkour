@@ -13,7 +13,6 @@ export function createHUD(ui) {
   let lastMission;
   let lastRiskRoute;
   let lastPresentationBlock;
-  let lastRiskOffer;
   let lastSetpieceAction;
 
   const themeLabels = {
@@ -39,18 +38,6 @@ export function createHUD(ui) {
       ui.presentationSkip.hidden = !presentationBlocking;
       ui.presentationSkip.setAttribute?.("aria-label", `${game.presentation?.title || "Etappe"} überspringen und loslaufen`);
       lastPresentationBlock = presentationBlocking;
-    }
-
-    const offer = game.riskRouteOffer || {};
-    const offerVisible = !!(offer.active && offer.decision == null && offer.preview);
-    const offerKey = `${offerVisible}/${offer.preview?.id || 0}/${offer.preview?.bonus || 0}`;
-    if (ui.routeChoice && offerKey !== lastRiskOffer) {
-      ui.routeChoice.hidden = !offerVisible;
-      if (ui.routeChoiceTitle) ui.routeChoiceTitle.textContent = `${offer.preview?.label || "Goldpfad"} voraus`;
-      if (ui.routeChoiceDetail) {
-        ui.routeChoiceDetail.textContent = `${offer.preview?.total || 5} Goldmäuse · +${offer.preview?.bonus || 0} Punkte`;
-      }
-      lastRiskOffer = offerKey;
     }
 
     const setpiece = game.setpiece || {};
@@ -131,14 +118,22 @@ export function createHUD(ui) {
     }
 
     const route = game.riskRoute || {};
-    const routeKey = `${route.active}/${route.id}/${route.collected}/${route.total}/${route.bonus}`;
+    const routeKey = `${route.active}/${route.id}/${route.entered}/${route.collected}/${route.total}/${route.bonus}`;
     if (routeKey !== lastRiskRoute) {
       const active = !!route.active;
       if (ui.riskDisplay) ui.riskDisplay.hidden = !active;
       ui.goals?.classList?.toggle("has-risk", active);
+      if (ui.riskKicker) ui.riskKicker.textContent = route.entered ? "Goldpfad" : "Abzweig";
       if (ui.riskLabel) ui.riskLabel.textContent = route.label || "Goldpfad";
-      if (ui.riskProgress) ui.riskProgress.textContent = `${route.collected || 0}/${route.total || 0} · +${route.bonus || 0}`;
-      ui.riskDisplay?.setAttribute?.("aria-label", `${route.label || "Goldpfad"}: ${route.collected || 0} von ${route.total || 0} Goldmäusen`);
+      if (ui.riskProgress) {
+        ui.riskProgress.textContent = route.entered
+          ? `${route.collected || 0}/${route.total || 0} · +${route.bonus || 0}`
+          : `↑ einsteigen · +${route.bonus || 0}`;
+      }
+      const routeStatus = route.entered
+        ? `${route.collected || 0} von ${route.total || 0} Goldmäusen`
+        : `oben einsteigen für ${route.bonus || 0} Bonuspunkte, unten normal weiterlaufen`;
+      ui.riskDisplay?.setAttribute?.("aria-label", `${route.label || "Goldpfad"}: ${routeStatus}`);
       lastRiskRoute = routeKey;
     }
 

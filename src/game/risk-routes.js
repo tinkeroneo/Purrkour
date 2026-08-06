@@ -7,33 +7,10 @@ export function createRiskRouteState(completed = 0) {
     label: "Goldpfad",
     total: 0,
     collected: 0,
+    entered: false,
     bonus: 0,
     completed: Math.max(0, Math.floor(Number(completed) || 0)),
     nextAt: 45,
-  };
-}
-
-export function createRiskRouteOfferState() {
-  return { active: false, decision: null, preview: null };
-}
-
-export function createRiskRouteOffer(route, score, total = 5) {
-  return {
-    active: true,
-    decision: null,
-    preview: beginRiskRoute(route, score, total),
-  };
-}
-
-export function resolveRiskRouteOffer(offer, route, score) {
-  if (!offer?.active || offer.decision == null) return { offer, route, accepted: null };
-  if (offer.decision === true && offer.preview) {
-    return { offer: createRiskRouteOfferState(), route: offer.preview, accepted: true };
-  }
-  return {
-    offer: createRiskRouteOfferState(),
-    route: { ...route, nextAt: Math.max(route?.nextAt || 0, Math.floor(Number(score) || 0) + 120) },
-    accepted: false,
   };
 }
 
@@ -52,6 +29,7 @@ export function beginRiskRoute(route, score, total = 5) {
     label: ROUTE_NAMES[(sequence - 1) % ROUTE_NAMES.length],
     total: Math.max(1, Math.floor(Number(total) || 5)),
     collected: 0,
+    entered: false,
     bonus: 70 + sequence * 10,
     nextAt: Math.max(current.nextAt, Math.floor(Number(score) || 0) + 170),
   };
@@ -61,7 +39,7 @@ export function collectRiskToken(route, routeId) {
   if (!route?.active || route.id !== routeId) return { state: route, completion: null };
   const collected = Math.min(route.total, route.collected + 1);
   if (collected < route.total) {
-    return { state: { ...route, collected }, completion: null };
+    return { state: { ...route, collected, entered: true }, completion: null };
   }
 
   const completion = {
@@ -71,7 +49,7 @@ export function collectRiskToken(route, routeId) {
     number: route.completed + 1,
   };
   return {
-    state: { ...route, active: false, collected, completed: route.completed + 1 },
+    state: { ...route, active: false, collected, entered: true, completed: route.completed + 1 },
     completion,
   };
 }

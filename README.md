@@ -19,6 +19,7 @@ Danach läuft das Spiel unter `http://127.0.0.1:4173`. Der Server bindet absicht
 - A/D, Pfeile links/rechts oder die sichtbaren ◀/▶-Touchflächen: bewegen
 - S, Pfeil runter oder sichtbarer ↓-Button: ducken
 - Während Meer- und Raketenreisen: Sprung oder „Reisemanöver“ löst bis zu drei Bonusmanöver aus
+- Bei einem goldenen Abzweig: oben auf den Goldpfad springen oder unten ohne Unterbrechung normal weiterlaufen
 - Hütte: Pause; Sound, Thema, Themenautomatik, Reisealbum, HUD und Hilfe besitzen eigene Buttons
 
 Die Hilfe erscheint beim ersten Start und kann über `?` erneut geöffnet werden.
@@ -36,8 +37,9 @@ Nützliche Query-Parameter:
 - `?theme=city` setzt ein Startthema.
 - `?help=1` öffnet die Hilfe; `?help=0` unterdrückt nur das automatische Öffnen.
 - `?album=1` öffnet das Reisealbum direkt, etwa für visuelle Prüfungen.
+- `?preview=route&help=0` zeigt den nächsten Goldpfad sofort als spielbaren Abzweig.
 
-Die Laufzeit besteht aus nativen ES-Modulen. `src/main.js` komponiert Core-, Game-, World-, Object- und Entity-Module. Weltregeln, Präsentationshinweise und Routenwahl besitzen eigene testbare Module. Präferenzen, Bestwert und Reisealbum verbleiben ausschließlich im lokalen Browserspeicher.
+Die Laufzeit besteht aus nativen ES-Modulen. `src/main.js` komponiert Core-, Game-, World-, Object- und Entity-Module. Weltregeln, Präsentationshinweise und Goldpfade besitzen eigene testbare Module. Präferenzen, Bestwert und Reisealbum verbleiben ausschließlich im lokalen Browserspeicher.
 
 ## Release
 

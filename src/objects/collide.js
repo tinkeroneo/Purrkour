@@ -6,6 +6,10 @@ import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffecti
 import { resetGameState } from "../game/state.js";
 import { getOverlay } from "../world/overlays.js";
 
+export function isPassRewardObject(object) {
+    return object?.kind === "obstacle" || (object?.kind === "platform" && !object.skyPath);
+}
+
 export function createCollider(game, catApi, terrain, objects, audio, hud, canvas, lifecycle = {}) {
     const { cat } = catApi;
 
@@ -501,7 +505,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             if (!o) continue;
             if (o._scored) continue;
             if (o.x + o.w < cat.x - 10) {
-                if (o.kind === "obstacle" || o.kind === "platform") {
+                if (isPassRewardObject(o)) {
                     o._scored = true;
                     awardFlow({ feedback: false, missionEvent: "maneuver" });
                 }

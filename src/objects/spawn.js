@@ -7,11 +7,9 @@ import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
 import {
-  createRiskRouteOffer,
-  resolveRiskRouteOffer,
+  beginRiskRoute,
   shouldStartRiskRoute,
 } from "../game/risk-routes.js";
-import { beginPresentation } from "../game/presentation.js";
 
 
 export function createSpawner(game, terrain, objects, canvas) {
@@ -29,7 +27,8 @@ export function createSpawner(game, terrain, objects, canvas) {
     animalsScale: 0.72,
   };
 
-  let nextSpawnIn = 260;
+  const routePreview = game.presentationPreview === "route";
+  let nextSpawnIn = routePreview ? 0 : 260;
   let lastTick = game.tick;
   function minGapForScore(s) {
     return clamp(CALM.gapBase - s * CALM.gapSlope, CALM.gapMin, CALM.gapBase);
@@ -39,44 +38,17 @@ export function createSpawner(game, terrain, objects, canvas) {
     return CALM.closeGapChanceMax;
   }
 
-  function reset() { nextSpawnIn = 260; }
+  function reset() { nextSpawnIn = routePreview ? 0 : 260; }
 
   function maybeSpawnSkyPath(spawnX, safeMode) {
     const platformOnScreen = objects.list.filter(o => o && o.kind === "platform" && o.x > -100 && o.x < (canvas.W + 100)).length;
     if (platformOnScreen > 9) return false;
     const skyOnScreen = objects.list.some(o => o && o.kind === "platform" && o.skyPath && o.x > -200 && o.x < (canvas.W + 200));
     if (skyOnScreen) return false;
-    if (game.riskRouteOffer?.active) {
-      const resolution = resolveRiskRouteOffer(game.riskRouteOffer, game.riskRoute, game.score);
-      if (resolution.accepted == null) {
-        nextSpawnIn = 80;
-        return true;
-      }
-      game.riskRouteOffer = resolution.offer;
-      game.riskRoute = resolution.route;
-      if (!resolution.accepted) {
-        objects.toast("Sicherer Pfad gewählt", 90);
-        return false;
-      }
-    } else {
-      const blocked = !!game.setpiece?.active;
-      if (!shouldStartRiskRoute(game.riskRoute, game.score, { safeMode, blocked })) return false;
-      game.riskRouteOffer = createRiskRouteOffer(game.riskRoute, game.score, 5);
-      game.safeTimer = Math.max(game.safeTimer || 0, 180);
-      beginPresentation(game.presentation, {
-        kind: "route",
-        kicker: "DEINE ROUTENWAHL",
-        title: game.riskRouteOffer.preview.label,
-        subtitle: "Sicher bleiben oder fünf Goldmäuse jagen?",
-        accent: "#ffd166",
-        enter: game.reducedMotion ? 1 : 12,
-        hold: game.reducedMotion ? 34 : 52,
-        exit: game.reducedMotion ? 1 : 18,
-        reducedMotion: game.reducedMotion,
-      });
-      nextSpawnIn = 80;
-      return true;
-    }
+    const blocked = !!game.setpiece?.active;
+    if (!shouldStartRiskRoute(game.riskRoute, game.score, { safeMode, blocked })) return false;
+    game.riskRoute = beginRiskRoute(game.riskRoute, game.score, 5);
+    game.safeTimer = Math.max(game.safeTimer || 0, 120);
 
     const routeId = game.riskRoute.id;
 
@@ -101,7 +73,10 @@ export function createSpawner(game, terrain, objects, canvas) {
       const wave = Math.sin(i * 0.82) * 14;
       const lift = baseLift + (arc * peakLift) + wave;
       const topY = terrain.surfaceAt(x) - lift;
-      objects.add({ kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0, skyPath: true, routeId });
+      objects.add({
+        kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0,
+        skyPath: true, routeId, routeEntry: i === 0, routeLabel: game.riskRoute.label,
+      });
       if (tokenIndices.has(i)) {
         objects.add({
           kind: "collectible", type: "route_mouse", routeId,
@@ -111,7 +86,7 @@ export function createSpawner(game, terrain, objects, canvas) {
       }
     }
     nextSpawnIn = 360;
-    objects.toast(`${game.riskRoute.label} voraus · 5 Goldmäuse`, 150);
+    objects.toast(`↑ ${game.riskRoute.label}: Goldmäuse · unten normal weiter`, 150);
     return true;
   }
 
@@ -478,7 +453,8 @@ export function createSpawner(game, terrain, objects, canvas) {
     lastTick = game.tick;
     nextSpawnIn -= game._effSpeed;
     if (nextSpawnIn <= 0) {
-      const spawnX = canvas.W + 140;
+      const routePreviewStart = routePreview && game.riskRoute.id === 0;
+      const spawnX = routePreviewStart ? Math.max(90, canvas.W * 0.28) : canvas.W + 140;
       const safeMode = game.safeTimer > 0;
       if (!maybeSpawnSkyPath(spawnX, safeMode)) {
         spawnPack(spawnX, safeMode);

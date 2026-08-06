@@ -59,6 +59,7 @@ const ui = {
   missionProgress: document.getElementById("missionProgress"),
   missionFill: document.getElementById("missionFill"),
   riskDisplay: document.getElementById("riskDisplay"),
+  riskKicker: document.getElementById("riskKicker"),
   riskLabel: document.getElementById("riskLabel"),
   riskProgress: document.getElementById("riskProgress"),
   catnip: document.getElementById("catnip"),
@@ -81,11 +82,6 @@ const ui = {
   presentationSkip: document.getElementById("presentationSkip"),
   moveLeftBtn: document.getElementById("moveLeftBtn"),
   moveRightBtn: document.getElementById("moveRightBtn"),
-  routeChoice: document.getElementById("routeChoice"),
-  routeChoiceTitle: document.getElementById("routeChoiceTitle"),
-  routeChoiceDetail: document.getElementById("routeChoiceDetail"),
-  declineRouteBtn: document.getElementById("declineRouteBtn"),
-  acceptRouteBtn: document.getElementById("acceptRouteBtn"),
   setpieceActionBtn: document.getElementById("setpieceActionBtn"),
 };
 
@@ -102,6 +98,10 @@ const initialTheme = queryTheme || config.initialTheme || storedTheme || undefin
 const game = createGameState({ initialTheme });
 game.reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 game.presentationPreview = query.get("preview") || "";
+if (game.presentationPreview === "route") {
+  game.riskRoute.nextAt = 0;
+  game.reducedMotion = true;
+}
 const album = createJourneyAlbum(runStorage);
 album.observe(game);
 const hud = createHUD(ui);
@@ -114,7 +114,6 @@ setupCrouchButton(game, ui.crouchBtn);
 setupMoveButtons(game, ui.moveLeftBtn, ui.moveRightBtn);
 setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage);
 setupAlbum(game, album, ui);
-setupRouteChoice(game, ui);
 setupSetpieceAction(game, ui.setpieceActionBtn);
 
 function getLocalStorage() {
@@ -230,15 +229,6 @@ function setupMoveButtons(game, leftButton, rightButton) {
   }
   bind(leftButton, -1);
   bind(rightButton, 1);
-}
-
-function setupRouteChoice(game, ui) {
-  ui.acceptRouteBtn?.addEventListener("click", () => {
-    if (game.riskRouteOffer?.active) game.riskRouteOffer.decision = true;
-  });
-  ui.declineRouteBtn?.addEventListener("click", () => {
-    if (game.riskRouteOffer?.active) game.riskRouteOffer.decision = false;
-  });
 }
 
 function setupSetpieceAction(game, button) {
