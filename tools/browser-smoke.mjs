@@ -56,6 +56,9 @@ try {
   const { stdout } = await execFileAsync(chrome, [
     "--headless=new",
     "--disable-gpu",
+    "--disable-software-rasterizer",
+    "--disable-gpu-compositing",
+    "--no-sandbox",
     "--no-first-run",
     "--hide-scrollbars",
     `--user-data-dir=${profile}`,
@@ -71,6 +74,42 @@ try {
   assert.match(stdout, /id="minimalBtn"/);
   assert.match(stdout, /id="journeyProgress"/);
   assert.match(stdout, /id="flowDisplay"/);
+
+  const { stdout: balloonPreview } = await execFileAsync(chrome, [
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-software-rasterizer",
+    "--disable-gpu-compositing",
+    "--no-sandbox",
+    "--no-first-run",
+    "--hide-scrollbars",
+    `--user-data-dir=${path.join(profile, "balloon")}`,
+    "--virtual-time-budget=3000",
+    "--dump-dom",
+    `http://127.0.0.1:${address.port}/?preview=setpiece&mode=ocean&vehicle=balloon&checkpoint=travel-50&seed=1337&help=0`,
+  ], { timeout: 30000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+  assert.match(balloonPreview, /data-preview-ready="true"/);
+  assert.match(balloonPreview, /data-preview-vehicle="balloon"/);
+  assert.match(balloonPreview, /data-preview-phase="travel"/);
+  assert.match(balloonPreview, /data-preview-cat-in-vehicle="true"/);
+  assert.match(balloonPreview, /data-preview-canvas="painted"/);
+
+  const { stdout: rocketReturn } = await execFileAsync(chrome, [
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-software-rasterizer",
+    "--disable-gpu-compositing",
+    "--no-sandbox",
+    "--no-first-run",
+    "--hide-scrollbars",
+    `--user-data-dir=${path.join(profile, "rocket")}`,
+    "--virtual-time-budget=3000",
+    "--dump-dom",
+    `http://127.0.0.1:${address.port}/?preview=setpiece&mode=rocket&checkpoint=control-return&seed=1337&help=0&reduced=1`,
+  ], { timeout: 30000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+  assert.match(rocketReturn, /data-preview-phase="control"/);
+  assert.match(rocketReturn, /data-preview-control-returned="true"/);
+  assert.match(rocketReturn, /data-preview-canvas="painted"/);
   process.stdout.write("Browser smoke passed.\n");
 } finally {
   await new Promise((resolve) => server.close(resolve));

@@ -1,6 +1,6 @@
 import { clamp, lerp, smoothstep } from "../core/util.js";
 
-export function createTerrain(getW, getH) {
+export function createTerrain(getW, getH, random = Math.random) {
   const TERRAIN = {
     stepX: 170,
     maxDelta: 44,
@@ -28,7 +28,7 @@ export function createTerrain(getW, getH) {
     for (let i = 0; i < 10; i++) {
       terrainPts.push({ x, y });
       x += TERRAIN.stepX;
-      const dy = (Math.random() * 2 - 1) * TERRAIN.maxDelta * 0.30;
+      const dy = (random() * 2 - 1) * TERRAIN.maxDelta * 0.30;
       y = clamp(y + dy, TERRAIN.minY, TERRAIN.maxY);
     }
     while (terrainPts[terrainPts.length - 1].x < getW() + TERRAIN.stepX) addPoint();
@@ -57,7 +57,7 @@ export function createTerrain(getW, getH) {
     const prev = terrainPts[terrainPts.length - 2] || last;
     const slope = last.y - prev.y;
 
-    const noise = (Math.random() * 2 - 1) * TERRAIN.maxDelta;
+    const noise = (random() * 2 - 1) * TERRAIN.maxDelta;
     const desired =
       last.y + clamp(-slope * 0.35 + noise * 0.30, -TERRAIN.maxDelta, TERRAIN.maxDelta);
 
@@ -88,7 +88,8 @@ export function createTerrain(getW, getH) {
     ctx.fillStyle = `rgba(${palette.ground[0]},${palette.ground[1]},${palette.ground[2]},${a})`;
     ctx.beginPath();
     ctx.moveTo(0, surfaceAt(0));
-    for (let x = 0; x <= W; x += 12) ctx.lineTo(x, surfaceAt(x));
+        for (let x = 0; x <= W; x += 12) ctx.lineTo(x, surfaceAt(x));
+        ctx.lineTo(W, surfaceAt(W));
     ctx.lineTo(W, H);
     ctx.lineTo(0, H);
     ctx.closePath();

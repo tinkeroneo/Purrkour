@@ -6,6 +6,7 @@ import { createGoat } from "../entities/goat.js";
 import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
+import { getGameplayMotif } from "../game/gameplay-motifs.js";
 import {
   beginRiskRoute,
   shouldStartRiskRoute,
@@ -41,6 +42,8 @@ export function createSpawner(game, terrain, objects, canvas) {
   function reset() { nextSpawnIn = routePreview ? 0 : 260; }
 
   function maybeSpawnSkyPath(spawnX, safeMode) {
+    const sectionPhase = game.progression?.sectionPhase || "flow";
+    if (safeMode || (sectionPhase !== "variation" && sectionPhase !== "challenge")) return false;
     const platformOnScreen = objects.list.filter(o => o && o.kind === "platform" && o.x > -100 && o.x < (canvas.W + 100)).length;
     if (platformOnScreen > 9) return false;
     const skyOnScreen = objects.list.some(o => o && o.kind === "platform" && o.skyPath && o.x > -200 && o.x < (canvas.W + 200));
@@ -55,8 +58,8 @@ export function createSpawner(game, terrain, objects, canvas) {
     const w = 104;
     const h = 44;
     const extra = Math.min(12, Math.floor((game.score || 0) / 60));
-    const count = (14 + extra) + Math.floor(Math.random() * 28);
-    const stepX = 210 + Math.floor(Math.random() * 72);
+    const count = (15 + Math.min(2, extra)) + Math.floor(Math.random() * 4);
+    const stepX = 180 + Math.floor(Math.random() * 42);
     const entryGap = 220 + Math.floor(Math.random() * 90);
     const baseLift = 150 + Math.floor(Math.random() * 44);
     const peakLift = 420 + Math.floor(Math.random() * 140);
@@ -97,6 +100,10 @@ export function createSpawner(game, terrain, objects, canvas) {
 
   function spawnPack(spawnX, safeMode = false) {
     const theme = getTheme(game.theme);
+    const themeKey = (game.theme && game.theme.key) ? game.theme.key : (game.theme || "forest");
+    const sectionPhase = game.progression?.sectionPhase || "flow";
+    const motif = getGameplayMotif(themeKey, sectionPhase, game.progression?.gameplayMotif);
+    if (game.progression) game.progression.gameplayMotifLabel = motif.label;
     const sm = theme.spawns || {};
     const m = (k) => (Number.isFinite(sm[k]) ? sm[k] : 1);
 
@@ -105,15 +112,15 @@ export function createSpawner(game, terrain, objects, canvas) {
     const zm = zones[band] || zones.ground || {};
     const z = (k) => (Number.isFinite(zm[k]) ? zm[k] : 1);
 
-    const gapMin = minGapForScore(game.score);
+    const gapMin = clamp(minGapForScore(game.score) * motif.gapMul, 200, 440);
     // During setpieces (ocean/air vehicles) we don't spawn normal hazards/collectibles.
     if (game.setpiece?.active) { nextSpawnIn = gapMin + 140; return; }
-    const allowClose = (Math.random() < closeGapChance(game.score));
+    const allowClose = Math.random() < clamp(closeGapChance(game.score) * motif.closeMul, 0, 0.12);
     const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
 
     const pFence = z("fence") * clamp(0.20 + game.score * 0.0018, 0.18, 0.28);
     const pBird = z("bird") * clamp((0.08 + game.score * 0.0015) * CALM.animalsScale, 0.06, 0.12);
-    const pDog = clamp((0.08 + game.score * 0.0013) * CALM.animalsScale, 0.06, 0.14);
+    const pDog = z("dog") * clamp((0.08 + game.score * 0.0013) * CALM.animalsScale, 0.06, 0.14);
     const pYarn = z("yarn") * 0.14;
 
     // grace window: no stressful obstacles right after big transitions
@@ -201,24 +208,30 @@ export function createSpawner(game, terrain, objects, canvas) {
       vbMouse = 1.15; vbFish = 1.10; vbCatnip = 1.10;
     }
 
-    const pFenceV = pFenceT * vbFence;
-    const pBirdV = pBirdT * vbBird;
-    const pDogV = pDogT * vbDog;
-    const pYarnV = pYarnT * vbYarn;
+    const pFenceV = pFenceT * vbFence * motif.weights.fence;
+    const pBirdV = pBirdT * vbBird * motif.weights.bird;
+    const pDogV = pDogT * vbDog * motif.weights.dog;
+    const pYarnV = pYarnT * vbYarn * motif.weights.yarn;
+    const pTunnelV = 0.055 * motif.weights.tunnel;
     function rndType() {
       if (safeMode) return "fence";
-      const r = Math.random();
-      if (r < pFenceV) return "fence";
-      if (r < pFenceV + pDogV) return "dog";
-      if (r < pFenceV + pDogV + pBirdV) return "bird";
-      if (r < pFenceV + pDogV + pBirdV + pYarnV) return "yarn";
+      const weighted = [
+        ["fence", pFenceV], ["dog", pDogV], ["bird", pBirdV],
+        ["yarn", pYarnV], ["tunnel", pTunnelV],
+      ];
+      const total = weighted.reduce((sum, entry) => sum + entry[1], 0);
+      let r = Math.random() * total;
+      for (const [key, weight] of weighted) {
+        r -= weight;
+        if (r <= 0) return key;
+      }
       return "fence";
     }
 
     const type = rndType();
 
     if (type === "fence") {
-      const doStair = (Math.random() < CALM.staircaseChance);
+      const doStair = Math.random() < clamp(CALM.staircaseChance * motif.stairMul, 0.08, 0.72);
       const count = doStair
         ? (CALM.staircaseMin + Math.floor(Math.random() * (CALM.staircaseMax - CALM.staircaseMin + 1)))
         : 1;
@@ -325,8 +338,6 @@ export function createSpawner(game, terrain, objects, canvas) {
 
     }
     else if (type === "dog") {
-      const themeKey = (game.theme && game.theme.key) ? game.theme.key : (game.theme || "forest");
-
       if (themeKey === "city") {
         // city: cars as harmless setpieces/platforms (no chase)
         const carTypes = ["car", "suv", "bus"];
@@ -451,6 +462,10 @@ export function createSpawner(game, terrain, objects, canvas) {
   function update(_palette) {
     if (game.tick < lastTick) reset();
     lastTick = game.tick;
+    if (game.progression?.suppressHazards) {
+      nextSpawnIn = Math.max(nextSpawnIn, 120);
+      return;
+    }
     nextSpawnIn -= game._effSpeed;
     if (nextSpawnIn <= 0) {
       const routePreviewStart = routePreview && game.riskRoute.id === 0;

@@ -1,5 +1,6 @@
 // src/game/vehicles/rocket.js
 import { clamp, roundRect, tri } from "../../core/util.js";
+import { drawPassengerCat } from "./passenger.js";
 
 export function drawRocketVehicle(ctx, env ) {
   const { game, setpiece, canvas } = env;
@@ -13,7 +14,7 @@ export function drawRocketVehicle(ctx, env ) {
   const t = (sp?.t ?? 0) + game.tick;
 
   // subtle bob in space
-  const bob = (phase === "travel") ? Math.sin(t * 0.06) * 3.5 : 0;
+  const bob = (phase === "travel" && !game.reducedMotion) ? Math.sin(t * 0.06) * 3.5 : 0;
   const yy = y + bob;
 
   ctx.save();
@@ -35,7 +36,7 @@ export function drawRocketVehicle(ctx, env ) {
       (phase === "board") ? 0.35 :
       (phase === "arrive") ? 0.25 : 0.75;
 
-    const jitter = (Math.sin(t * 0.33) + Math.sin(t * 0.17) * 0.6) * 6;
+    const jitter = game.reducedMotion ? 0 : (Math.sin(t * 0.33) + Math.sin(t * 0.17) * 0.6) * 6;
     const fh = 46 + strength * 38 + jitter * strength * 0.6;
 
     ctx.globalAlpha = 0.85;
@@ -93,20 +94,18 @@ export function drawRocketVehicle(ctx, env ) {
 
   // cat in capsule (only if catInVehicle)
   if (sp?.catInVehicle) {
-    ctx.globalAlpha = 0.95;
-    ctx.fillStyle = "#3b3b3b";
-    roundRect(ctx, x - 7, yy + 8, 14, 14, 6);
-    roundRect(ctx, x - 5, yy + 1, 10, 9, 5);
-    ctx.fillStyle = "#2a2a2a";
-    tri(ctx, x - 5, yy + 1, x - 1, yy - 4, x + 2, yy + 1);
-    tri(ctx, x + 5, yy + 1, x + 1, yy - 4, x - 2, yy + 1);
-    ctx.globalAlpha = 1;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(x, yy + 14, 7, 9, 0, 0, Math.PI * 2);
+    ctx.clip();
+    drawPassengerCat(ctx, { x, y: yy + 28, scale: 0.62 });
+    ctx.restore();
   }
 
   // Mars landing marker (flag + tiny rover) during arrival/landing
   const arriveU = clamp(((sp.phaseT ?? 0) / 160), 0, 1);
   if (palette?.key === "mars" && (sp.phase === "arrive" || sp.phase === "land") && arriveU > 0.55) {
-    const mx = x + 120;
+    const mx = Math.min((canvas?.W ?? x + 160) - 34, x + 120);
     const gy = env.terrain.surfaceAt(mx);
     ctx.save();
     ctx.globalAlpha = clamp((arriveU - 0.55) / 0.45, 0, 1);

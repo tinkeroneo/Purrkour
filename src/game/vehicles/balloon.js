@@ -1,5 +1,6 @@
 // src/game/vehicles/balloon.js
-import { roundRect, tri } from "../../core/util.js";
+import { roundRect } from "../../core/util.js";
+import { drawPassengerCat } from "./passenger.js";
 
 export function drawBalloonVehicle(ctx, env) {
   const { game, setpiece } = env;
@@ -8,7 +9,7 @@ export function drawBalloonVehicle(ctx, env) {
   const x = sp?.vehicle?.x ?? 200;
   const y = sp?.vehicle?.y ?? 120; // basket baseline
 
-  const bob = Math.sin((game.tick + (sp?.t ?? 0)) * 0.08) * 3.5;
+  const bob = game.reducedMotion ? 0 : Math.sin((game.tick + (sp?.t ?? 0)) * 0.08) * 3.5;
   const yy = y + (sp?.phase === "travel" ? bob : 0);
 
   ctx.save();
@@ -41,12 +42,10 @@ export function drawBalloonVehicle(ctx, env) {
 
   // cat in basket (only if catInVehicle)
   if (sp?.catInVehicle) {
-    ctx.fillStyle = "#3b3b3b";
-    roundRect(ctx, x - 10, yy - 18, 20, 16, 7);
-    roundRect(ctx, x - 7, yy - 28, 14, 12, 6);
-    ctx.fillStyle = "#2a2a2a";
-    tri(ctx, x - 7, yy - 28, x - 2, yy - 36, x + 2, yy - 28);
-    tri(ctx, x + 7, yy - 28, x + 2, yy - 36, x - 2, yy - 28);
+    drawPassengerCat(ctx, { x, y: yy - 2, scale: 1 });
+    ctx.fillStyle = "rgba(125,78,42,.96)";
+    roundRect(ctx, x - 20, yy - 3, 40, 11, 6);
+    ctx.fill();
   }
 
   ctx.restore();

@@ -5,11 +5,13 @@
 import { clamp } from "../core/util.js";
 import { beginPresentation } from "./presentation.js";
 import { getBeatPresentationCue } from "./presentation-cues.js";
+import { getSectionPhase } from "./gameplay-motifs.js";
 import { setBaseSpeed } from "./speed.js";
 import { getWorldRule } from "./world-rules.js";
 
 // --- Tuning (hier feinjustieren, ohne suchen) ---
 export const SAFE_AFTER_CHECKPOINT = 180; // 2–3s @60fps
+const seconds = (value) => value * 60;
 
 function smoothstep(t) {
   t = clamp(t, 0, 1);
@@ -40,6 +42,7 @@ function speedForBeat(beatId, u) {
     case "FOREST_INTRO":
       return lerp(2.05, 2.35, easeInOut(u));
     case "CHECKPOINT_BREATH":
+    case "RIDGE_BREATH":
       return lerp(2.10, 2.05, smoothstep(u));
     case "OCEAN_JOURNEY":
       return lerp(1.80, 1.65, smoothstep(u));
@@ -59,6 +62,7 @@ function ambienceForBeat(beatId, night) {
   const n = clamp(night ?? 0, 0, 1);
   switch (beatId) {
     case "CHECKPOINT_BREATH":
+    case "RIDGE_BREATH":
       return { whoosh: 0.03, ocean: 0.04, rumble: 0.02, engine: 0.0001, night: 0.02 + n * 0.05, tau: 0.22 };
     case "OCEAN_JOURNEY":
       return { whoosh: 0.10, ocean: 0.28, rumble: 0.05, engine: 0.02, night: 0.02 + n * 0.08, tau: 0.18 };
@@ -75,32 +79,33 @@ function ambienceForBeat(beatId, night) {
 
 // Beat table (score lengths are intentionally simple; tweak freely)
 const BEATS = [
-  { id: "FOREST_INTRO", label: "Waldpfade", theme: "forest", lenScore: 220, night: false, safeOnEnter: 0 },
+  { id: "FOREST_INTRO", label: "Waldpfade", theme: "forest", lenScore: 220, minTicks: seconds(30), maxTicks: seconds(90), motif: "rhythm", night: false, safeOnEnter: 0 },
   // Breath is usually triggered by checkpoint pickup; we keep a fallback scheduled beat too.
-  { id: "CHECKPOINT_BREATH", label: "Schnurrpause", theme: "forest", lenScore: 20, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "CHECKPOINT_BREATH", label: "Waldlichtung", theme: "forest", lenScore: 6, minTicks: seconds(5), maxTicks: seconds(8), motif: "release", breath: true, night: false, safeOnEnter: seconds(8) },
 
   // Story setpiece: ocean crossing (zeppelin/balloon/raft)
   { id: "OCEAN_JOURNEY", label: "Über das Meer", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "island" },
 
   // Land & breathe
-  { id: "ISLAND_REST", label: "Inselrast", theme: "island", lenScore: 230, night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
+  { id: "ISLAND_REST", label: "Inselrast", theme: "island", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "long-arcs", night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Rocket cutscene to Mars
   { id: "ROCKET_FLIGHT", label: "Start zu den Sternen", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mars" },
 
   // Actual Mars gameplay segment
-  { id: "MARS_RUN", label: "Marslauf", theme: "mars", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "MARS_RUN", label: "Marslauf", theme: "mars", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "low-gravity", night: false, safeOnEnter: 0 },
 
   // Rocket cutscene back from Mars
   { id: "ROCKET_RETURN", label: "Rückflug", theme: "mars", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "rocket", targetTheme: "mountain" },
 
-  { id: "MOUNTAIN_FOCUS", label: "Bergpfade", theme: "mountain", lenScore: 200, night: false, safeOnEnter: 0 },
-  { id: "NIGHT_PASSAGE", label: "Nachtpassage", theme: "mountain", lenScore: 200, night: true, safeOnEnter: 0 },
+  { id: "MOUNTAIN_FOCUS", label: "Bergpfade", theme: "mountain", lenScore: 200, minTicks: seconds(30), maxTicks: seconds(75), motif: "vertical", night: false, safeOnEnter: 0 },
+  { id: "NIGHT_PASSAGE", label: "Nachtpassage", theme: "mountain", lenScore: 200, minTicks: seconds(25), maxTicks: seconds(70), motif: "sightlines", night: true, safeOnEnter: 0 },
+  { id: "RIDGE_BREATH", label: "Aussichtspunkt", theme: "mountain", lenScore: 4, minTicks: seconds(5), maxTicks: seconds(8), motif: "release", breath: true, night: false, safeOnEnter: seconds(8) },
 
-  { id: "JUNGLE_RUN", label: "Dschungellauf", theme: "jungle", lenScore: 230, night: false, safeOnEnter: 0 },
-  { id: "CLIFF_RUN", label: "Klippenpfad", theme: "cliff", lenScore: 230, night: false, safeOnEnter: 0 },
-  { id: "CITY_RUN", label: "Dächer der Stadt", theme: "city", lenScore: 230, night: false, safeOnEnter: 0 },
-  { id: "DESERT_RUN", label: "Wüstenwind", theme: "desert", lenScore: 230, night: false, safeOnEnter: 0 },
+  { id: "JUNGLE_RUN", label: "Dschungellauf", theme: "jungle", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "reactions", night: false, safeOnEnter: 0 },
+  { id: "CLIFF_RUN", label: "Klippenpfad", theme: "cliff", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "edges", night: false, safeOnEnter: 0 },
+  { id: "CITY_RUN", label: "Dächer der Stadt", theme: "city", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "duck-rhythm", night: false, safeOnEnter: 0 },
+  { id: "DESERT_RUN", label: "Wüstenwind", theme: "desert", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "wide-jumps", night: false, safeOnEnter: 0 },
 
   // Return journey back to forest loop
   { id: "RETURN_JOURNEY", label: "Heimreise", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
@@ -108,6 +113,12 @@ const BEATS = [
 
 export function getProgressionBeatIds() {
   return BEATS.map((beat) => beat.id);
+}
+
+export function getProgressionBeatSummaries() {
+  return BEATS.map(({ id, label, theme, lenScore, minTicks = 0, maxTicks = 0, motif = null, setpiece = null, breath = false }) => ({
+    id, label, theme, lenScore, minTicks, maxTicks, motif, setpiece, breath,
+  }));
 }
 
 function clearWorld(objects) {
@@ -129,6 +140,9 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       night: 0,
       nightTarget: 0,
       ambiencePreset: null,
+      sectionPhase: "establish",
+      gameplayMotif: BEATS[0].motif,
+      suppressHazards: false,
       _lastCheckpointActive: false,
       _forcedBreath: false,
       _resumeIdx: null,
@@ -147,7 +161,10 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
   function enterBeat(idx, reason = "") {
     const beat = BEATS[idx] ?? BEATS[0];
     const previousBeat = BEATS[game.progression.beatIdx] ?? null;
-    const cinematic = reason === "boot" || reason === "reset" || !!beat.setpiece || previousBeat?.theme !== beat.theme;
+    const journeyComplete = reason === "journey-complete";
+    const controlReturned = reason === "setpiece-finished";
+    const cinematic = journeyComplete || reason === "boot" || reason === "reset" || !!beat.setpiece
+      || (!controlReturned && previousBeat?.theme !== beat.theme);
     game.progression.beatIdx = idx;
     game.progression.beatId = beat.id;
     game.progression.beatLabel = beat.label;
@@ -155,13 +172,15 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     game.progression.beatStartScore = game.score;
     game.progression.beatTick = 0;
     game.progression._forcedBreath = (reason === "checkpoint");
+    game.progression.suppressHazards = !!beat.breath;
+    if (beat.breath) clearWorld(objects);
     const cue = getBeatPresentationCue(beat.id) || {};
     const worldRule = getWorldRule(beat.theme);
     beginPresentation(game.presentation, {
       kind: cinematic ? "chapter" : "milestone",
-      kicker: cue.kicker || `ETAPPE ${idx + 1}`,
-      title: beat.label,
-      subtitle: `${cue.subtitle || "Die Reise geht weiter"} · ${worldRule.label}`,
+      kicker: journeyComplete ? "REISE VOLLENDET" : (cue.kicker || `ETAPPE ${idx + 1}`),
+      title: journeyComplete ? "Wieder daheim" : beat.label,
+      subtitle: journeyComplete ? "Neun Welten. Eine Spur zurück zum Anfang." : `${cue.subtitle || "Die Reise geht weiter"} · ${worldRule.label}`,
       accent: cue.accent,
       reducedMotion: game.reducedMotion,
       pinned: game.presentationPreview === "chapter" && idx === 0,
@@ -174,7 +193,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     audio?.SFX?.chapter?.(beat.theme);
 
     // Theme switch (soft fade)
-    startThemeFade?.(beat.theme, beat.setpiece ? 110 : 80);
+    if (!beat.setpiece && !game.userTheme) startThemeFade?.(beat.theme, 80);
 
     // Safe mode is ONLY set here.
     if (beat.safeOnEnter > 0) {
@@ -239,20 +258,24 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       // clear the flag so it won't re-trigger
       sp.finished = false;
       const nextIdx = (game.progression.beatIdx + 1) % BEATS.length;
-      enterBeat(nextIdx, "setpiece-finished");
+      enterBeat(nextIdx, beat.id === "RETURN_JOURNEY" ? "journey-complete" : "setpiece-finished");
       return;
     }
     const u = scoreU(game, game.progression.beatStartScore, beat.lenScore);
-    if (u < 1) return;
-
-    // If this breath beat was forced by checkpoint, we do NOT want it to "eat" the scripted beat order.
-    // We simply return to the next beat in the main script based on where we came from.
-    if (beat.id === "CHECKPOINT_BREATH" && game.progression._forcedBreath) {
-      const resumeIdx = (game.progression._resumeIdx ?? ((game.progression.beatIdx + 1) % BEATS.length));
-      game.progression._resumeIdx = null;
-      enterBeat(resumeIdx, "resume");
+    const reachedMinimum = game.progression.beatTick >= (beat.minTicks ?? 0);
+    const reachedMaximum = Number.isFinite(beat.maxTicks) && game.progression.beatTick >= beat.maxTicks;
+    if (beat.breath && reachedMinimum) {
+      if (beat.id === "CHECKPOINT_BREATH" && game.progression._forcedBreath) {
+        const resumeIdx = game.progression._resumeIdx ?? ((game.progression.beatIdx + 1) % BEATS.length);
+        game.progression._resumeIdx = null;
+        enterBeat(resumeIdx, "resume");
+        return;
+      }
+      const nextIdx = (game.progression.beatIdx + 1) % BEATS.length;
+      enterBeat(nextIdx, "breath-complete");
       return;
     }
+    if (!reachedMaximum && !(reachedMinimum && u >= 1)) return;
 
     // otherwise progress linearly (loop after RETURN_JOURNEY back to FOREST_INTRO)
     const nextIdx = (game.progression.beatIdx + 1) % BEATS.length;
@@ -266,7 +289,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
 
   function applyOutputs() {
     const beat = currentBeat();
-    if (beat.theme && !game.userTheme) game.theme = beat.theme;
+    if (beat.theme && !beat.setpiece && !game.userTheme) game.theme = beat.theme;
     const worldRule = getWorldRule(game.theme);
     game.worldRule = worldRule;
 
@@ -276,7 +299,18 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       : scoreU(game, game.progression.beatStartScore, beat.lenScore);
 
     game.progression.beatLabel = beat.label;
-    game.progression.beatProgress = u;
+    const timelineU = beat.setpiece
+      ? u
+      : clamp(game.progression.beatTick / Math.max(1, beat.minTicks ?? 1), 0, 1);
+    const maxTimeU = beat.setpiece
+      ? u
+      : clamp(game.progression.beatTick / Math.max(1, beat.maxTicks ?? beat.minTicks ?? 1), 0, 1);
+    game.progression.beatProgress = beat.setpiece
+      ? u
+      : beat.breath ? timelineU : Math.max(Math.min(u, timelineU), maxTimeU);
+    game.progression.sectionPhase = beat.breath ? "release" : getSectionPhase(timelineU);
+    game.progression.gameplayMotif = beat.motif || beat.theme;
+    game.progression.suppressHazards = !!beat.breath;
 
     setBaseSpeed(game, speedForBeat(beat.id, u) * worldRule.paceMul);
     game.progressionSpeedMul = progressionSpeedMulForScore(game.score);
@@ -298,14 +332,16 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
     // init if needed
     if (!game.progression.beatId) enterBeat(0, "init");
 
-    game.progression.beatTick++;
+    if (!game.pause?.active) {
+      game.progression.beatTick++;
 
-    // checkpoint breather can override in-run
-    maybeCheckpointBreath();
+      // checkpoint breather can override in-run
+      maybeCheckpointBreath();
 
-    // beat-specific logic
-    updateSetpiece();
-    advanceIfNeeded();
+      // beat-specific logic
+      updateSetpiece();
+      advanceIfNeeded();
+    }
 
     // always write outputs for loop/spawner/bg
     applyOutputs();

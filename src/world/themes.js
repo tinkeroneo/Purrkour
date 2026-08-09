@@ -24,6 +24,12 @@ export const THEMES = {
   cliff: cliffTheme,
 };
 
+for (const theme of Object.values(THEMES)) {
+  if (!theme?.palette) continue;
+  theme.palette.key = theme.key;
+  theme.palette.label = theme.label;
+}
+
 // stable theme order for UI (legacy access)
 THEMES.__order = THEME_ORDER;
 

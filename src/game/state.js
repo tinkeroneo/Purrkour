@@ -66,14 +66,21 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
             // runtime fields used by setpieces.js
             vehicle: null,
             catInVehicle: false,
+            catExitPending: false,
+            originTheme: initialTheme,
+            targetTheme: null,
             scroll: 1,
             oceanMaskX: 0,
             oceanFromX: 0,
+            boardingProgress: 0,
+            travelStage: "origin",
+            vehicleScale: 1,
             actionRequested: false,
             maneuverCooldown: 0,
+            maneuverReady: false,
             maneuvers: 0,
             totalManeuvers: 0,
-            maneuverLimit: 3,
+            maneuverLimit: 4,
         },
 
         // tunnel/bonus area
@@ -114,24 +121,38 @@ export function createGameState({ initialTheme: initialThemeOverride } = {}) {
 
         calmTimer: 0,
         comboGlow: 0,
+        feel: {
+            landing: 0,
+            hit: 0,
+        },
         flow: createFlowState(),
         mission: createMissionState(),
         presentation: createPresentationState(),
         riskRoute: createRiskRouteState(),
 
-        lastHitTick: -99999
+        lastHitTick: -99999,
+        lastFailureCause: "Hindernis berührt",
     };
 }
 
 export function resetGameState(game) {
     const progressionApi = game.progressionApi;
+    const setpieceApi = game.setpieceApi;
     const reducedMotion = !!game.reducedMotion;
     const presentationPreview = game.presentationPreview || "";
+    const userTheme = game.userTheme || null;
     const initial = createGameState({ initialTheme: game.initialTheme || "forest" });
     for (const key of Object.keys(game)) delete game[key];
     Object.assign(game, initial);
     if (progressionApi) game.progressionApi = progressionApi;
+    if (setpieceApi) game.setpieceApi = setpieceApi;
     game.reducedMotion = reducedMotion;
     game.presentationPreview = presentationPreview;
+    game.userTheme = userTheme;
+    if (userTheme) {
+        game.theme = userTheme;
+        game.worldRule = getWorldRule(userTheme);
+        game.themeFade = { active: false, from: userTheme, to: userTheme, t: 0, dur: 60 };
+    }
     return game;
 }

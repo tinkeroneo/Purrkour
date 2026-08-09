@@ -14,6 +14,8 @@ export function createHUD(ui) {
   let lastRiskRoute;
   let lastPresentationBlock;
   let lastSetpieceAction;
+  let lastFocusMode;
+  let lastSceneAnnouncement;
 
   const themeLabels = {
     forest: "Wald",
@@ -34,6 +36,19 @@ export function createHUD(ui) {
 
   function sync(game, cat) {
     const presentationBlocking = !!(game.presentation?.active && game.presentation?.blocking);
+    const focusMode = !!game.setpiece?.active
+      || !!(game.presentation?.active && game.presentation.kind === "chapter");
+    if (ui.root && focusMode !== lastFocusMode) {
+      ui.root.classList.toggle("is-focus", focusMode);
+      lastFocusMode = focusMode;
+    }
+    const sceneAnnouncement = game.presentation?.active
+      ? `${game.presentation.kicker}: ${game.presentation.title}. ${game.presentation.subtitle}`
+      : "";
+    if (ui.sceneStatus && sceneAnnouncement !== lastSceneAnnouncement) {
+      ui.sceneStatus.textContent = sceneAnnouncement;
+      lastSceneAnnouncement = sceneAnnouncement;
+    }
     if (ui.presentationSkip && presentationBlocking !== lastPresentationBlock) {
       ui.presentationSkip.hidden = !presentationBlocking;
       ui.presentationSkip.setAttribute?.("aria-label", `${game.presentation?.title || "Etappe"} überspringen und loslaufen`);
@@ -43,11 +58,11 @@ export function createHUD(ui) {
     const setpiece = game.setpiece || {};
     const maneuvers = setpiece.maneuvers || 0;
     const maneuverLimit = setpiece.maneuverLimit || 3;
-    const actionVisible = !!(setpiece.active && setpiece.phase === "travel" && maneuvers < maneuverLimit);
-    const actionKey = `${actionVisible}/${maneuvers}/${maneuverLimit}/${(setpiece.maneuverCooldown || 0) > 0}`;
+    const actionVisible = !!(setpiece.active && setpiece.phase === "travel" && setpiece.maneuverReady);
+    const actionKey = `${actionVisible}/${maneuvers}/${maneuverLimit}`;
     if (ui.setpieceActionBtn && actionKey !== lastSetpieceAction) {
       ui.setpieceActionBtn.hidden = !actionVisible;
-      ui.setpieceActionBtn.disabled = (setpiece.maneuverCooldown || 0) > 0;
+      ui.setpieceActionBtn.disabled = false;
       ui.setpieceActionBtn.textContent = `✨ Reisemanöver ${maneuvers}/${maneuverLimit}`;
       ui.setpieceActionBtn.setAttribute?.("aria-label", `Reisemanöver, ${maneuvers} von ${maneuverLimit} genutzt`);
       lastSetpieceAction = actionKey;
@@ -76,6 +91,7 @@ export function createHUD(ui) {
     const mice = `🐭 × ${game.mice}`;
     if (ui.miceDisplay && mice !== lastMice) {
       ui.miceDisplay.textContent = mice;
+      ui.miceDisplay.setAttribute?.("aria-label", `${game.mice} Mäuse gesammelt`);
       lastMice = mice;
     }
 
@@ -158,6 +174,7 @@ export function createHUD(ui) {
         ui.restBtn.title = paused ? "Weiterspielen" : "Zur Hütte (Pause)";
         ui.restBtn.setAttribute("aria-label", paused ? "Weiterspielen" : "Pause an der Hütte");
         ui.restBtn.setAttribute("aria-pressed", String(paused));
+        if (ui.pauseStatus) ui.pauseStatus.hidden = !paused;
         lastPaused = paused;
       }
     }

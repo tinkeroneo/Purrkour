@@ -1,5 +1,6 @@
 // src/game/vehicles/zeppelin.js
 import { roundRect } from "../../core/util.js";
+import { drawPassengerCat } from "./passenger.js";
 
 export function drawZeppelinVehicle(ctx, env) {
   const { game, setpiece } = env;
@@ -8,7 +9,7 @@ export function drawZeppelinVehicle(ctx, env) {
   const x = sp?.vehicle?.x ?? 220;
   const y = sp?.vehicle?.y ?? 140;
 
-  const bob = Math.sin((game.tick + (sp?.t ?? 0)) * 0.06) * 2.8;
+  const bob = game.reducedMotion ? 0 : Math.sin((game.tick + (sp?.t ?? 0)) * 0.06) * 2.8;
   const yy = y + (sp?.phase === "travel" ? bob : 0);
 
   ctx.save();
@@ -42,12 +43,9 @@ export function drawZeppelinVehicle(ctx, env) {
 
   // cat in gondola
   if (sp?.catInVehicle) {
-    ctx.fillStyle = "#3b3b3b";
-    roundRect(ctx, x - 9, yy - 30, 18, 12, 6);
-    ctx.fillStyle = "#2a2a2a";
-    ctx.beginPath();
-    ctx.arc(x - 4, yy - 26, 1.8, 0, Math.PI * 2);
-    ctx.arc(x + 4, yy - 26, 1.8, 0, Math.PI * 2);
+    drawPassengerCat(ctx, { x, y: yy - 14, scale: 0.82 });
+    ctx.fillStyle = "rgba(86,68,52,.96)";
+    roundRect(ctx, x - 18, yy - 18, 36, 8, 4);
     ctx.fill();
   }
 

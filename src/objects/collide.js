@@ -2,6 +2,7 @@ import { aabb, clamp } from "../core/util.js";
 import { breakFlow, createFlowState, rewardFlow, tickFlow } from "../game/flow.js";
 import { recordMissionEvent } from "../game/missions.js";
 import { collectRiskToken, expireRiskRoute } from "../game/risk-routes.js";
+import { getSetpieceCatTargetX } from "../game/setpieces.js";
 import { applyAutoAcceleration, bumpBaseSpeed, computeEffectiveSpeed, getEffectiveSpeed } from "../game/speed.js";
 import { resetGameState } from "../game/state.js";
 import { getOverlay } from "../world/overlays.js";
@@ -54,7 +55,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         o.y = terrain.surfaceAt(o.x) + (o.yOffset ?? 0);
     }
 
-    function loseLife() {
+    function loseLife(cause = "Hindernis berührt") {
         if (game.invulnTimer > 0) return;
 
         const lostFlow = breakFlow(game.flow);
@@ -62,6 +63,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         game.lives = Math.max(0, game.lives - 1);
         game.invulnTimer = 90;
         game.lastHitTick = game.tick;
+        game.lastFailureCause = cause;
+        game.feel.hit = game.reducedMotion ? 4 : 14;
 
         audio.SFX.hit();
         objects.addBubble("ouch", cat.x + cat.w * 0.55, cat.y - 8);
@@ -92,7 +95,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                 game.input.crouch = false;
             }
             objects.toast("Lauf beendet 🐾", 160);
-            lifecycle.onGameOver?.({ score: game.score, mice: game.mice });
+            lifecycle.onGameOver?.({ score: game.score, mice: game.mice, cause });
         }
     }
 
@@ -140,7 +143,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         const catBox = { x: cat.x + 12, y: cat.y + 12, w: cat.w - 24, h: cat.h - 18 };
         if (aabb(dogBox, catBox)) {
             objects.addBubble("nope!", cat.x + cat.w * 0.55, cat.y - 8);
-            loseLife();
+            loseLife("Vom Hund erwischt");
             const idx = objects.list.indexOf(dog);
             if (idx >= 0) objects.list.splice(idx, 1);
             return;
@@ -186,6 +189,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         if (game.slowTimer > 0) game.slowTimer--;
         if (game.safeTimer > 0) game.safeTimer--;
         if (game.comboGlow > 0) game.comboGlow--;
+        if (game.feel?.landing > 0) game.feel.landing--;
+        if (game.feel?.hit > 0) game.feel.hit--;
 
         // jump capacity
         cat.maxJumps = (game.tripleJumpTimer > 0) ? 3 : cat.baseMaxJumps;
@@ -193,17 +198,25 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         // acceleration + effective speed (used by loop / terrain.update)
         applyAutoAcceleration(game);
         const eff = computeEffectiveSpeed(game);
+        const flowTick = tickFlow(game.flow);
+        if (flowTick.expired && flowTick.previousMultiplier > 1) {
+            objects.toast("Flow abgekühlt", 75);
+        }
+
         const sp = game.setpiece;
 
         // --- setpiece: scripted beat (approach/board/travel/arrive) ---
         if (sp?.active) {
             const phase = sp.phase || "travel";
-            const vx = sp.vehicle?.x ?? (canvas ? canvas.W * 0.76 : (cat.baseX + 260));
-            const targetX = vx - 70;
+            const targetX = getSetpieceCatTargetX(sp, cat.baseX);
 
             // During approach/board/arrive: keep cat on land and guide it into position.
             if (phase === "approach" || phase === "board" || phase === "arrive") {
-                if (!sp.catInVehicle) {
+                if (sp.catExitPending) {
+                    cat.x = targetX;
+                    sp.catExitPending = false;
+                    sp.catInVehicle = false;
+                } else if (!sp.catInVehicle) {
                     cat.x += (targetX - cat.x) * 0.10;
                 } else {
                     cat.x = cat.baseX;
@@ -229,9 +242,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             return;
         }
 
-        const flowTick = tickFlow(game.flow);
-        if (flowTick.expired && flowTick.previousMultiplier > 1) {
-            objects.toast("Flow abgekühlt", 75);
+        for (const object of objects.list) {
+            object?.update?.(game, terrain, eff);
         }
 
         // manual horizontal control (forward/back)
@@ -244,6 +256,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
         // cat physics
         const prevY = cat.y;
+        const wasOnSurface = cat.onSurface;
+        const impactVelocity = cat.vy;
         catApi.gravityStep();
         cat.onSurface = false;
 
@@ -253,6 +267,12 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             cat.y = groundSurface - cat.h;
             cat.vy = 0;
             cat.onSurface = true;
+        }
+        if (!wasOnSurface && cat.onSurface && impactVelocity > 2.4) {
+            cat.squashTimer = game.reducedMotion ? 0 : Math.min(10, 4 + Math.floor(impactVelocity * 0.45));
+            cat.squashAmp = 0.2;
+            game.feel.landing = game.reducedMotion ? 2 : Math.min(12, Math.floor(impactVelocity));
+            objects.addPuff?.(cat.x + cat.w * 0.5, groundSurface - 4, "rgba(240,248,255,.8)", impactVelocity > 6 ? 5 : 3);
         }
 
         // --- Bird drop Y-physics (run ONCE per frame, no x scroll here) ---
@@ -377,16 +397,16 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
                 if (o.type === "tunnel") {
                     if (game.input?.crouch) {
-                        if (!game.tunnel?.active) {
-                            game.tunnel.active = true;
-                            game.tunnel.exitSpawned = false;
-                            game.safeTimer = Math.max(game.safeTimer, 90);
-                        }
+                        game.tunnel.active = false;
+                        game.tunnel.exitSpawned = false;
+                        objects.addBubble("durch!", cat.x + cat.w * 0.55, cat.y - 8);
+                        awardFlow({ steps: 2, basePoints: 2, missionEvent: "maneuver" });
+                        audio?.SFX?.dash?.();
                         objects.list.splice(i, 1); i--;
                         continue;
                     }
                     objects.addBubble("duck!", cat.x + cat.w * 0.55, cat.y - 8);
-                    loseLife();
+                    loseLife("Tunnel verpasst");
                     objects.list.splice(i, 1); i--;
                     continue;
                 }
@@ -441,13 +461,13 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                         continue; // IMPORTANT: don't treat as damage
                     }
 
-                    loseLife();
+                    loseLife("Vogelkontakt");
                     objects.list.splice(i, 1); i--;
                     continue;
                 }
 
                 // unknown obstacle
-                loseLife();
+                loseLife("Hindernis gerammt");
                 objects.list.splice(i, 1); i--;
             }
         }

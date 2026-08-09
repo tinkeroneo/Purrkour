@@ -12,6 +12,8 @@ test("mobile controls expose crouch semantics and browser zoom", () => {
   assert.match(html, /id="crouchBtn"[^>]*aria-label="Ducken"[^>]*aria-pressed="false"/);
   assert.match(html, /id="moveLeftBtn"[^>]*aria-label="Nach links laufen"/);
   assert.match(html, /id="moveRightBtn"[^>]*aria-label="Nach rechts laufen"/);
+  assert.match(html, /id="touchCrouchBtn"[^>]*aria-label="Ducken"/);
+  assert.match(html, /@media \(any-pointer:coarse\)/);
   assert.match(html, /min-width:44px; min-height:44px/);
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   assert.match(html, /Tippen: Sprung/);
@@ -28,6 +30,7 @@ test("discoverable help, theme and compact-view controls replace hidden gestures
   assert.match(html, /id="autoThemeBtn"[^>]*aria-label="Automatischen Themenwechsel verwenden"/);
   assert.match(html, /id="minimalBtn"[^>]*aria-label="Kompaktansicht einschalten"/);
   assert.match(html, /id="helpBtn"[^>]*aria-label="Spielhilfe öffnen"/);
+  assert.match(html, /id="settingsBtn"[^>]*aria-expanded="false"/);
   assert.match(html, /id="albumBtn"[^>]*aria-label="Reisealbum öffnen"/);
   assert.match(html, /<dialog id="albumDialog"/);
   assert.doesNotMatch(main, /longPress|setPointerCapture\(e\.pointerId\)/);
@@ -36,6 +39,7 @@ test("discoverable help, theme and compact-view controls replace hidden gestures
   assert.match(main, /game\.helpOpen = false/);
   assert.match(main, /createJourneyAlbum/);
   assert.match(main, /get\("album"\) === "1"/);
+  assert.doesNotMatch(html, /<li><strong>(Flow|Aufträge|Goldpfade|Pause):/);
 });
 
 test("game over remains visible until the player requests a restart", () => {
@@ -45,6 +49,7 @@ test("game over remains visible until the player requests a restart", () => {
   assert.match(html, /<dialog id="gameOverDialog"/);
   assert.match(html, /id="gameOverScore"/);
   assert.match(html, /id="gameOverBest"/);
+  assert.match(html, /id="gameOverCause"/);
   assert.match(html, /<button[^>]*id="restartBtn"[^>]*>Erneut spielen<\/button>/);
   assert.doesNotMatch(collider, /setTimeout\(resetAll/);
   assert.match(collider, /game\.finished = true/);
@@ -70,6 +75,7 @@ test("journey, flow and run summary expose the new reward loop", () => {
 });
 
 test("chapter, travel and in-world route previews are browser-verifiable", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const main = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
   const cues = fs.readFileSync(path.join(root, "src/game/presentation-cues.js"), "utf8");
   const draw = fs.readFileSync(path.join(root, "src/objects/draw.js"), "utf8");
@@ -83,4 +89,34 @@ test("chapter, travel and in-world route previews are browser-verifiable", () =>
   assert.match(draw, /getPresentationFrame\(presentation\)/);
   assert.match(main, /dismissPresentation\(game\.presentation\)/);
   assert.match(main, /setupMoveButtons\(game/);
+  assert.match(main, /function togglePause\(\)/);
+  assert.match(main, /game\.pause\.phase = game\.setpiece\?\.active \? "setpiece" : "walk"/);
+  assert.match(main, /document\.addEventListener\("visibilitychange"/);
+  assert.match(main, /prefers-reduced-motion: reduce[\s\S]*addEventListener\?\.\("change"/);
+  assert.match(html, /id="pauseStatus"[^>]*role="status"/);
+  assert.match(html, /id="sceneStatus"[^>]*aria-live="polite"/);
+  assert.match(html, /#ui\.is-focus ~ #hint\{ opacity:0; \}/);
+  assert.match(main, /game\.presentationPreview === "ocean-travel"/);
+  assert.match(main, /game\.presentationPreview === "rocket-travel"/);
+  assert.match(main, /game\.presentationPreview === "setpiece"/);
+  assert.match(main, /data\.previewReady|dataset\.previewReady/);
+  assert.match(main, /previewSetpiece/);
+  assert.match(main, /previewControlReturned/);
+});
+
+test("travel renderers keep a visible passenger and explicit origin-to-target passes", () => {
+  const vehicles = ["balloon", "raft", "zeppelin", "rocket"];
+  for (const vehicle of vehicles) {
+    const source = fs.readFileSync(path.join(root, `src/game/vehicles/${vehicle}.js`), "utf8");
+    assert.match(source, /drawPassengerCat/, `${vehicle} must render the passenger`);
+  }
+
+  const background = fs.readFileSync(path.join(root, "src/world/background.js"), "utf8");
+  const draw = fs.readFileSync(path.join(root, "src/objects/draw.js"), "utf8");
+  assert.match(background, /function drawOceanTravel/);
+  assert.match(background, /function drawRocketTravel/);
+  assert.match(background, /originSurfaceY/);
+  assert.match(draw, /bg\.drawOceanTravel/);
+  assert.match(draw, /bg\.drawRocketTravel/);
+  assert.match(draw, /vehicleScale/);
 });

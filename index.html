@@ -9,6 +9,7 @@
   <style>
     :root { color-scheme:dark; --glass:rgba(9,19,30,.78); --line:rgba(255,255,255,.17); --gold:#ffd166; }
     *{ box-sizing:border-box; }
+    .sr-only{ position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
     body{
       margin:0; overflow:hidden; color:#fff;
       font-family:Inter,ui-rounded,"Segoe UI",system-ui,-apple-system,sans-serif;
@@ -81,6 +82,8 @@
     #riskDisplay{ border-color:rgba(255,209,102,.38); background:rgba(255,209,102,.09); }
     #riskDisplay[hidden]{ display:none; }
     #ui .controls{ grid-column:1 / span 6; display:flex; flex-wrap:nowrap; gap:6px; justify-content:center; }
+    #ui.is-focus{ width:min(680px,calc(100vw - 20px)); }
+    #ui.is-focus .goals,#ui.is-focus .controls{ display:none; }
     .btn{
       min-width:44px; min-height:44px; border:1px solid rgba(255,255,255,.11); padding:7px 11px;
       border-radius:13px; background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.09));
@@ -91,13 +94,31 @@
     .btn.is-active{ background:rgba(117,208,255,.35); border-color:rgba(173,230,255,.55); transform:translateY(1px); }
     .theme-button{ cursor:pointer; min-width:76px; }
     .theme-button:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
-    #speedBtn{ min-width:88px; color:rgba(255,255,255,.7); }
+    #speedBtn{ display:none; }
+    .settings-wrap{ position:relative; }
+    .settings-panel{
+      position:absolute; top:calc(100% + 8px); right:0; z-index:18;
+      display:grid; grid-template-columns:repeat(3,minmax(56px,auto)); gap:6px; padding:8px;
+      border:1px solid var(--line); border-radius:12px; background:rgba(8,20,31,.96);
+      box-shadow:0 16px 42px rgba(0,0,0,.38); backdrop-filter:blur(12px);
+    }
+    .settings-panel[hidden]{ display:none; }
     #hint{
       position:fixed; left:0; right:0; bottom:10px; z-index:10; padding:0 10px;
       color:rgba(255,255,255,.72); font-size:13px; text-align:center; pointer-events:none;
       text-shadow:0 2px 12px rgba(0,0,0,.55);
     }
     #hint.minimal{ display:none; }
+    #ui.is-focus ~ #hint{ opacity:0; }
+    #pauseStatus{
+      position:fixed; left:50%; top:50%; z-index:13; transform:translate(-50%,-50%);
+      padding:12px 18px; border:1px solid rgba(255,255,255,.2); border-radius:12px;
+      color:#fff; background:rgba(7,20,32,.82); box-shadow:0 14px 40px rgba(0,0,0,.3);
+      backdrop-filter:blur(10px); text-align:center; pointer-events:none;
+    }
+    #pauseStatus strong{ display:block; color:var(--gold); font-size:13px; text-transform:uppercase; }
+    #pauseStatus span{ display:block; margin-top:3px; color:rgba(255,255,255,.76); font-size:12px; }
+    #pauseStatus[hidden]{ display:none; }
     .presentation-skip{
       position:fixed; left:50%; bottom:34px; z-index:14; transform:translateX(-50%);
       min-width:132px; min-height:44px; border:1px solid rgba(255,255,255,.25); border-radius:999px;
@@ -112,7 +133,21 @@
       box-shadow:0 10px 28px rgba(0,0,0,.32);
     }
     .setpiece-action[hidden]{ display:none; }
-    .touch-controls{ display:none; }
+    .touch-controls{
+      position:fixed; inset:auto max(12px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom));
+      z-index:12; display:none; align-items:end; justify-content:space-between; pointer-events:none;
+    }
+    .touch-move{
+      width:64px; height:58px; border:1px solid rgba(255,255,255,.2); border-radius:18px;
+      color:#fff; background:rgba(11,26,39,.78); box-shadow:0 8px 24px rgba(0,0,0,.28);
+      font:900 25px/1 system-ui; pointer-events:auto; touch-action:none; backdrop-filter:blur(8px);
+    }
+    .touch-move.is-active{ background:rgba(117,208,255,.42); transform:translateY(2px); }
+    .touch-move:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+    .touch-crouch{ width:58px; height:52px; font-size:20px; }
+    #ui.is-focus ~ .touch-controls{ display:none; }
+    body.touch-preview .touch-controls{ display:flex; }
+    body.touch-preview #ui .controls>#crouchBtn,body.touch-preview #hint{ display:none; }
     dialog{
       width:min(420px,calc(100vw - 32px)); border:1px solid rgba(255,255,255,.22); border-radius:24px;
       padding:28px; color:#fff; text-align:center;
@@ -122,6 +157,7 @@
     dialog::backdrop{ background:rgba(3,8,14,.76); backdrop-filter:blur(7px); }
     dialog h1{ margin:0 0 8px; font-size:clamp(26px,8vw,38px); }
     dialog p{ margin:8px 0; }
+    .dialog-kicker{ display:block; margin-bottom:7px; color:var(--gold); font-size:10px; font-weight:900; letter-spacing:.12em; text-align:center; }
     .result{ display:flex; justify-content:center; gap:10px; margin:20px 0; }
     .result p{ flex:1; padding:11px 8px; border-radius:14px; background:rgba(255,255,255,.07); color:rgba(255,255,255,.7); font-size:12px; }
     .result strong{ display:block; color:#fff; font-size:27px; font-variant-numeric:tabular-nums; }
@@ -148,7 +184,9 @@
     .hint-mobile{ display:none; }
 
     #ui.minimal{ width:auto; grid-template-columns:auto minmax(150px,220px) auto auto; }
-    #ui.minimal .journey,#ui.minimal .mice,#ui.minimal .goals,#ui.minimal .controls>*:not(#minimalBtn){ display:none; }
+    #ui.minimal .journey,#ui.minimal .mice,#ui.minimal .goals:not(.has-risk),#ui.minimal .controls>*:not(.settings-wrap){ display:none; }
+    #ui.minimal .goals.has-risk{ display:grid; grid-column:1 / -1; }
+    #ui.minimal .goals.has-risk #missionDisplay{ display:none; }
     #ui.minimal .score{ grid-column:1; }
     #ui.minimal .flow{ grid-column:2; }
     #ui.minimal .lives{ grid-column:3; }
@@ -179,20 +217,22 @@
       #hint{ font-size:11px; bottom:6px; }
       .presentation-skip{ bottom:92px; }
       .setpiece-action{ bottom:96px; }
-      .touch-controls{
-        position:fixed; inset:auto 12px 30px; z-index:12; display:flex; justify-content:space-between;
-        pointer-events:none;
-      }
-      .touch-move{
-        width:64px; height:58px; border:1px solid rgba(255,255,255,.2); border-radius:18px;
-        color:#fff; background:rgba(11,26,39,.78); box-shadow:0 8px 24px rgba(0,0,0,.28);
-        font:900 25px/1 system-ui; pointer-events:auto; touch-action:none; backdrop-filter:blur(8px);
-      }
-      .touch-move.is-active{ background:rgba(117,208,255,.42); transform:translateY(2px); }
-      .touch-move:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+      .touch-controls{ display:flex; }
       .hint-desktop{ display:none; }
       .hint-mobile{ display:inline; }
       #ui.minimal{ width:calc(100vw - 12px); grid-template-columns:auto minmax(120px,1fr) auto auto; }
+    }
+    @media (any-pointer:coarse){
+      .touch-controls{ display:flex; }
+      #ui .controls>#crouchBtn{ display:none; }
+      #hint{ display:none; }
+    }
+    @media (max-height:520px){
+      dialog{ max-height:calc(100vh - 20px); overflow:auto; padding:20px; }
+      #ui{ top:4px; }
+      #ui .goals:not(.has-risk){ display:none; }
+      #ui .goals.has-risk #missionDisplay{ display:none; }
+      .settings-panel{ position:fixed; top:70px; right:10px; }
     }
     @media (max-width:400px){
       #ui .controls{ gap:4px; }
@@ -215,7 +255,7 @@
       <span class="journey-track" id="journeyProgress" role="progressbar" aria-label="Fortschritt der Etappe" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="journeyFill"></span></span>
       <button class="album-button" id="albumBtn" type="button" aria-label="Reisealbum öffnen" title="Reisealbum">📖</button>
     </div>
-    <div class="pill mice" id="miceDisplay">🐭 × 0</div>
+    <div class="pill mice" id="miceDisplay" aria-label="0 Mäuse gesammelt">🐭 × 0</div>
     <div class="pill score"><span class="label">Punkte</span><span id="score">0</span></div>
     <div class="pill flow" id="flowDisplay" aria-label="Flow x1, beste Kette 0">
       <span id="flowValue">Flow x1</span>
@@ -236,12 +276,17 @@
     <div class="controls">
       <button class="btn" id="restBtn" type="button" aria-label="Pause an der Hütte" aria-pressed="false" title="Zur Hütte (Pause)">🏠</button>
       <button class="btn" id="crouchBtn" type="button" aria-label="Ducken" aria-pressed="false" title="Zum Ducken gedrückt halten">↓</button>
-      <button class="btn" id="soundBtn" type="button" aria-label="Sound ausschalten" aria-pressed="true" title="Sound an/aus">🔊</button>
       <button class="btn" id="speedBtn" type="button" aria-label="Pace steigt automatisch" title="Pace steigt automatisch" disabled>Pace 1.0x</button>
-      <button class="btn theme theme-button" id="themeBtn" type="button" aria-label="Nächstes Thema" title="Nächstes Thema">🌍 <span id="catnip">wald</span></button>
-      <button class="btn" id="autoThemeBtn" type="button" aria-label="Automatischen Themenwechsel verwenden" aria-pressed="true" title="Themen automatisch wechseln">Auto</button>
-      <button class="btn" id="minimalBtn" type="button" aria-label="Kompaktansicht einschalten" aria-pressed="false" title="HUD kompakter anzeigen">HUD</button>
-      <button class="btn" id="helpBtn" type="button" aria-label="Spielhilfe öffnen" title="Spielhilfe">❓</button>
+      <div class="settings-wrap">
+        <button class="btn" id="settingsBtn" type="button" aria-label="Einstellungen öffnen" aria-expanded="false" aria-controls="settingsPanel" title="Einstellungen">⚙</button>
+        <div class="settings-panel" id="settingsPanel" hidden>
+          <button class="btn" id="soundBtn" type="button" aria-label="Sound ausschalten" aria-pressed="true" title="Sound an/aus">🔊</button>
+          <button class="btn theme theme-button" id="themeBtn" type="button" aria-label="Nächstes Thema" title="Nächstes Thema">🌍 <span id="catnip">wald</span></button>
+          <button class="btn" id="autoThemeBtn" type="button" aria-label="Automatischen Themenwechsel verwenden" aria-pressed="true" title="Themen automatisch wechseln">Auto</button>
+          <button class="btn" id="minimalBtn" type="button" aria-label="Kompaktansicht einschalten" aria-pressed="false" title="HUD kompakter anzeigen">HUD</button>
+          <button class="btn" id="helpBtn" type="button" aria-label="Spielhilfe öffnen" title="Spielhilfe">?</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -249,31 +294,32 @@
     <span class="hint-desktop">Tippen oder Leertaste: springen · ↓ halten: ducken · A/D oder Pfeile: bewegen</span>
     <span class="hint-mobile">Tippen: Sprung · ◀/▶: Bewegen · ↓: Ducken</span>
   </div>
+  <div id="pauseStatus" role="status" aria-live="polite" hidden><strong>Schnurrpause</strong><span>Tippen, Leertaste oder Hütte: weiter</span></div>
+  <div id="sceneStatus" class="sr-only" aria-live="polite"></div>
   <button id="presentationSkip" class="presentation-skip" type="button" hidden>Loslaufen</button>
   <button id="setpieceActionBtn" class="btn setpiece-action" type="button" hidden>✨ Reisemanöver</button>
-  <div class="touch-controls" aria-label="Bewegungssteuerung">
+  <div class="touch-controls" role="group" aria-label="Bewegungssteuerung">
     <button id="moveLeftBtn" class="touch-move" type="button" aria-label="Nach links laufen">◀</button>
+    <button id="touchCrouchBtn" class="touch-move touch-crouch" type="button" aria-label="Ducken" aria-pressed="false">↓</button>
     <button id="moveRightBtn" class="touch-move" type="button" aria-label="Nach rechts laufen">▶</button>
   </div>
 
   <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpIntro">
-    <h1 id="helpTitle">So spielst du</h1>
-    <p id="helpIntro">Sammle Mäuse, verbinde saubere Manöver zu Flow und entdecke neue Welten.</p>
+    <span class="dialog-kicker">NEUN WELTEN · EIN FLOW</span>
+    <h1 id="helpTitle">Purrkour</h1>
+    <p id="helpIntro">Sammle Mäuse, verbinde saubere Manöver und bleib im Rhythmus.</p>
     <ul>
       <li><strong>Springen:</strong> Tippe ins Spiel oder drücke <kbd>Leertaste</kbd>.</li>
       <li><strong>Bewegen:</strong> Nutze <kbd>A</kbd>/<kbd>D</kbd> oder die Pfeiltasten.</li>
       <li><strong>Ducken:</strong> Halte <kbd>↓</kbd>, <kbd>S</kbd> oder den ↓-Button.</li>
-      <li><strong>Flow:</strong> Sammeln, Ausweichen und besondere Manöver füllen die Kette. Bei x2 bis x4 zählen Aktionen mehr.</li>
-      <li><strong>Aufträge:</strong> Kleine Ziele wechseln zwischen Mäusejagd, hohem Flow und besonderen Manövern.</li>
-      <li><strong>Goldpfade:</strong> Springe auf den goldenen Höhenweg, um die Route zu beginnen, oder bleibe unten auf der normalen Strecke. Fünf Goldmäuse bringen den Routenbonus.</li>
-      <li><strong>Pause:</strong> Die Hütte hält den Lauf an. Thema, Automatik und HUD haben eigene Buttons.</li>
     </ul>
-    <button class="btn" id="closeHelpBtn" type="button">Loslaufen</button>
+    <button class="btn" id="closeHelpBtn" type="button">Reise beginnen</button>
   </dialog>
 
   <dialog id="gameOverDialog" aria-labelledby="gameOverTitle" aria-describedby="gameOverDescription">
+    <span class="dialog-kicker">REISEENDE</span>
     <h1 id="gameOverTitle">Lauf beendet</h1>
-    <p id="gameOverDescription">Gute Jagd. Noch eine Runde?</p>
+    <p id="gameOverDescription">Letzter Moment: <strong id="gameOverCause">Hindernis berührt</strong></p>
     <div class="result">
       <p>Punkte<strong id="gameOverScore">0</strong></p>
       <p>Bestwert<strong id="gameOverBest">0</strong></p>
@@ -301,7 +347,7 @@
     <button class="btn" id="closeAlbumBtn" type="button">Weiterlaufen</button>
   </dialog>
 
-  <canvas id="game"></canvas>
+  <canvas id="game" role="img" aria-label="Purrkour Spielfeld" aria-describedby="hint"></canvas>
 
   <script type="module" src="./src/main.js"></script>
 </body>

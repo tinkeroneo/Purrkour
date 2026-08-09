@@ -1,5 +1,6 @@
 // src/game/vehicles/raft.js
 import { roundRect } from "../../core/util.js";
+import { drawPassengerCat } from "./passenger.js";
 
 export function drawRaftVehicle(ctx, env) {
   const { game, setpiece } = env;
@@ -8,7 +9,7 @@ export function drawRaftVehicle(ctx, env) {
   const x = sp?.vehicle?.x ?? 200;
   const y = sp?.vehicle?.y ?? 160;
 
-  const bob = Math.sin((game.tick + (sp?.t ?? 0)) * 0.09) * 2.2;
+  const bob = game.reducedMotion ? 0 : Math.sin((game.tick + (sp?.t ?? 0)) * 0.09) * 2.2;
   const yy = y + (sp?.phase === "travel" ? bob : 0);
 
   ctx.save();
@@ -41,13 +42,7 @@ export function drawRaftVehicle(ctx, env) {
 
   // cat sits on raft
   if (sp?.catInVehicle) {
-    ctx.fillStyle = "#3b3b3b";
-    roundRect(ctx, x - 10, yy - 24, 20, 14, 7);
-    ctx.fillStyle = "#2a2a2a";
-    ctx.beginPath();
-    ctx.arc(x - 4, yy - 20, 1.8, 0, Math.PI * 2);
-    ctx.arc(x + 4, yy - 20, 1.8, 0, Math.PI * 2);
-    ctx.fill();
+    drawPassengerCat(ctx, { x: x - 17, y: yy - 7, scale: 1 });
   }
 
   ctx.restore();

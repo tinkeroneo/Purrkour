@@ -7,8 +7,12 @@ import { createFixedStepClock } from "./timestep.js";
 
 // src/game/loop.js
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio, album, canvas }) {
-    const setpieces = createSetpieceManager({ game, objects, startThemeFade, canvas, terrain, audio });
+    const setpieces = createSetpieceManager({
+        game, objects, startThemeFade, canvas, terrain, audio,
+        random: game.previewRandom || Math.random,
+    });
     const clock = createFixedStepClock();
+    game.setpieceApi = setpieces;
 
     function startThemeFade(toKey, dur = 70) {
         const fromKey = game.theme;
@@ -30,6 +34,10 @@ export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, co
     game.progressionApi = progression;
 function simulate() {
         if (!game.finished) {
+            if (game.travelPreviewFrozen) {
+                hud.sync(game, cat.cat ?? cat);
+                return;
+            }
             if (game.helpOpen) {
                 hud.sync(game, cat.cat ?? cat);
                 return;
@@ -64,6 +72,12 @@ function simulate() {
             if (game.pause?.active) {
                 const c = (cat.cat ?? cat);
                 game.pause.t = (game.pause.t || 0) + 1;
+
+                if (game.pause.phase === "setpiece") {
+                    objects.updateBubbles?.();
+                    hud.sync(game, c);
+                    return;
+                }
 
                 // Target hut stays on-screen (within cat clamp window)
                 // (cat.clampX keeps max ~45% of screen width)
@@ -143,7 +157,11 @@ if (game.setpiece?.active) {
                 // extra layers during flight / ocean-crossing
                 if (isFlight) {
                     const type = game.setpiece?.type || "balloon";
-                    const mix = (type === "zeppelin")
+                    const mode = game.setpiece?.mode;
+                    const phase = game.setpiece?.phase;
+                    const mix = (mode === "rocket")
+                        ? { whoosh: phase === "travel" ? 0.22 : 0.09, ocean: 0.0001, rumble: 0.14, engine: 0.18 }
+                        : (type === "zeppelin")
                         ? { whoosh: 0.12, ocean: 0.22, rumble: 0.08, engine: 0.05 }
                         : (type === "raft")
                             ? { whoosh: 0.04, ocean: 0.30, rumble: 0.02, engine: 0.0001 }

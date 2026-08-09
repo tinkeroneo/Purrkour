@@ -48,3 +48,16 @@ test("run reset restores the canonical initial state", () => {
   assert.equal("progression" in game, false);
   assert.equal("unknownRunField" in game, false);
 });
+
+test("run reset preserves an explicit visual theme preference", () => {
+  const game = createGameState();
+  game.userTheme = "desert";
+  game.theme = "desert";
+  game.score = 300;
+
+  resetGameState(game);
+
+  assert.equal(game.userTheme, "desert");
+  assert.equal(game.theme, "desert");
+  assert.equal(game.worldRule.label, "Schwerer Sand");
+});

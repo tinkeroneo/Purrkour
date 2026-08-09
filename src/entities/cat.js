@@ -35,6 +35,8 @@ export function createCat(game, hud) {
     const worldJump = game.worldRule?.jumpMul ?? 1.0;
     cat.vy = BASE_JUMP_VY * jumpBoost * overlayJump * worldJump;
     cat.jumpsLeft--;
+    cat.squashTimer = game.reducedMotion ? 0 : 7;
+    cat.squashAmp = -0.12;
 
     audio?.SFX?.jump?.();
     hud.sync(game, cat);
@@ -54,6 +56,8 @@ export function createCat(game, hud) {
     cat.y = surfaceY - cat.h;
     cat.vy = 0;
     cat.onSurface = true;
+    cat.squashTimer = 0;
+    cat.squashAmp = 0.18;
     cat.maxJumps = cat.baseMaxJumps;
     cat.jumpsLeft = cat.maxJumps;
     hud.sync(game, cat);

@@ -10,6 +10,7 @@ import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
 import { beginPresentation, dismissPresentation } from "./game/presentation.js";
 import { PRESENTATION_PREVIEWS } from "./game/presentation-cues.js";
+import { getSetpieceCatTargetX } from "./game/setpieces.js";
 import { setupDebugControls } from "./game/debug.js";
 import { recordScore } from "./game/records.js";
 
@@ -31,6 +32,7 @@ const ctx = canvasEl.getContext("2d");
 const uiRoot = document.getElementById("ui");
 
 const ui = {
+  root: uiRoot,
   score: document.getElementById("score"),
   lives: document.getElementById("lives"),
   miceDisplay: document.getElementById("miceDisplay"),
@@ -65,24 +67,30 @@ const ui = {
   catnip: document.getElementById("catnip"),
   restBtn: document.getElementById("restBtn"),
   crouchBtn: document.getElementById("crouchBtn"),
+  touchCrouchBtn: document.getElementById("touchCrouchBtn"),
   soundBtn: document.getElementById("soundBtn"),
   speedBtn: document.getElementById("speedBtn"),
   themeBtn: document.getElementById("themeBtn"),
   autoThemeBtn: document.getElementById("autoThemeBtn"),
   minimalBtn: document.getElementById("minimalBtn"),
   helpBtn: document.getElementById("helpBtn"),
+  settingsBtn: document.getElementById("settingsBtn"),
+  settingsPanel: document.getElementById("settingsPanel"),
   helpDialog: document.getElementById("helpDialog"),
   closeHelpBtn: document.getElementById("closeHelpBtn"),
   gameOverDialog: document.getElementById("gameOverDialog"),
   gameOverScore: document.getElementById("gameOverScore"),
   gameOverBest: document.getElementById("gameOverBest"),
   gameOverFlow: document.getElementById("gameOverFlow"),
+  gameOverCause: document.getElementById("gameOverCause"),
   gameOverBestLabel: document.getElementById("gameOverBestLabel"),
   restartBtn: document.getElementById("restartBtn"),
   presentationSkip: document.getElementById("presentationSkip"),
   moveLeftBtn: document.getElementById("moveLeftBtn"),
   moveRightBtn: document.getElementById("moveRightBtn"),
   setpieceActionBtn: document.getElementById("setpieceActionBtn"),
+  pauseStatus: document.getElementById("pauseStatus"),
+  sceneStatus: document.getElementById("sceneStatus"),
 };
 
 
@@ -92,12 +100,22 @@ const THEME_STORAGE_KEY = "purrkour.initialTheme";
 const ONBOARDING_STORAGE_KEY = "purrkour.onboardingSeen.v1";
 const runStorage = createSafeStorage(getLocalStorage());
 const query = new URLSearchParams(window.location.search);
+const previewKind = query.get("preview") || "";
+const previewRandom = ["setpiece", "ocean-travel", "rocket-travel"].includes(previewKind)
+  ? createSeededRandom(query.get("seed"))
+  : null;
+if (query.get("touch") === "1") document.body.classList.add("touch-preview");
 const queryTheme = query.get("theme");
 const storedTheme = runStorage.getItem(THEME_STORAGE_KEY);
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
 const game = createGameState({ initialTheme });
+if (previewRandom) game.previewRandom = previewRandom;
 game.reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-game.presentationPreview = query.get("preview") || "";
+window.matchMedia?.("(prefers-reduced-motion: reduce)").addEventListener?.("change", (event) => {
+  game.reducedMotion = !!event.matches;
+});
+game.presentationPreview = previewKind;
+if (query.get("reduced") === "1") game.reducedMotion = true;
 if (game.presentationPreview === "route") {
   game.riskRoute.nextAt = 0;
   game.reducedMotion = true;
@@ -105,14 +123,17 @@ if (game.presentationPreview === "route") {
 const album = createJourneyAlbum(runStorage);
 album.observe(game);
 const hud = createHUD(ui);
+const audio = createAudio(ui.soundBtn, runStorage);
 if (initialTheme) game.userTheme = initialTheme;
 
 setupThemeControls(game, ui.themeBtn, ui.autoThemeBtn);
 setupHudMinimode(uiRoot, ui.minimalBtn);
 setupSpeedIndicator(ui.speedBtn);
 setupCrouchButton(game, ui.crouchBtn);
+setupCrouchButton(game, ui.touchCrouchBtn);
 setupMoveButtons(game, ui.moveLeftBtn, ui.moveRightBtn);
-setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage);
+setupSettingsMenu(ui.settingsBtn, ui.settingsPanel);
+setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage, audio);
 setupAlbum(game, album, ui);
 setupSetpieceAction(game, ui.setpieceActionBtn);
 
@@ -122,6 +143,17 @@ function getLocalStorage() {
   } catch {
     return null;
   }
+}
+
+function createSeededRandom(value) {
+  let seed = (Number.parseInt(value || "1337", 10) >>> 0) || 1337;
+  return () => {
+    seed += 0x6D2B79F5;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function storeTheme(theme) {
@@ -239,7 +271,24 @@ function setupSetpieceAction(game, button) {
   });
 }
 
-function setupHelp(game, dialog, openButton, closeButton, storage) {
+function setupSettingsMenu(button, panel) {
+  if (!button || !panel) return;
+  function setOpen(open) {
+    panel.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+  }
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setOpen(panel.hidden);
+  });
+  panel.addEventListener("click", (event) => event.stopPropagation());
+  window.addEventListener("pointerdown", () => setOpen(false), { passive: true });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setOpen(false);
+  });
+}
+
+function setupHelp(game, dialog, openButton, closeButton, storage, audio) {
   if (!dialog || !openButton || !closeButton) return;
 
   function openHelp() {
@@ -255,6 +304,8 @@ function setupHelp(game, dialog, openButton, closeButton, storage) {
       // Help remains usable when preference storage is unavailable.
     }
     game.helpOpen = false;
+    audio?.ensure?.();
+    dismissPresentation(game.presentation);
     game.safeTimer = Math.max(game.safeTimer ?? 0, 30);
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
@@ -349,8 +400,7 @@ function setupAlbum(game, album, ui) {
 
 
 
-const audio = createAudio(ui.soundBtn, runStorage);
-const terrain = createTerrain(() => canvas.W, () => canvas.H);
+const terrain = createTerrain(() => canvas.W, () => canvas.H, previewRandom || Math.random);
 // Lakes are currently disabled (keeps core gameplay calmer). We keep a tiny no-op
 // object so other modules can call lakes.update/draw safely.
 const lakes = { reset() {}, update() {}, draw() {} };
@@ -364,12 +414,13 @@ const collider = createCollider(game, cat, terrain, objects, audio, hud, canvas,
   onGameOver: showGameOver,
 });
 
-function showGameOver({ score }) {
+function showGameOver({ score, cause }) {
   album.finishRun(game);
   const result = recordScore(runStorage, score);
   if (ui.gameOverScore) ui.gameOverScore.textContent = String(score);
   if (ui.gameOverBest) ui.gameOverBest.textContent = String(result.best);
   if (ui.gameOverFlow) ui.gameOverFlow.textContent = `x${getFlowMultiplier(game.flow?.best)}`;
+  if (ui.gameOverCause) ui.gameOverCause.textContent = cause || game.lastFailureCause || "Hindernis berührt";
   if (ui.gameOverBestLabel) ui.gameOverBestLabel.hidden = !result.isNewBest;
   if (!ui.gameOverDialog) return;
 
@@ -421,15 +472,38 @@ window.addEventListener("resize", resizeLayout, { passive: true });
 // input
 const debug = setupDebugControls({ game, cat, objects, terrain, bg, uiRoot });
 
+function togglePause() {
+  if (game.pause?.active) {
+    game.pause.active = false;
+    game.pause.phase = "none";
+    game.pause.t = 0;
+    game.invulnTimer = Math.max(game.invulnTimer, 40);
+    return;
+  }
+  if (game.finished || game.helpOpen) return;
+  game.pause = game.pause || {};
+  game.pause.active = true;
+  game.pause.phase = game.setpiece?.active ? "setpiece" : "walk";
+  game.pause.t = 0;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && !game.pause?.active && !game.finished && !game.helpOpen) togglePause();
+});
+
 setupInput({
   onJump: () => {
-    if (game.pause?.active || game.helpOpen) return;
-    if (dismissPresentation(game.presentation)) return;
-    if (game.setpiece?.active && game.setpiece.phase === "travel") {
-      game.setpiece.actionRequested = true;
+    if (game.pause?.active) {
+      togglePause();
       return;
     }
+    if (game.helpOpen) return;
     audio.ensure();
+    if (dismissPresentation(game.presentation)) return;
+    if (game.setpiece?.active) {
+      if (game.setpiece.phase === "travel") game.setpiece.actionRequested = true;
+      return;
+    }
     cat.jump(audio);
   },
   onMove: (dir) => {
@@ -451,20 +525,7 @@ setupInput({
 if (ui.restBtn) {
   ui.restBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    // Toggle pause via hut.
-    if (game.pause?.active) {
-      game.pause.active = false;
-      game.pause.phase = "resume";
-      game.pause.t = 0;
-      // short invuln so resume feels fair
-      game.invulnTimer = Math.max(game.invulnTimer, 40);
-    } else {
-      if (game.setpiece?.active) return; // don't interrupt setpiece
-      game.pause = game.pause || {};
-      game.pause.active = true;
-      game.pause.phase = "walk";
-      game.pause.t = 0;
-    }
+    togglePause();
   }, { passive: false });
 }
 
@@ -476,9 +537,125 @@ const loop = createLoop({
   ,album
 });
 
-ui.presentationSkip?.addEventListener("click", () => dismissPresentation(game.presentation));
+function applyScenePreview() {
+  if (game.presentationPreview === "world") {
+    game.presentation.active = false;
+    game.presentation.blocking = false;
+    if (query.get("night") === "1" && game.progression) {
+      game.progression.night = 1;
+      game.progression.nightTarget = 1;
+      game.nightOverride = 1;
+    }
+    return;
+  }
+  if (game.presentationPreview === "game-over") {
+    game.presentation.active = false;
+    game.presentation.blocking = false;
+    game.score = 128;
+    game.flow.best = 11;
+    game.finished = true;
+    showGameOver({ score: game.score, cause: "Klippenkante verpasst" });
+    return;
+  }
+  if (game.presentationPreview === "success") {
+    beginPresentation(game.presentation, {
+      kind: "chapter",
+      kicker: "REISE VOLLENDET",
+      title: "Wieder daheim",
+      subtitle: "Neun Welten. Eine Spur zurück zum Anfang.",
+      accent: "#ffd166",
+      pinned: true,
+      reducedMotion: game.reducedMotion,
+    });
+    return;
+  }
+  const mode = game.presentationPreview === "ocean-travel"
+    ? "ocean"
+    : game.presentationPreview === "rocket-travel"
+      ? "rocket"
+      : game.presentationPreview === "setpiece" ? (query.get("mode") || "ocean") : null;
+  if (!mode) return;
+
+  const checkpoints = {
+    start: { phase: "approach", progress: 0.2 },
+    boarding: { phase: "board", progress: 0.5 },
+    "boarding-mid": { phase: "board", progress: 0.5 },
+    "travel-25": { phase: "travel", progress: 0.25 },
+    "travel-50": { phase: "travel", progress: 0.5 },
+    "travel-75": { phase: "travel", progress: 0.75 },
+    arrival: { phase: "arrive", progress: 0.55 },
+    "arrival-mid": { phase: "arrive", progress: 0.55 },
+    "control-return": { phase: "control", progress: 1 },
+  };
+  const checkpoint = checkpoints[query.get("checkpoint")] || null;
+  const phase = checkpoint?.phase || query.get("phase") || "travel";
+  const parsedProgress = Number.parseFloat(query.get("progress"));
+  const progress = checkpoint?.progress ?? (Number.isFinite(parsedProgress) ? parsedProgress : 0.5);
+  const type = mode === "rocket" ? "rocket" : (query.get("vehicle") || "balloon");
+  const originTheme = query.get("origin") || (mode === "rocket" ? "island" : "forest");
+  const targetTheme = query.get("target") || (mode === "rocket" ? "mars" : "island");
+  const sp = game.setpieceApi?.previewSetpiece({
+    mode, type, phase, progress, originTheme, targetTheme,
+  });
+  if (!sp) return;
+
+  if (sp.catExitPending) {
+    sp.catExitPending = false;
+    sp.catInVehicle = false;
+  }
+  const previewCat = cat.cat ?? cat;
+  if (sp.active && !sp.catInVehicle) {
+    previewCat.x = getSetpieceCatTargetX(sp, previewCat.baseX);
+    previewCat.y = terrain.surfaceAt(previewCat.x) - previewCat.h;
+    previewCat.vy = 0;
+    previewCat.onSurface = true;
+  }
+  game.helpOpen = false;
+  if (ui.helpDialog?.open) ui.helpDialog.close?.();
+  game.presentation.active = false;
+  game.presentation.blocking = false;
+  game.travelPreviewFrozen = true;
+  game.progression.beatLabel = mode === "rocket" ? "Start zu den Sternen" : "Über das Meer";
+  game.progression.beatProgress = phase === "control" ? 1 : progress;
+  hud.sync(game, previewCat);
+
+  document.body.dataset.previewMode = mode;
+  document.body.dataset.previewVehicle = type;
+  document.body.dataset.previewPhase = sp.active ? sp.phase : "control";
+  document.body.dataset.previewProgress = String(sp.phaseProgress ?? 1);
+  document.body.dataset.previewStage = sp.travelStage || "none";
+  document.body.dataset.previewCatInVehicle = String(!!sp.catInVehicle);
+  document.body.dataset.previewTheme = game.theme;
+  document.body.dataset.previewControlReturned = String(!sp.active && !game.controlLocked);
+}
+
+applyScenePreview();
+
+ui.presentationSkip?.addEventListener("click", () => {
+  audio.ensure();
+  dismissPresentation(game.presentation);
+});
 if (PRESENTATION_PREVIEWS[game.presentationPreview]) {
   beginPresentation(game.presentation, { ...PRESENTATION_PREVIEWS[game.presentationPreview], pinned: true });
 }
 loop.start();
+if (game.travelPreviewFrozen) {
+  requestAnimationFrame(() => {
+    const colors = new Set();
+    let opaque = 0;
+    for (let row = 1; row <= 6; row++) {
+      for (let column = 1; column <= 10; column++) {
+        const x = Math.min(canvas.W - 1, Math.floor((canvas.W * column) / 11));
+        const y = Math.min(canvas.H - 1, Math.floor((canvas.H * row) / 7));
+        const pixel = ctx.getImageData(x, y, 1, 1).data;
+        if (pixel[3] > 0) opaque++;
+        colors.add(`${pixel[0] >> 4}/${pixel[1] >> 4}/${pixel[2] >> 4}/${pixel[3] >> 4}`);
+      }
+    }
+    document.body.dataset.previewCanvasSamples = `${opaque}/${colors.size}`;
+    document.body.dataset.previewCanvas = opaque === 60 && colors.size >= 2 ? "painted" : "invalid";
+    document.body.dataset.previewReady = "true";
+    window.__purrkourPreviewReady = true;
+  });
+}
 

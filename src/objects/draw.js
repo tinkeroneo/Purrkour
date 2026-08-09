@@ -11,7 +11,15 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     function drawSetpieceVehicle() {
         const sp = game.setpiece;
         if (!sp || !sp.active) return;
+        const scale = sp.vehicleScale ?? 1;
+        const x = sp.vehicle?.x ?? canvas.W * 0.5;
+        const y = sp.vehicle?.y ?? canvas.H * 0.5;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.translate(-x, -y);
         drawVehicle(ctx, { canvas, terrain, game, setpiece: sp, palette: bg.palette?.() });
+        ctx.restore();
     }
 
 
@@ -38,6 +46,28 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.fill();
             ctx.globalAlpha = 1;
         }
+    }
+
+    function drawSpeedCues() {
+        if (game.reducedMotion || game.pause?.active || game.presentation?.blocking) return;
+        const speed = game._effSpeed ?? 0;
+        const strength = clamp((speed - 4.4) / 3.8, 0, 1);
+        if (strength <= 0) return;
+        ctx.save();
+        ctx.strokeStyle = `rgba(236,248,255,${0.07 + strength * 0.14})`;
+        ctx.lineWidth = 1 + strength;
+        ctx.lineCap = "round";
+        const spacing = Math.max(46, 82 - strength * 24);
+        const offset = (game.tick * speed * 2.4) % spacing;
+        for (let y = canvas.H * 0.2; y < canvas.H * 0.82; y += spacing) {
+            const x = canvas.W - ((y * 3 + offset * 11) % (canvas.W + 180));
+            const len = 24 + strength * 70;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - len, y + strength * 2);
+            ctx.stroke();
+        }
+        ctx.restore();
     }
 
     function drawSpeechBubbles(objects) {
@@ -529,6 +559,63 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         ctx.restore();
     }
 
+    function drawBreathCamp(x, groundY, beatId) {
+        const ridge = beatId === "RIDGE_BREATH";
+        ctx.save();
+        ctx.translate(x, groundY);
+
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = "#071423";
+        ctx.beginPath();
+        ctx.ellipse(0, 2, 78, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = ridge ? "#516c78" : "#cf7b52";
+        ctx.beginPath();
+        ctx.moveTo(-62, 0);
+        ctx.lineTo(-27, -52);
+        ctx.lineTo(8, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = ridge ? "#a9c4c6" : "#f2d3a7";
+        ctx.beginPath();
+        ctx.moveTo(-27, -52);
+        ctx.lineTo(8, 0);
+        ctx.lineTo(-10, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        const flame = game.reducedMotion ? 0 : Math.sin(game.tick * 0.13) * 3;
+        ctx.strokeStyle = "#65452f";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(24, -2); ctx.lineTo(54, -16);
+        ctx.moveTo(54, -2); ctx.lineTo(24, -16);
+        ctx.stroke();
+        ctx.fillStyle = "#ffcf5c";
+        ctx.beginPath();
+        ctx.moveTo(39, -8);
+        ctx.quadraticCurveTo(28, -25 - flame, 40, -34);
+        ctx.quadraticCurveTo(55, -21 + flame, 39, -8);
+        ctx.fill();
+        ctx.fillStyle = "#f06a43";
+        ctx.beginPath();
+        ctx.moveTo(39, -9);
+        ctx.quadraticCurveTo(35, -20, 41, -25);
+        ctx.quadraticCurveTo(48, -17, 39, -9);
+        ctx.fill();
+
+        if (ridge) {
+            ctx.strokeStyle = "rgba(235,246,255,.78)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(76, 0); ctx.lineTo(76, -58); ctx.lineTo(112, -58);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     function drawHeartWave() {
         const hw = game.heartWave;
         if (!hw || !hw.active) return;
@@ -570,11 +657,21 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         if (!presentation?.active || frame.alpha <= 0) return;
 
         const compact = presentation.kind !== "chapter";
+        const travelCue = presentation.kind === "travel";
         const narrow = canvas.W <= 560;
-        const cardW = Math.min(compact ? 540 : 620, canvas.W - (narrow ? 28 : 64));
-        const cardH = compact ? (narrow ? 104 : 112) : (narrow ? 126 : 142);
-        const cardX = (canvas.W - cardW) / 2;
-        const cardY = compact
+        const cardW = travelCue
+            ? Math.min(narrow ? 210 : 300, canvas.W - 32)
+            : Math.min(compact ? 540 : 620, canvas.W - (narrow ? 28 : 64));
+        const cardH = travelCue ? 68 : (compact ? (narrow ? 104 : 112) : (narrow ? 126 : 142));
+        const vehicleX = game.setpiece?.vehicle?.x ?? canvas.W * 0.5;
+        const cardX = travelCue
+            ? (vehicleX < canvas.W * 0.52 ? canvas.W - cardW - 16 : 16)
+            : (canvas.W - cardW) / 2;
+        const cardY = travelCue
+            ? (canvas.H <= 520
+                ? canvas.H - cardH - 24
+                : Math.min(canvas.H - cardH - 120, Math.max(330, canvas.H * 0.46)))
+            : compact
             ? Math.max(narrow ? 252 : 154, canvas.H * 0.27)
             : Math.max(narrow ? 252 : 176, canvas.H * 0.34);
         const shift = (1 - frame.reveal) * (compact ? 28 : 44);
@@ -620,16 +717,68 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         ctx.textBaseline = "alphabetic";
         ctx.fillStyle = accent;
         ctx.font = `800 ${narrow ? 10 : 11}px system-ui, sans-serif`;
-        ctx.fillText(presentation.kicker, textX, cardY + (narrow ? 31 : 36), cardW - 68);
+        ctx.fillText(presentation.kicker, textX, cardY + (travelCue ? 23 : (narrow ? 31 : 36)), cardW - 68);
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = `900 ${compact ? (narrow ? 24 : 30) : (narrow ? 30 : 40)}px system-ui, sans-serif`;
-        ctx.fillText(presentation.title, textX, cardY + (compact ? (narrow ? 62 : 70) : (narrow ? 72 : 84)), cardW - 68);
+        ctx.font = `900 ${travelCue ? (narrow ? 17 : 20) : compact ? (narrow ? 24 : 30) : (narrow ? 30 : 40)}px system-ui, sans-serif`;
+        ctx.fillText(
+            presentation.title,
+            textX,
+            cardY + (travelCue ? 50 : compact ? (narrow ? 62 : 70) : (narrow ? 72 : 84)),
+            cardW - 68,
+        );
 
-        ctx.fillStyle = "rgba(235,246,255,0.78)";
-        ctx.font = `700 ${narrow ? 12 : 14}px system-ui, sans-serif`;
-        ctx.fillText(presentation.subtitle, textX, cardY + cardH - (narrow ? 17 : 20), cardW - 68);
+        if (!travelCue) {
+            ctx.fillStyle = "rgba(235,246,255,0.78)";
+            ctx.font = `700 ${narrow ? 12 : 14}px system-ui, sans-serif`;
+            ctx.fillText(presentation.subtitle, textX, cardY + cardH - (narrow ? 17 : 20), cardW - 68);
+        }
         ctx.restore();
+    }
+
+    function drawSceneDirection() {
+        const sp = game.setpiece;
+        if (sp?.active) {
+            const intensity = clamp(sp.directionIntensity ?? 0.2, 0, 1);
+            const barH = game.reducedMotion ? 4 : Math.round(5 + intensity * (canvas.W <= 560 ? 5 : 10));
+            ctx.save();
+            ctx.globalAlpha = 0.72;
+            ctx.fillStyle = "rgba(3,10,17,.9)";
+            ctx.fillRect(0, 0, canvas.W, barH);
+            ctx.fillRect(0, canvas.H - barH, canvas.W, barH);
+
+            const vignette = ctx.createRadialGradient(
+                canvas.W * 0.5, canvas.H * 0.45, Math.min(canvas.W, canvas.H) * 0.22,
+                canvas.W * 0.5, canvas.H * 0.45, Math.max(canvas.W, canvas.H) * 0.72,
+            );
+            vignette.addColorStop(0, "rgba(4,12,20,0)");
+            vignette.addColorStop(1, `rgba(4,12,20,${0.16 + intensity * 0.12})`);
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = vignette;
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+            ctx.restore();
+        }
+
+        const fade = game.themeFade;
+        if (fade?.active && fade.dur > 0) {
+            const u = clamp(fade.t / fade.dur, 0, 1);
+            const peak = Math.sin(u * Math.PI);
+            ctx.save();
+            ctx.globalAlpha = peak * 0.11;
+            ctx.fillStyle = "rgba(226,244,255,.9)";
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+            if (!game.reducedMotion) {
+                const x = canvas.W * u;
+                const edge = ctx.createLinearGradient(x - 80, 0, x + 80, 0);
+                edge.addColorStop(0, "rgba(255,255,255,0)");
+                edge.addColorStop(0.5, "rgba(255,255,255,.34)");
+                edge.addColorStop(1, "rgba(255,255,255,0)");
+                ctx.globalAlpha = peak * 0.28;
+                ctx.fillStyle = edge;
+                ctx.fillRect(0, 0, canvas.W, canvas.H);
+            }
+            ctx.restore();
+        }
     }
 
 
@@ -637,18 +786,30 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         const palette = bg.palette();
 
         bg.drawSky(ctx);
+        drawSpeedCues();
 
+        const travelMode = game.setpiece?.active && game.setpiece?.phase === "travel"
+            ? game.setpiece.mode
+            : null;
         const landMaskX = ((game.setpiece?.active || game.setpiece?.preludeActive) ? (game.setpiece.oceanMaskX ?? canvas.W) : canvas.W);
         const hasLandMask = (landMaskX < canvas.W);
-        if (hasLandMask) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(0, 0, landMaskX, canvas.H);
-            ctx.clip();
-            bg.drawParallax(ctx);
-            ctx.restore();
-        } else {
-            bg.drawParallax(ctx);
+        if (!travelMode) {
+            if (hasLandMask) {
+                ctx.save();
+                if (bg.clipLand) bg.clipLand(ctx, landMaskX);
+                else {
+                    ctx.beginPath();
+                    ctx.rect(0, 0, landMaskX, canvas.H);
+                    ctx.clip();
+                }
+                bg.drawParallax(ctx);
+                ctx.restore();
+            } else {
+                bg.drawParallax(ctx);
+            }
+            if (hasLandMask && typeof bg.drawOceanMasked === "function") {
+                bg.drawOceanMasked(ctx, landMaskX);
+            }
         }
 
         // camera follow: keep cat visible on high jumps, leave some view below
@@ -665,25 +826,25 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         game.cameraY = lerp(game.cameraY ?? 0, targetCamY, 0.08);
 
         ctx.save();
-        ctx.translate(0, game.cameraY);
+        const hitStrength = game.reducedMotion ? 0 : clamp((game.feel?.hit ?? 0) / 14, 0, 1);
+        const landingDip = game.reducedMotion ? 0 : Math.sin(clamp((game.feel?.landing ?? 0) / 12, 0, 1) * Math.PI) * 2.5;
+        const shakeX = hitStrength ? Math.sin(game.tick * 3.7) * 4 * hitStrength : 0;
+        const shakeY = hitStrength ? Math.cos(game.tick * 2.9) * 2 * hitStrength : 0;
+        ctx.translate(shakeX, game.cameraY + shakeY + landingDip);
 
         // Setpiece mode: scripted beats (ocean crossing etc.)
         // Phase-aware:
         // - approach/board/arrive: draw normal land + masked ocean behind vehicle
         // - travel: ocean-only
         if (game.setpiece?.active && game.setpiece.phase === "travel") {
-            // ocean-only travel shot
-            if (typeof bg.drawOcean === "function") {
-                bg.drawOcean(ctx);
-            }
-            if (typeof bg.drawGroundFog === "function") {
-                bg.drawGroundFog(ctx);
-            }
+            if (game.setpiece.mode === "ocean") bg.drawOceanTravel?.(ctx, game.setpiece);
+            else if (game.setpiece.mode === "rocket") bg.drawRocketTravel?.(ctx, game.setpiece);
             drawSetpieceVehicle();
             drawSpeechBubbles(objects);
             ctx.restore();
             drawHeartWave();
             drawToast(objects);
+            drawSceneDirection();
             drawPresentation();
             return;
         }
@@ -691,9 +852,12 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         // land mask for ocean transition (hide land/objects on water side)
         if (hasLandMask) {
             ctx.save();
-            ctx.beginPath();
-            ctx.rect(0, 0, landMaskX, canvas.H);
-            ctx.clip();
+            if (bg.clipLand) bg.clipLand(ctx, landMaskX);
+            else {
+                ctx.beginPath();
+                ctx.rect(0, 0, landMaskX, canvas.H);
+                ctx.clip();
+            }
         }
 
         terrain.drawGround(ctx, palette);
@@ -740,13 +904,17 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             }
         }
 
-        // setpiece vehicle overlay (approach/board/arrive/travel)
-        if (game.setpiece?.active) drawSetpieceVehicle();
+        const restingAtHut = game.pause?.active && game.pause.phase !== "setpiece";
         // rest hut (pause)
-        if (game.pause?.active) {
+        if (restingAtHut) {
             const hx = game.pause.hutX ?? 240;
             const hy = terrain.surfaceAt(hx) - 52;
             drawRestHut(hx, hy);
+        }
+
+        if (game.progression?.suppressHazards && !game.setpiece?.active) {
+            const campX = Math.min(canvas.W - 128, Math.max(220, canvas.W * 0.7));
+            drawBreathCamp(campX, terrain.surfaceAt(campX), game.progression.beatId);
         }
 
         // DEBUG: collision boxes
@@ -777,7 +945,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         // cat shadow + sprite
         const blink = (game.invulnTimer > 0) ? ((game.tick % 10) < 6) : true;
         const inVehicle = !!(game.setpiece?.active && game.setpiece.catInVehicle);
-        if (game.pause?.active) {
+        if (restingAtHut) {
             // no shadow while sleeping
         } else if (!inVehicle && blink) {
             ctx.globalAlpha = 0.18;
@@ -791,7 +959,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             ctx.globalAlpha = 1;
         }
 
-        if (game.pause?.active) {
+        if (restingAtHut) {
             // sleeping bubble
             ctx.globalAlpha = 0.9;
             ctx.fillStyle = "rgba(255,255,255,0.85)";
@@ -809,7 +977,14 @@ if (themeKey === "mountain" || themeKey === "cliff") {
 
         if (hasLandMask) ctx.restore();
 
+        // The vehicle is a screen-space focus and must not disappear behind the land reveal clip.
+        if (game.setpiece?.active) drawSetpieceVehicle();
+
         ctx.restore();
+
+        if (hasLandMask) bg.drawOceanEdge?.(ctx, landMaskX);
+
+        bg.drawForeground?.(ctx);
 
         // checkpoint glow (screen-space)
         if (game.checkpointGlow > 0) {
@@ -840,9 +1015,16 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             ctx.fillRect(0, 0, canvas.W, canvas.H);
             ctx.globalAlpha = 1;
         }
+        if (game.feel?.hit > 0) {
+            ctx.globalAlpha = clamp(game.feel.hit / 14, 0, 1) * 0.2;
+            ctx.fillStyle = "#ff5f6d";
+            ctx.fillRect(0, 0, canvas.W, canvas.H);
+            ctx.globalAlpha = 1;
+        }
 
         drawHeartWave();
         drawToast(objects);
+        drawSceneDirection();
         drawPresentation();
 
 
