@@ -6,19 +6,21 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("mobile controls expose crouch semantics and browser zoom", () => {
+test("mobile controls stay focused on crouching without browser selection", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const input = fs.readFileSync(path.join(root, "src/core/input.js"), "utf8");
+  const main = fs.readFileSync(path.join(root, "src/main.js"), "utf8");
   assert.match(html, /id="crouchBtn"[^>]*aria-label="Ducken"[^>]*aria-pressed="false"/);
-  assert.match(html, /id="moveLeftBtn"[^>]*aria-label="Nach links laufen"/);
-  assert.match(html, /id="moveRightBtn"[^>]*aria-label="Nach rechts laufen"/);
+  assert.doesNotMatch(html, /id="moveLeftBtn"|id="moveRightBtn"/);
   assert.match(html, /id="touchCrouchBtn"[^>]*aria-label="Ducken"/);
   assert.match(html, /@media \(any-pointer:coarse\)/);
   assert.match(html, /min-width:44px; min-height:44px/);
+  assert.match(html, /-webkit-user-select:none; user-select:none; -webkit-touch-callout:none/);
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   assert.match(html, /Tippen: Sprung/);
   assert.match(html, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(input, /\.touch-controls, #presentationSkip/);
+  assert.match(main, /\["contextmenu", "selectstart"\]/);
 });
 
 test("discoverable help, theme and compact-view controls replace hidden gestures", () => {
@@ -88,7 +90,7 @@ test("chapter, travel and in-world route previews are browser-verifiable", () =>
   assert.match(draw, /function drawPresentation\(\)/);
   assert.match(draw, /getPresentationFrame\(presentation\)/);
   assert.match(main, /dismissPresentation\(game\.presentation\)/);
-  assert.match(main, /setupMoveButtons\(game/);
+  assert.doesNotMatch(main, /setupMoveButtons\(game/);
   assert.match(main, /function togglePause\(\)/);
   assert.match(main, /game\.pause\.phase = game\.setpiece\?\.active \? "setpiece" : "walk"/);
   assert.match(main, /document\.addEventListener\("visibilitychange"/);

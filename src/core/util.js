@@ -2,24 +2,46 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const smoothstep = (t) => t * t * (3 - 2 * t);
 
+export function measureViewport(view = window, root = document.documentElement) {
+  const visual = view.visualViewport;
+  const atDefaultScale = !visual || !Number.isFinite(visual.scale) || Math.abs(visual.scale - 1) < 0.01;
+  const visualWidth = atDefaultScale && Number.isFinite(visual?.width) ? visual.width : 0;
+  const visualHeight = atDefaultScale && Number.isFinite(visual?.height) ? visual.height : 0;
+  const width = visualWidth || root?.clientWidth || view.innerWidth || 360;
+  const height = visualHeight || root?.clientHeight || view.innerHeight || 640;
+
+  return {
+    width: Math.max(1, Math.floor(width)),
+    height: Math.max(1, Math.floor(height)),
+  };
+}
+
 export function aabb(A, B) {
   return A.x < (B.x + B.w) && (A.x + A.w) > B.x && A.y < (B.y + B.h) && (A.y + A.h) > B.y;
 }
 
 export function makeCanvas(canvasEl, ctx) {
+  let initialized = false;
   const api = {
     W: 360,
     H: 640,
     DPR: 1,
     resize() {
-      api.DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      api.W = Math.floor(window.innerWidth);
-      api.H = Math.floor(window.innerHeight);
+      const { width, height } = measureViewport();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const changed = !initialized || width !== api.W || height !== api.H || dpr !== api.DPR;
+      if (!changed) return false;
+
+      initialized = true;
+      api.DPR = dpr;
+      api.W = width;
+      api.H = height;
       canvasEl.style.width = api.W + "px";
       canvasEl.style.height = api.H + "px";
       canvasEl.width = Math.floor(api.W * api.DPR);
       canvasEl.height = Math.floor(api.H * api.DPR);
       ctx.setTransform(api.DPR, 0, 0, api.DPR, 0, 0);
+      return true;
     }
   };
   return api;

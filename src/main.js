@@ -86,8 +86,6 @@ const ui = {
   gameOverBestLabel: document.getElementById("gameOverBestLabel"),
   restartBtn: document.getElementById("restartBtn"),
   presentationSkip: document.getElementById("presentationSkip"),
-  moveLeftBtn: document.getElementById("moveLeftBtn"),
-  moveRightBtn: document.getElementById("moveRightBtn"),
   setpieceActionBtn: document.getElementById("setpieceActionBtn"),
   pauseStatus: document.getElementById("pauseStatus"),
   sceneStatus: document.getElementById("sceneStatus"),
@@ -131,7 +129,6 @@ setupHudMinimode(uiRoot, ui.minimalBtn);
 setupSpeedIndicator(ui.speedBtn);
 setupCrouchButton(game, ui.crouchBtn);
 setupCrouchButton(game, ui.touchCrouchBtn);
-setupMoveButtons(game, ui.moveLeftBtn, ui.moveRightBtn);
 setupSettingsMenu(ui.settingsBtn, ui.settingsPanel);
 setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage, audio);
 setupAlbum(game, album, ui);
@@ -218,6 +215,9 @@ function setupCrouchButton(game, el) {
   for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
     el.addEventListener(eventName, () => setCrouch(false), { passive: true });
   }
+  for (const eventName of ["contextmenu", "selectstart"]) {
+    el.addEventListener(eventName, (event) => event.preventDefault());
+  }
 }
 
 
@@ -230,37 +230,6 @@ function setupHudMinimode(uiRoot, button) {
     button.setAttribute("aria-label", minimal ? "Vollständige Ansicht einschalten" : "Kompaktansicht einschalten");
   }
   button.addEventListener("click", toggleMinimode);
-}
-
-function setupMoveButtons(game, leftButton, rightButton) {
-  const activePointers = new Map();
-  function applyDirection() {
-    const directions = [...activePointers.values()];
-    const direction = directions.length ? directions[directions.length - 1] : 0;
-    if (!game.input) game.input = { moveDir: 0, crouch: false };
-    game.input.moveDir = direction;
-    leftButton?.classList.toggle("is-active", direction < 0);
-    rightButton?.classList.toggle("is-active", direction > 0);
-  }
-  function bind(button, direction) {
-    if (!button) return;
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      activePointers.set(event.pointerId, direction);
-      try { button.setPointerCapture(event.pointerId); } catch {
-        // Release events still clear the direction without pointer capture.
-      }
-      applyDirection();
-    }, { passive: false });
-    for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
-      button.addEventListener(eventName, (event) => {
-        activePointers.delete(event.pointerId);
-        applyDirection();
-      }, { passive: true });
-    }
-  }
-  bind(leftButton, -1);
-  bind(rightButton, 1);
 }
 
 function setupSetpieceAction(game, button) {
@@ -447,7 +416,8 @@ if (ui.restartBtn) {
 
 let layoutInitialized = false;
 function resizeLayout() {
-  canvas.resize();
+  const changed = canvas.resize();
+  if (layoutInitialized && !changed) return;
 
   if (!layoutInitialized) {
     terrain.init();
@@ -467,7 +437,25 @@ function resizeLayout() {
 }
 
 resizeLayout();
-window.addEventListener("resize", resizeLayout, { passive: true });
+let resizeFrame = 0;
+let resizeFollowup = 0;
+function scheduleResizeLayout() {
+  if (resizeFrame) window.cancelAnimationFrame(resizeFrame);
+  resizeFrame = window.requestAnimationFrame(() => {
+    resizeFrame = 0;
+    resizeLayout();
+  });
+
+  clearTimeout(resizeFollowup);
+  resizeFollowup = window.setTimeout(() => {
+    resizeFollowup = 0;
+    resizeLayout();
+  }, 180);
+}
+
+window.addEventListener("resize", scheduleResizeLayout, { passive: true });
+window.addEventListener("orientationchange", scheduleResizeLayout, { passive: true });
+window.visualViewport?.addEventListener("resize", scheduleResizeLayout, { passive: true });
 
 // input
 const debug = setupDebugControls({ game, cat, objects, terrain, bg, uiRoot });

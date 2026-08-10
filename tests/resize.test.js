@@ -1,8 +1,37 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { measureViewport } from "../src/core/util.js";
 import { createObjects } from "../src/objects/objects.js";
 import { createTerrain } from "../src/world/terrain.js";
+
+test("viewport measurement follows settled portrait dimensions after rotation", () => {
+  const staleLandscapeWindow = {
+    innerWidth: 844,
+    innerHeight: 390,
+    visualViewport: { width: 390.8, height: 843.7, scale: 1 },
+  };
+  const portraitRoot = { clientWidth: 390, clientHeight: 844 };
+
+  assert.deepEqual(measureViewport(staleLandscapeWindow, portraitRoot), {
+    width: 390,
+    height: 843,
+  });
+});
+
+test("viewport measurement keeps the layout viewport while the page is zoomed", () => {
+  const zoomedWindow = {
+    innerWidth: 390,
+    innerHeight: 844,
+    visualViewport: { width: 195, height: 422, scale: 2 },
+  };
+  const portraitRoot = { clientWidth: 390, clientHeight: 844 };
+
+  assert.deepEqual(measureViewport(zoomedWindow, portraitRoot), {
+    width: 390,
+    height: 844,
+  });
+});
 
 test("terrain resize preserves its shape while adapting to the viewport", () => {
   let width = 390;

@@ -1,6 +1,6 @@
 # Produktrichtung: Purrkour
 
-Stand: 2026-08-06
+Stand: 2026-08-11
 
 ## Zielbild
 
@@ -30,6 +30,17 @@ Stand: 2026-08-06
 | P1 | Aktive Setpieces | bis zu drei klar sichtbare Reisemanöver machen Meer- und Raketenfahrt spielbar statt rein passiv | umgesetzt |
 | P2 | Klangmotive pro Beat | kurze weltabhängige Zweitonmotive markieren neue Reiseabschnitte über die bestehende WebAudio-Schicht | technisch umgesetzt; Audioabnahme offen |
 | P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | Backlog |
+
+## Sprint 4: Feinschliff und Spielrhythmus
+
+| Priorität | Thema | Abnahme | Status |
+|---|---|---|---|
+| P0 | Orientierungsstabilität | Hochformat → Querformat → Hochformat übernimmt jedes Mal die aktuelle Canvas- und HUD-Größe | umgesetzt |
+| P0 | Klare Mobile-Steuerung | Mobile zeigt nur die notwendigen Sprung- und Duck-Aktionen; Long-Press öffnet weder Auswahl noch Kontextmenü | umgesetzt |
+| P1 | Eigenständige Schlusswelten | Dschungel, Klippe, Stadt und Wüste erhalten unterscheidbare Rhythmuskurven, Hindernismischungen und Höhepunkte | geplant |
+| P1 | Responsive Reiseabnahme | Boarding, Travel, Arrival und Control Return bleiben von 360 px Mobile Portrait bis Mobile Landscape lesbar | geplant |
+| P2 | Klangabnahme | Start, Manöver, Landung, Flow-Ketten und Weltwechsel sind akustisch unterscheidbar und nicht ermüdend | geplant |
+| P2 | Visuelle Regression | die deterministische Reisematrix prüft Fahrzeuge, Katze, Cues und HUD an Phasengrenzen automatisch | geplant |
 
 ## Erfolgskriterien dieser Iteration
 

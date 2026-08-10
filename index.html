@@ -10,6 +10,7 @@
     :root { color-scheme:dark; --glass:rgba(9,19,30,.78); --line:rgba(255,255,255,.17); --gold:#ffd166; }
     *{ box-sizing:border-box; }
     .sr-only{ position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+    html,body{ width:100%; height:100%; }
     body{
       margin:0; overflow:hidden; color:#fff;
       font-family:Inter,ui-rounded,"Segoe UI",system-ui,-apple-system,sans-serif;
@@ -19,7 +20,7 @@
       content:""; position:fixed; inset:0; pointer-events:none; z-index:5;
       box-shadow:inset 0 0 90px rgba(2,7,12,.35);
     }
-    canvas{ display:block; width:100vw; height:100vh; touch-action:manipulation; }
+    canvas{ display:block; width:100vw; height:100vh; width:100dvw; height:100dvh; touch-action:manipulation; }
 
     #ui{
       position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10;
@@ -135,7 +136,8 @@
     .setpiece-action[hidden]{ display:none; }
     .touch-controls{
       position:fixed; inset:auto max(12px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom));
-      z-index:12; display:none; align-items:end; justify-content:space-between; pointer-events:none;
+      z-index:12; display:none; align-items:end; justify-content:flex-end; pointer-events:none;
+      -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent;
     }
     .touch-move{
       width:64px; height:58px; border:1px solid rgba(255,255,255,.2); border-radius:18px;
@@ -313,16 +315,14 @@
 
   <div id="hint">
     <span class="hint-desktop">Tippen oder Leertaste: springen · ↓ halten: ducken · A/D oder Pfeile: bewegen</span>
-    <span class="hint-mobile">Tippen: Sprung · ◀/▶: Bewegen · ↓: Ducken</span>
+    <span class="hint-mobile">Tippen: Sprung · ↓ halten: Ducken</span>
   </div>
   <div id="pauseStatus" role="status" aria-live="polite" hidden><strong>Schnurrpause</strong><span>Tippen, Leertaste oder Hütte: weiter</span></div>
   <div id="sceneStatus" class="sr-only" aria-live="polite"></div>
   <button id="presentationSkip" class="presentation-skip" type="button" hidden>Loslaufen</button>
   <button id="setpieceActionBtn" class="btn setpiece-action" type="button" hidden>✨ Reisemanöver</button>
-  <div class="touch-controls" role="group" aria-label="Bewegungssteuerung">
-    <button id="moveLeftBtn" class="touch-move" type="button" aria-label="Nach links laufen">◀</button>
+  <div class="touch-controls" role="group" aria-label="Mobile Steuerung">
     <button id="touchCrouchBtn" class="touch-move touch-crouch" type="button" aria-label="Ducken" aria-pressed="false">↓</button>
-    <button id="moveRightBtn" class="touch-move" type="button" aria-label="Nach rechts laufen">▶</button>
   </div>
 
   <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpIntro">
