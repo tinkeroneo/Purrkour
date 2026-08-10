@@ -580,14 +580,17 @@ function applyScenePreview() {
     start: { phase: "approach", progress: 0.2 },
     boarding: { phase: "board", progress: 0.5 },
     "boarding-mid": { phase: "board", progress: 0.5 },
+    "travel-start": { phase: "travel", progress: 0 },
     "travel-25": { phase: "travel", progress: 0.25 },
     "travel-50": { phase: "travel", progress: 0.5 },
     "travel-75": { phase: "travel", progress: 0.75 },
+    "arrival-start": { phase: "arrive", progress: 0 },
     arrival: { phase: "arrive", progress: 0.55 },
     "arrival-mid": { phase: "arrive", progress: 0.55 },
     "control-return": { phase: "control", progress: 1 },
   };
-  const checkpoint = checkpoints[query.get("checkpoint")] || null;
+  const checkpointKey = query.get("checkpoint") || "";
+  const checkpoint = checkpoints[checkpointKey] || null;
   const phase = checkpoint?.phase || query.get("phase") || "travel";
   const parsedProgress = Number.parseFloat(query.get("progress"));
   const progress = checkpoint?.progress ?? (Number.isFinite(parsedProgress) ? parsedProgress : 0.5);
@@ -612,8 +615,10 @@ function applyScenePreview() {
   }
   game.helpOpen = false;
   if (ui.helpDialog?.open) ui.helpDialog.close?.();
-  game.presentation.active = false;
-  game.presentation.blocking = false;
+  if (checkpoint?.phase === "control") {
+    game.presentation.active = false;
+    game.presentation.blocking = false;
+  }
   game.travelPreviewFrozen = true;
   game.progression.beatLabel = mode === "rocket" ? "Start zu den Sternen" : "Über das Meer";
   game.progression.beatProgress = phase === "control" ? 1 : progress;

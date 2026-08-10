@@ -13,6 +13,7 @@ export const SETPIECE_TIMINGS = {
 
 const MANEUVER_THRESHOLDS = Object.freeze([0.18, 0.42, 0.66, 0.84]);
 const BOARDING_OFFSETS = Object.freeze({ balloon: 38, raft: 42, zeppelin: 40, rocket: 38 });
+const BOARDING_MARGINS = Object.freeze({ balloon: 86, raft: 86, zeppelin: 112, rocket: 86 });
 
 export function getTravelStage(progress) {
   const u = clamp(progress ?? 0, 0, 1);
@@ -69,6 +70,11 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
   const R_TRAVEL_DUR = SETPIECE_TIMINGS.rocket.TRAVEL;
   const R_ARRIVE_DUR = SETPIECE_TIMINGS.rocket.ARRIVE;
 
+  function boardAnchorX(type, requestedX) {
+    const margin = BOARDING_MARGINS[type] ?? 86;
+    return clamp(requestedX, 0, Math.max(0, canvas.W - margin));
+  }
+
   function refreshManeuverWindow(sp) {
     const threshold = sp.maneuverThresholds?.[sp.maneuvers] ?? 1.1;
     sp.maneuverReady = sp.phase === "travel"
@@ -104,7 +110,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     approach({ sp }) {
       // vehicle stands on land, cat walks in, world eases to a stop
       const u = clamp(sp.phaseT / APPROACH_DUR, 0, 1);
-      const targetX = canvas.W * 0.76;
+      const targetX = boardAnchorX(sp.type, canvas.W * 0.76);
       const entry = smoothstep(clamp(u / 0.42, 0, 1));
       sp.vehicle.x = lerp(sp.phaseFromX ?? canvas.W + 70, targetX, entry);
       sp.vehicle.y = vehicleGroundY(sp.type, terrain.surfaceAt(sp.vehicle.x));
@@ -124,7 +130,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     },
     board({ sp, surf }) {
       // frozen world, cat climbs in; ocean starts behind vehicle near end
-      sp.vehicle.x = canvas.W * 0.76;
+      sp.vehicle.x = boardAnchorX(sp.type, canvas.W * 0.76);
       sp.vehicle.y = vehicleGroundY(sp.type, surf);
 
       const u = clamp(sp.phaseT / BOARD_DUR, 0, 1);
@@ -214,7 +220,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     approach({ sp }) {
       // rocket rolls in on a tiny pad, cat walks up, world slows
       const u = clamp(sp.phaseT / R_APPROACH_DUR, 0, 1);
-      const targetX = canvas.W * 0.76;
+      const targetX = boardAnchorX(sp.type, canvas.W * 0.76);
       const entry = smoothstep(clamp(u / 0.42, 0, 1));
       sp.vehicle.x = lerp(sp.phaseFromX ?? canvas.W + 70, targetX, entry);
       sp.vehicle.y = vehicleGroundY("rocket", terrain.surfaceAt(sp.vehicle.x));

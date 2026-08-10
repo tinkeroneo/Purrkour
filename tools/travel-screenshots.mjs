@@ -122,7 +122,17 @@ const server = http.createServer(async (request, response) => {
 });
 
 const vehicles = ["balloon", "raft", "zeppelin", "rocket"];
-const checkpoints = ["start", "boarding", "travel-25", "travel-50", "travel-75", "arrival", "control-return"];
+const checkpoints = [
+  "start",
+  "boarding",
+  "travel-start",
+  "travel-25",
+  "travel-50",
+  "travel-75",
+  "arrival-start",
+  "arrival",
+  "control-return",
+];
 const viewports = [
   { key: "desktop", width: 1440, height: 900, touch: false },
   { key: "portrait", width: 390, height: 844, touch: true },
@@ -130,9 +140,7 @@ const viewports = [
 ];
 const motions = ["normal", "reduced"];
 
-const resume = process.argv.includes("--resume");
-const refreshStart = process.argv.includes("--refresh-start");
-if (!resume) await rm(output, { recursive: true, force: true });
+await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 const profileRoot = await mkdtemp(path.join(os.tmpdir(), "purrkour-travel-"));
 let chromeProcess;
@@ -198,14 +206,6 @@ try {
       if (viewport.touch) params.set("touch", "1");
       if (motion === "reduced") params.set("reduced", "1");
       const url = `http://127.0.0.1:${port}/?${params}`;
-      try {
-        const existing = await stat(screenshot);
-        if (existing.size >= 5000 && !(refreshStart && checkpoint === "start")) {
-          manifest.push({ ...job, viewport: viewport.key, file: fileName, bytes: existing.size, url, reused: true });
-          process.stdout.write(`\rTravel frames ${manifest.length}/${jobs.length}`);
-          continue;
-        }
-      } catch { /* capture missing frame */ }
       await client.send("Emulation.setDeviceMetricsOverride", {
         width: viewport.width,
         height: viewport.height,

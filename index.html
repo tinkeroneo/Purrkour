@@ -229,9 +229,30 @@
     }
     @media (max-height:520px){
       dialog{ max-height:calc(100vh - 20px); overflow:auto; padding:20px; }
-      #ui{ top:4px; }
+      #ui{ top:4px; gap:4px; padding:4px 6px; }
+      #ui .pill{ min-height:28px; }
       #ui .goals:not(.has-risk){ display:none; }
       #ui .goals.has-risk #missionDisplay{ display:none; }
+      #ui .journey{ min-height:28px; }
+      .journey-copy{ font-size:10px; }
+      #journeyLabel{ font-size:10px; }
+      #flowDisplay{ padding:4px; }
+      #flowDisplay #flowValue{ font-size:10px; }
+      #ui .controls{
+        grid-column:1 / span 6;
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:4px;
+      }
+      #ui .controls>.btn{
+        min-height:28px;
+        min-width:0;
+        padding:3px 6px;
+        font-size:11px;
+      }
+      #ui .controls>#crouchBtn{ display:none; }
+      .settings-wrap{ grid-column:span 1; }
+      .album-button{ width:28px; height:28px; }
       .settings-panel{ position:fixed; top:70px; right:10px; }
     }
     @media (max-width:400px){
