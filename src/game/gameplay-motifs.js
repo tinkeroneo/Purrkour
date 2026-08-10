@@ -28,6 +28,18 @@ const BEAT_MOTIF_OVERRIDES = Object.freeze({
   }),
 });
 
+export const WORLD_SIGNATURE_MOMENTS = Object.freeze({
+  jungle: Object.freeze({ id: "canopy-crossing", phase: "variation", spacing: 540 }),
+  cliff: Object.freeze({ id: "summit-stair", phase: "challenge", spacing: 620 }),
+  city: Object.freeze({ id: "under-over", phase: "challenge", spacing: 560 }),
+  desert: Object.freeze({ id: "scorpion-slalom", phase: "variation", spacing: 600 }),
+});
+
+export function getSignatureMoment(themeKey, phase) {
+  const moment = WORLD_SIGNATURE_MOMENTS[themeKey];
+  return moment?.phase === phase ? moment : null;
+}
+
 export function getSectionPhase(progress) {
   const u = Math.max(0, Math.min(1, progress ?? 0));
   if (u < 0.13) return "establish";

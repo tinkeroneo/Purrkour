@@ -4,6 +4,12 @@ import { drawDog } from "../entities/dog.js";
 import { drawBird } from "../entities/bird.js";
 import { drawVehicle } from "../game/vehicles/index.js";
 import { getPresentationFrame } from "../game/presentation.js";
+import {
+    getPresentationCardLayout,
+    getVehicleBounds,
+    rectanglesOverlap,
+    rectangleInsideViewport,
+} from "../game/presentation-layout.js";
 
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
@@ -20,6 +26,14 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.translate(-x, -y);
         drawVehicle(ctx, { canvas, terrain, game, setpiece: sp, palette: bg.palette?.() });
         ctx.restore();
+        if (game.travelPreviewFrozen) {
+            const vehicleRect = getVehicleBounds(sp);
+            game.visualAudit = {
+                ...(game.visualAudit || {}),
+                vehicleRect,
+                vehicleInBounds: rectangleInsideViewport(vehicleRect, canvas.W, canvas.H),
+            };
+        }
     }
 
 
@@ -656,24 +670,12 @@ if (themeKey === "mountain" || themeKey === "cliff") {
         const frame = getPresentationFrame(presentation);
         if (!presentation?.active || frame.alpha <= 0) return;
 
-        const compact = presentation.kind !== "chapter";
-        const travelCue = presentation.kind === "travel";
-        const narrow = canvas.W <= 560;
-        const cardW = travelCue
-            ? Math.min(narrow ? 210 : 300, canvas.W - 32)
-            : Math.min(compact ? 540 : 620, canvas.W - (narrow ? 28 : 64));
-        const cardH = travelCue ? 68 : (compact ? (narrow ? 104 : 112) : (narrow ? 126 : 142));
         const vehicleX = game.setpiece?.vehicle?.x ?? canvas.W * 0.5;
-        const cardX = travelCue
-            ? (vehicleX < canvas.W * 0.52 ? canvas.W - cardW - 16 : 16)
-            : (canvas.W - cardW) / 2;
-        const cardY = travelCue
-            ? (canvas.H <= 520
-                ? canvas.H - cardH - 24
-                : Math.min(canvas.H - cardH - 120, Math.max(330, canvas.H * 0.46)))
-            : compact
-            ? Math.max(narrow ? 252 : 154, canvas.H * 0.27)
-            : Math.max(narrow ? 252 : 176, canvas.H * 0.34);
+        const layout = getPresentationCardLayout(canvas.W, canvas.H, presentation.kind, vehicleX);
+        const {
+            x: cardX, y: cardY, w: cardW, h: cardH,
+            compact, travel: travelCue, narrow,
+        } = layout;
         const shift = (1 - frame.reveal) * (compact ? 28 : 44);
         const accent = presentation.accent || "#8fe3bc";
 
@@ -734,6 +736,17 @@ if (themeKey === "mountain" || themeKey === "cliff") {
             ctx.fillText(presentation.subtitle, textX, cardY + cardH - (narrow ? 17 : 20), cardW - 68);
         }
         ctx.restore();
+
+        if (game.travelPreviewFrozen && travelCue) {
+            const cueRect = { x: cardX + shift, y: cardY, w: cardW, h: cardH };
+            const vehicleRect = getVehicleBounds(game.setpiece);
+            game.visualAudit = {
+                cueRect,
+                vehicleRect,
+                cueVehicleOverlap: rectanglesOverlap(cueRect, vehicleRect, 6),
+                vehicleInBounds: rectangleInsideViewport(vehicleRect, canvas.W, canvas.H),
+            };
+        }
     }
 
     function drawSceneDirection() {
@@ -783,6 +796,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
 
 
     function draw(objects) {
+        if (game.travelPreviewFrozen) game.visualAudit = {};
         const palette = bg.palette();
 
         bg.drawSky(ctx);

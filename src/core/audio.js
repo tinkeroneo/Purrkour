@@ -189,6 +189,26 @@ function chime(vol = 0.045) {
         setTimeout(() => tone({ freq: 880, dur: 0.10, type: "sine", vol: vol * 0.9, slideTo: 990 }), 70);
         setTimeout(() => tone({ freq: 740, dur: 0.12, type: "triangle", vol: vol * 0.65, slideTo: 820 }), 150);
     }
+    function travelPhase(mode, phase) {
+        const rocket = mode === "rocket";
+        if (phase === "approach") {
+            tone({ freq: rocket ? 110 : 294, dur: 0.12, type: "triangle", vol: 0.035, slideTo: rocket ? 145 : 330 });
+            return;
+        }
+        if (phase === "board") {
+            tone({ freq: rocket ? 147 : 349, dur: 0.1, type: rocket ? "sawtooth" : "sine", vol: 0.032, slideTo: rocket ? 196 : 392 });
+            return;
+        }
+        if (phase === "travel") {
+            tone({ freq: rocket ? 196 : 392, dur: 0.16, type: "triangle", vol: 0.04, slideTo: rocket ? 330 : 523 });
+            tone({ freq: rocket ? 294 : 494, dur: 0.18, type: "sine", vol: 0.025, slideTo: rocket ? 440 : 587 });
+            return;
+        }
+        if (phase === "arrive") {
+            tone({ freq: rocket ? 392 : 523, dur: 0.16, type: "sine", vol: 0.036, slideTo: rocket ? 247 : 392 });
+            tone({ freq: rocket ? 247 : 330, dur: 0.2, type: "triangle", vol: 0.024, slideTo: rocket ? 196 : 294 });
+        }
+    }
     const amb = {
         wind: null,
         ocean: null,
@@ -369,6 +389,7 @@ function chime(vol = 0.045) {
         magic: () => { tone({ freq: 520, dur: 0.10, type: "sine", vol: 0.038, slideTo: 760 }); setTimeout(() => tone({ freq: 860, dur: 0.10, type: "sine", vol: 0.032, slideTo: 980 }), 90); },
         home: () => { tone({ freq: 330, dur: 0.12, type: "triangle", vol: 0.045, slideTo: 440 }); setTimeout(() => tone({ freq: 520, dur: 0.14, type: "sine", vol: 0.03, slideTo: 520 }), 140); },
         dash: () => tone({ freq: 520, dur: 0.05, type: "triangle", vol: 0.03, slideTo: 640 }),
+        travelPhase,
         chapter: (theme = "forest") => {
             const roots = { forest: 392, ocean: 330, island: 440, mars: 247, mountain: 349, jungle: 415, cliff: 294, city: 466, desert: 370 };
             const root = roots[theme] || roots.forest;

@@ -230,11 +230,23 @@ try {
       });
       await writeFile(screenshot, Buffer.from(capture.data, "base64"));
       const health = await client.send("Runtime.evaluate", {
-        expression: "({ health: document.body.dataset.previewCanvas, samples: document.body.dataset.previewCanvasSamples })",
+        expression: `({
+          health: document.body.dataset.previewCanvas,
+          samples: document.body.dataset.previewCanvasSamples,
+          cueOverlap: document.body.dataset.previewCueOverlap,
+          vehicleInBounds: document.body.dataset.previewVehicleInBounds,
+        })`,
         returnByValue: true,
       });
       if (health.result?.value?.health !== "painted") {
         throw new Error(`Canvas health failed: ${fileName} (${health.result?.value?.samples || "no samples"})`);
+      }
+      if (health.result?.value?.cueOverlap === "true") {
+        throw new Error(`Travel cue overlaps the vehicle: ${fileName}`);
+      }
+      if (checkpoint !== "start" && checkpoint !== "control-return"
+        && health.result?.value?.vehicleInBounds !== "true") {
+        throw new Error(`Vehicle leaves the viewport: ${fileName}`);
       }
       const info = await stat(screenshot);
       if (info.size < 5000) throw new Error(`Suspicious screenshot: ${fileName} (${info.size} bytes)`);

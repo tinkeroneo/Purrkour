@@ -6,7 +6,7 @@ import { createGoat } from "../entities/goat.js";
 import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
-import { getGameplayMotif } from "../game/gameplay-motifs.js";
+import { getGameplayMotif, getSignatureMoment } from "../game/gameplay-motifs.js";
 import {
   beginRiskRoute,
   shouldStartRiskRoute,
@@ -31,6 +31,7 @@ export function createSpawner(game, terrain, objects, canvas) {
   const routePreview = game.presentationPreview === "route";
   let nextSpawnIn = routePreview ? 0 : 260;
   let lastTick = game.tick;
+  const signatureMomentsSeen = new Set();
   function minGapForScore(s) {
     return clamp(CALM.gapBase - s * CALM.gapSlope, CALM.gapMin, CALM.gapBase);
   }
@@ -39,7 +40,10 @@ export function createSpawner(game, terrain, objects, canvas) {
     return CALM.closeGapChanceMax;
   }
 
-  function reset() { nextSpawnIn = routePreview ? 0 : 260; }
+  function reset() {
+    nextSpawnIn = routePreview ? 0 : 260;
+    signatureMomentsSeen.clear();
+  }
 
   function maybeSpawnSkyPath(spawnX, safeMode) {
     const sectionPhase = game.progression?.sectionPhase || "flow";
@@ -96,6 +100,96 @@ export function createSpawner(game, terrain, objects, canvas) {
   function spawnLife(spawnX) {
     const surf = terrain.surfaceAt(spawnX);
     objects.add({ kind: "collectible", type: "life", x: spawnX, y: surf - 90, w: 20, h: 20, taken: false, yMode: "fixed" });
+  }
+
+  function addSignatureObject(object, momentId) {
+    object.signatureMoment = momentId;
+    objects.add(object);
+    return object;
+  }
+
+  function spawnSignatureMoment(spawnX, safeMode) {
+    if (safeMode || game.setpiece?.active) return false;
+    const themeKey = (game.theme && game.theme.key) ? game.theme.key : (game.theme || "forest");
+    const phase = game.progression?.sectionPhase || "flow";
+    const moment = getSignatureMoment(themeKey, phase);
+    if (!moment) return false;
+    const key = `${game.progression?.beatId || themeKey}:${moment.id}`;
+    if (signatureMomentsSeen.has(key)) return false;
+    signatureMomentsSeen.add(key);
+
+    if (themeKey === "jungle") {
+      const monkeyY = terrain.surfaceAt(spawnX) - 54;
+      addSignatureObject(createMonkey(spawnX, monkeyY, { w: 54, h: 54 }), moment.id);
+      const birdX = spawnX + 220;
+      addSignatureObject(createBird({
+        x: birdX, y: terrain.surfaceAt(birdX) - 175,
+        w: 36, h: 20, yMode: "fixed", flapT: 0,
+      }), moment.id);
+      for (let i = 0; i < 3; i++) {
+        const x = spawnX + 90 + i * 62;
+        addSignatureObject({
+          kind: "collectible", type: "mouse", x,
+          y: terrain.surfaceAt(x) - 82 - Math.sin((i / 2) * Math.PI) * 45,
+          w: 22, h: 16, taken: false, yMode: "fixed",
+        }, moment.id);
+      }
+    } else if (themeKey === "cliff") {
+      for (let i = 0; i < 3; i++) {
+        const x = spawnX + i * 132;
+        const h = 46;
+        const y = terrain.surfaceAt(x) - h - i * 58;
+        addSignatureObject({
+          kind: "platform", type: "fence", x, y,
+          w: 96, h, yMode: "fixed", yOffset: 0,
+        }, moment.id);
+        addSignatureObject({
+          kind: "collectible", type: "mouse", x: x + 36, y: y - 28,
+          w: 22, h: 16, taken: false, yMode: "fixed",
+        }, moment.id);
+      }
+      const goatX = spawnX + 420;
+      addSignatureObject(createGoat(goatX, terrain.surfaceAt(goatX) - 48, { w: 58, h: 48 }), moment.id);
+    } else if (themeKey === "city") {
+      const tunnelW = 92;
+      addSignatureObject({
+        kind: "obstacle", type: "tunnel", x: spawnX,
+        y: terrain.surfaceAt(spawnX) - 40, w: tunnelW, h: 40,
+        yMode: "ground", yOffset: -40,
+      }, moment.id);
+      const carX = spawnX + 245;
+      addSignatureObject({
+        kind: "platform", type: "car", carType: "car", x: carX,
+        y: terrain.surfaceAt(carX) - 44, w: 110, h: 44,
+        yMode: "ground", yOffset: -44, drivePhase: 0,
+      }, moment.id);
+      addSignatureObject({
+        kind: "collectible", type: "mouse", x: carX + 42, y: terrain.surfaceAt(carX) - 76,
+        w: 22, h: 16, taken: false, yMode: "fixed",
+      }, moment.id);
+    } else if (themeKey === "desert") {
+      const scorpionX = spawnX;
+      addSignatureObject(createScorpion(
+        scorpionX, terrain.surfaceAt(scorpionX) - 48, { w: 58, h: 48 },
+      ), moment.id);
+      const yarnX = spawnX + 270;
+      addSignatureObject({
+        kind: "obstacle", type: "yarn", x: yarnX,
+        y: terrain.surfaceAt(yarnX) - 28, w: 28, h: 28,
+        yMode: "ground", yOffset: -28,
+      }, moment.id);
+      for (let i = 0; i < 3; i++) {
+        const x = spawnX + 90 + i * 72;
+        addSignatureObject({
+          kind: "collectible", type: "fish", x,
+          y: terrain.surfaceAt(x) - 90 - Math.sin((i / 2) * Math.PI) * 34,
+          w: 18, h: 14, taken: false, yMode: "fixed",
+        }, moment.id);
+      }
+    }
+
+    nextSpawnIn = moment.spacing;
+    return true;
   }
 
   function spawnPack(spawnX, safeMode = false) {
@@ -471,7 +565,7 @@ export function createSpawner(game, terrain, objects, canvas) {
       const routePreviewStart = routePreview && game.riskRoute.id === 0;
       const spawnX = routePreviewStart ? Math.max(90, canvas.W * 0.28) : canvas.W + 140;
       const safeMode = game.safeTimer > 0;
-      if (!maybeSpawnSkyPath(spawnX, safeMode)) {
+      if (!spawnSignatureMoment(spawnX, safeMode) && !maybeSpawnSkyPath(spawnX, safeMode)) {
         spawnPack(spawnX, safeMode);
       }
     }

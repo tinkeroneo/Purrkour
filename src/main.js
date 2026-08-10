@@ -9,7 +9,7 @@ import { getFlowMultiplier } from "./game/flow.js";
 import { createHUD } from "./game/hud.js";
 import { createLoop } from "./game/loop.js";
 import { beginPresentation, dismissPresentation } from "./game/presentation.js";
-import { PRESENTATION_PREVIEWS } from "./game/presentation-cues.js";
+import { getSetpiecePresentationCue, PRESENTATION_PREVIEWS } from "./game/presentation-cues.js";
 import { getSetpieceCatTargetX } from "./game/setpieces.js";
 import { setupDebugControls } from "./game/debug.js";
 import { recordScore } from "./game/records.js";
@@ -606,6 +606,16 @@ function applyScenePreview() {
   if (checkpoint?.phase === "control") {
     game.presentation.active = false;
     game.presentation.blocking = false;
+  } else {
+    const previewCue = getSetpiecePresentationCue(mode, sp.phase);
+    if (previewCue) {
+      beginPresentation(game.presentation, {
+        ...previewCue,
+        kind: "travel",
+        pinned: true,
+        reducedMotion: game.reducedMotion,
+      });
+    }
   }
   game.travelPreviewFrozen = true;
   game.progression.beatLabel = mode === "rocket" ? "Start zu den Sternen" : "Über das Meer";
@@ -647,6 +657,8 @@ if (game.travelPreviewFrozen) {
     }
     document.body.dataset.previewCanvasSamples = `${opaque}/${colors.size}`;
     document.body.dataset.previewCanvas = opaque === 60 && colors.size >= 2 ? "painted" : "invalid";
+    document.body.dataset.previewCueOverlap = String(!!game.visualAudit?.cueVehicleOverlap);
+    document.body.dataset.previewVehicleInBounds = String(game.visualAudit?.vehicleInBounds !== false);
     document.body.dataset.previewReady = "true";
     window.__purrkourPreviewReady = true;
   });

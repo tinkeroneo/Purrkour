@@ -65,6 +65,11 @@ test("audio context is created only after an explicit unlock gesture", async (t)
   assert.equal(counters.contexts, 1);
   assert.equal(audio.unlocked, true);
   assert.ok(counters.started > 0, "pending ambience should start after unlock");
+
+  const startedBeforeTravel = counters.started;
+  audio.SFX.travelPhase("ocean", "travel");
+  audio.SFX.travelPhase("rocket", "arrive");
+  assert.equal(counters.started, startedBeforeTravel + 4);
 });
 
 test("blocked preference storage does not break audio setup", () => {

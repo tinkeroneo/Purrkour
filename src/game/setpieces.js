@@ -318,6 +318,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     sp.phaseT = 0;
     sp.phaseProgress = 0;
     applyThemePlan(sp, nextPhase);
+    audio?.SFX?.travelPhase?.(sp.mode, nextPhase);
     const cue = getSetpiecePresentationCue(sp.mode, nextPhase);
     if (cue) {
       beginPresentation(game.presentation, {
@@ -403,6 +404,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
 
     // lock player input during the scripted beat (collider will enforce)
     game.controlLocked = true;
+    audio?.SFX?.travelPhase?.("ocean", "approach");
   }
 
   function finishOceanCrossing() {
@@ -560,8 +562,7 @@ export function createSetpieceManager({ game, objects, startThemeFade, canvas, t
     game.controlLocked = false;
     game.safeTimer = 120;
 
-    // little cue (soft whoosh / dash)
-    audio?.SFX?.dash?.();
+    audio?.SFX?.travelPhase?.("rocket", "approach");
   }
 
   function finishRocketFlight() {

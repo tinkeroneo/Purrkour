@@ -238,6 +238,8 @@ try {
   assert.match(balloonPreview, /data-preview-phase="travel"/);
   assert.match(balloonPreview, /data-preview-cat-in-vehicle="true"/);
   assert.match(balloonPreview, /data-preview-canvas="painted"/);
+  assert.match(balloonPreview, /data-preview-cue-overlap="false"/);
+  assert.match(balloonPreview, /data-preview-vehicle-in-bounds="true"/);
 
   const { stdout: rocketReturn } = await execFileAsync(chrome, [
     "--headless=new",

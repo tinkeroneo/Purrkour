@@ -37,10 +37,10 @@ Stand: 2026-08-11
 |---|---|---|---|
 | P0 | Orientierungsstabilität | Hochformat → Querformat → Hochformat übernimmt jedes Mal die aktuelle Canvas- und HUD-Größe | umgesetzt |
 | P0 | Klare Mobile-Steuerung | Mobile zeigt nur die notwendigen Sprung- und Duck-Aktionen; Long-Press öffnet weder Auswahl noch Kontextmenü | umgesetzt |
-| P1 | Eigenständige Schlusswelten | Dschungel, Klippe, Stadt und Wüste erhalten unterscheidbare Rhythmuskurven, Hindernismischungen und Höhepunkte | geplant |
-| P1 | Responsive Reiseabnahme | Boarding, Travel, Arrival und Control Return bleiben von 360 px Mobile Portrait bis Mobile Landscape lesbar | geplant |
-| P2 | Klangabnahme | Start, Manöver, Landung, Flow-Ketten und Weltwechsel sind akustisch unterscheidbar und nicht ermüdend | geplant |
-| P2 | Visuelle Regression | die deterministische Reisematrix prüft Fahrzeuge, Katze, Cues und HUD an Phasengrenzen automatisch | geplant |
+| P1 | Eigenständige Schlusswelten | Dschungel, Klippe, Stadt und Wüste erhalten unterscheidbare Rhythmuskurven, Hindernismischungen und Höhepunkte | umgesetzt |
+| P1 | Responsive Reiseabnahme | Boarding, Travel, Arrival und Control Return bleiben von 360 px Mobile Portrait bis Mobile Landscape lesbar | umgesetzt |
+| P2 | Klangabnahme | Start, Manöver, Landung, Flow-Ketten und Weltwechsel sind akustisch unterscheidbar und nicht ermüdend | Phasen-Cues umgesetzt; Hörabnahme offen |
+| P2 | Visuelle Regression | die deterministische Reisematrix prüft Fahrzeuge, Katze, Cues und HUD an Phasengrenzen automatisch | umgesetzt |
 
 ## Erfolgskriterien dieser Iteration
 
