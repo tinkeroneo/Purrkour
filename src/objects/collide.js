@@ -444,6 +444,7 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                     const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop + 8) && (catBottom >= birdTop + 2);
 
                     if (landing) {
+                        o.landedSafely = true;
                         cat.y = birdTop - cat.h + 1;
                         cat.vy = 0;
                         cat.onSurface = true;
@@ -460,6 +461,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
                         continue; // IMPORTANT: don't treat as damage
                     }
+
+                    if (o.landedSafely) continue;
 
                     loseLife("Vogelkontakt");
                     objects.list.splice(i, 1); i--;

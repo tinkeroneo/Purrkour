@@ -15,6 +15,7 @@ export function createBird(opts) {
         vy: opts.vy ?? 0,
         restY: opts.restY,
         landedTimer: opts.landedTimer ?? 0,
+        landedSafely: !!opts.landedSafely,
         draw(ctx) {
             drawBird(ctx, o);
         }
