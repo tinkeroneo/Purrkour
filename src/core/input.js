@@ -20,6 +20,13 @@ export function setupInput({ onJump, onKey, onMove, onCrouch, onGameFocus }) {
 
   window.addEventListener("pointerdown", triggerJump, { passive: false });
 
+  function releaseMovement() {
+    if (!keys.size) return;
+    keys.clear();
+    onMove?.(0);
+    onCrouch?.(false);
+  }
+
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space"  || e.code === "KeyW" || e.code === "ArrowUp") {
       const active = document.activeElement;
@@ -28,16 +35,22 @@ export function setupInput({ onJump, onKey, onMove, onCrouch, onGameFocus }) {
       return;
     }
     if (e.code === "ArrowLeft" || e.code === "KeyA") {
+      e.preventDefault?.();
+      if (keys.has("left")) return;
       keys.add("left");
       onMove?.(-1);
       return;
     }
     if (e.code === "ArrowRight" || e.code === "KeyD") {
+      e.preventDefault?.();
+      if (keys.has("right")) return;
       keys.add("right");
       onMove?.(1);
       return;
     }
     if (e.code === "ArrowDown" || e.code === "KeyS") {
+      e.preventDefault?.();
+      if (keys.has("down")) return;
       keys.add("down");
       onCrouch?.(true);
       return;
@@ -64,4 +77,6 @@ export function setupInput({ onJump, onKey, onMove, onCrouch, onGameFocus }) {
       onMove?.(1);
     }
   });
+
+  window.addEventListener("blur", releaseMovement);
 }

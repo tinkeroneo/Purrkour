@@ -46,8 +46,13 @@ function createBirdCollisionFixture({ catY = 92, bird = {} } = {}) {
     updatePawprints() {},
     updateBubbles() {},
   };
+  const audioCalls = { stomp: 0 };
   const audio = {
-    SFX: new Proxy({}, { get: () => () => {} }),
+    SFX: new Proxy({}, {
+      get: (_target, key) => key === "stomp"
+        ? () => { audioCalls.stomp++; }
+        : () => {},
+    }),
   };
   const catApi = {
     cat,
@@ -69,11 +74,11 @@ function createBirdCollisionFixture({ catY = 92, bird = {} } = {}) {
     { width: 390, height: 844 },
   );
 
-  return { game, cat, targetBird, objects, collider };
+  return { game, cat, targetBird, objects, collider, audioCalls };
 }
 
 test("landing cleanly on a bird makes that bird permanently harmless", () => {
-  const { game, cat, targetBird, objects, collider } = createBirdCollisionFixture();
+  const { game, cat, targetBird, objects, collider, audioCalls } = createBirdCollisionFixture();
 
   collider.update();
 
@@ -82,12 +87,30 @@ test("landing cleanly on a bird makes that bird permanently harmless", () => {
   assert.equal(cat.onSurface, true);
   assert.equal(cat.vy, 0);
 
+  for (let frame = 0; frame < 8; frame++) {
+    collider.update();
+    assert.equal(cat.onSurface, true, `bird must remain solid on frame ${frame + 1}`);
+    assert.equal(cat.y + cat.h, targetBird.y + 1);
+  }
+
   cat.y = targetBird.y + 6;
-  cat.vy = 0;
   collider.update();
 
   assert.equal(game.lives, 7);
   assert.equal(objects.list.includes(targetBird), true);
+  assert.equal(audioCalls.stomp, 1);
+});
+
+test("a fast top crossing still lands on a bird", () => {
+  const { game, cat, targetBird, collider } = createBirdCollisionFixture({ catY: 70 });
+  cat.vy = 120;
+
+  collider.update();
+
+  assert.equal(targetBird.landedSafely, true);
+  assert.equal(game.lives, 7);
+  assert.equal(cat.y + cat.h, targetBird.y + 1);
+  assert.equal(cat.onSurface, true);
 });
 
 test("a bird stays dangerous until the cat lands cleanly", () => {

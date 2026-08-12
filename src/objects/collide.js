@@ -351,20 +351,23 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
             }
         }
 
-        // platform land (top) - keep after scroll so platform positions are current
+        // Platform land (top) - a bird stays a stable platform after its first clean landing.
+        let supportingBird = null;
         for (const o of objects.list) {
             if (!o) continue;
-            if (o.kind !== "platform") continue;
+            const safeBird = o.kind === "obstacle" && o.type === "bird" && o.landedSafely;
+            if (o.kind !== "platform" && !safeBird) continue;
 
             const catPrevBottom = prevY + cat.h;
             const catBottom = cat.y + cat.h;
-            const onTopBand = catPrevBottom <= o.y + 10 && catBottom >= o.y + 2;
+            const onTopBand = catPrevBottom <= o.y + 10 && catBottom >= o.y + (safeBird ? 0 : 2);
             const xOverlap = (cat.x + cat.w * 0.70) > o.x && (cat.x + cat.w * 0.30) < (o.x + o.w);
 
             if (cat.vy >= 0 && onTopBand && xOverlap) {
-                cat.y = o.y - cat.h + 2;
+                cat.y = o.y - cat.h + (safeBird ? 1 : 2);
                 cat.vy = 0;
                 cat.onSurface = true;
+                if (safeBird) supportingBird = o;
             }
         }
 
@@ -393,6 +396,40 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                 if (!o || o.kind !== "obstacle") continue;
 
                 const obsBox = { x: o.x + 4, y: o.y + 4, w: o.w - 8, h: o.h - 8 };
+                if (o.type === "bird") {
+                    if (o === supportingBird) continue;
+                    const catPrevBottom = prevY + cat.h;
+                    const catBottom = cat.y + cat.h;
+                    const birdTop = o.y;
+                    const xOverlap = (cat.x + cat.w * 0.78) > o.x && (cat.x + cat.w * 0.22) < (o.x + o.w);
+                    const landing = cat.vy >= 0 && xOverlap && catPrevBottom <= birdTop + 8 && catBottom >= birdTop;
+
+                    if (landing) {
+                        o.landedSafely = true;
+                        cat.y = birdTop - cat.h + 1;
+                        cat.vy = 0;
+                        cat.onSurface = true;
+                        cat.jumpsLeft = cat.maxJumps;
+
+                        o.landedTimer = 14;
+                        if (audio?.SFX?.stomp) audio.SFX.stomp();
+                        else if (audio?.SFX?.combo) audio.SFX.combo();
+
+                        if (!o._scored) {
+                            o._scored = true;
+                            awardFlow({ steps: 2, basePoints: 2, missionEvent: "maneuver" });
+                        }
+                        continue;
+                    }
+
+                    if (!aabb(catBox, obsBox)) continue;
+                    if (o.landedSafely) continue;
+
+                    loseLife("Vogelkontakt");
+                    objects.list.splice(i, 1); i--;
+                    continue;
+                }
+
                 if (!aabb(catBox, obsBox)) continue;
 
                 if (o.type === "tunnel") {
@@ -431,41 +468,6 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
 
                 if (o.type === "dog") {
                     startChase(o);
-                    continue;
-                }
-
-                if (o.type === "bird") {
-                    // Bird is a platform ONLY when landing from above (side/below = danger)
-                    const catPrevBottom = prevY + cat.h;
-                    const catBottom = cat.y + cat.h;
-                    const birdTop = o.y;
-                    const xOverlap = (cat.x + cat.w * 0.78) > o.x && (cat.x + cat.w * 0.22) < (o.x + o.w);
-
-                    const landing = (cat.vy >= 0) && xOverlap && (catPrevBottom <= birdTop + 8) && (catBottom >= birdTop + 2);
-
-                    if (landing) {
-                        o.landedSafely = true;
-                        cat.y = birdTop - cat.h + 1;
-                        cat.vy = 0;
-                        cat.onSurface = true;
-                        cat.jumpsLeft = cat.maxJumps;
-
-                        o.landedTimer = 14;
-                        if (audio?.SFX?.stomp) audio.SFX.stomp();
-                        else if (audio?.SFX?.combo) audio.SFX.combo();
-
-                        if (!o._scored) {
-                            o._scored = true;
-                            awardFlow({ steps: 2, basePoints: 2, missionEvent: "maneuver" });
-                        }
-
-                        continue; // IMPORTANT: don't treat as damage
-                    }
-
-                    if (o.landedSafely) continue;
-
-                    loseLife("Vogelkontakt");
-                    objects.list.splice(i, 1); i--;
                     continue;
                 }
 
@@ -546,12 +548,13 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         }
 
         // animation frame selection
-        cat.animT++;
         const inAir = !cat.onSurface;
         if (inAir) catApi.setAnimFrame(4);
         else {
-            const runRate = clamp(10 - (eff * 1.6), 4, 10);
-            catApi.setAnimFrame(Math.floor(cat.animT / runRate) % 4);
+            const stride = clamp(0.18 + eff * 0.05 + Math.abs(game.input?.moveDir ?? 0) * 0.045, 0.22, 0.45);
+            cat.runPhase = (cat.runPhase ?? 0) + stride;
+            cat.animT++;
+            catApi.setAnimFrame(Math.floor(cat.runPhase / (Math.PI * 0.5)) % 4);
         }
 
         objects.updateBubbles();

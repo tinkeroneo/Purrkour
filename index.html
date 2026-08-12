@@ -225,6 +225,11 @@
       #ui.minimal{ width:calc(100vw - 12px); grid-template-columns:auto minmax(120px,1fr) auto auto; }
     }
     @media (any-pointer:coarse){
+      #ui,.settings-panel,#pauseStatus{
+        -webkit-backdrop-filter:none;
+        backdrop-filter:none;
+      }
+      #ui{ background:rgba(9,19,30,.94); }
       .touch-controls{ display:flex; }
       #ui .controls>#crouchBtn{ display:none; }
       #hint{ display:none; }

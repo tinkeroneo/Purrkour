@@ -19,6 +19,7 @@ export function createCat(game, hud) {
     jumpsLeft: 2,
 
     animT: 0,
+    runPhase: 0,
     frame: 0,
     onSurface: true,
     squashTimer: 0,
@@ -58,6 +59,7 @@ export function createCat(game, hud) {
     cat.onSurface = true;
     cat.squashTimer = 0;
     cat.squashAmp = 0.18;
+    cat.runPhase = 0;
     cat.maxJumps = cat.baseMaxJumps;
     cat.jumpsLeft = cat.maxJumps;
     hud.sync(game, cat);
@@ -93,7 +95,8 @@ function draw(ctx) {
 
     const fur = "#3b3b3b", furDark = "#2a2a2a", eye = "#f5f7ff", nose = "#ff9aa2";
     const running = (cat.frame <= 3);
-    const bob = running ? (Math.sin(cat.frame * Math.PI / 2) * 1.6) : 0;
+    const runPhase = cat.runPhase ?? 0;
+    const bob = running ? Math.abs(Math.sin(runPhase * 2)) * 1.2 : 0;
 
     ctx.save();
     const sq = (cat.squashTimer > 0) ? (cat.squashTimer / 10) : 0;
@@ -109,7 +112,7 @@ function draw(ctx) {
     // Shift the sprite slightly right so it doesn't look like it clips into solids.
     ctx.translate(10, 0);
     // tail
-    const tailPhase = running ? cat.frame : 2;
+    const tailWave = running ? Math.sin(runPhase * 0.65) : 0;
     ctx.save();
     ctx.strokeStyle = furDark;
     ctx.lineWidth = Math.max(2, w * 0.08);
@@ -119,10 +122,10 @@ function draw(ctx) {
     ctx.beginPath();
     ctx.moveTo(tailBaseX, tailBaseY);
     ctx.quadraticCurveTo(
-      tailBaseX - w * (0.45 + tailPhase * 0.03),
-      tailBaseY - h * (0.10 + tailPhase * 0.05),
-      tailBaseX - w * (0.20 + tailPhase * 0.02),
-      tailBaseY - h * (0.48 + tailPhase * 0.03)
+      tailBaseX - w * (0.48 + tailWave * 0.04),
+      tailBaseY - h * (0.18 + tailWave * 0.05),
+      tailBaseX - w * (0.22 + tailWave * 0.03),
+      tailBaseY - h * (0.52 + tailWave * 0.04)
     );
     ctx.stroke();
     ctx.restore();
@@ -134,15 +137,15 @@ function draw(ctx) {
 
     // ears
     ctx.fillStyle = furDark;
-    tri(ctx, w * 0.60, h * 0.10, w * 0.68, h * 0.02 - (cat.frame === 1 ? 1 : 0), w * 0.73, h * 0.14);
-    tri(ctx, w * 0.77, h * 0.10, w * 0.85, h * 0.02 + (cat.frame === 2 ? 1 : 0), w * 0.90, h * 0.14);
+    const earTwitch = running ? Math.sin(runPhase * 0.5) : 0;
+    tri(ctx, w * 0.60, h * 0.10, w * 0.68, h * 0.02 - earTwitch, w * 0.73, h * 0.14);
+    tri(ctx, w * 0.77, h * 0.10, w * 0.85, h * 0.02 + earTwitch, w * 0.90, h * 0.14);
 
     // legs
     const legY = h * 0.74;
     const legW = w * 0.12, legH = h * 0.18;
-    const f = cat.frame % 4;
-    const legA = (f === 0) ? -2 : (f === 2) ? 2 : 0;
-    const legB = (f === 0) ? 2 : (f === 2) ? -2 : 0;
+    const legA = running ? Math.sin(runPhase) * 2.4 : 0;
+    const legB = -legA;
 
     ctx.fillStyle = furDark;
     roundRect(ctx, w * 0.34, legY + legB, legW, legH, legW * 0.4); ctx.fill();

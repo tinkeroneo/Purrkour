@@ -46,3 +46,37 @@ test("game input restores focus and jumps after HUD focus is released", (t) => {
   listeners.get("pointerdown")({ target: hudButton, preventDefault() {} });
   assert.equal(jumps, 2, "the HUD tap itself must never become a jump");
 });
+
+test("held movement keys emit once and release cleanly when focus is lost", (t) => {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  const listeners = new Map();
+  const moves = [];
+  let crouches = 0;
+
+  globalThis.window = {
+    addEventListener(type, listener) { listeners.set(type, listener); },
+  };
+  globalThis.document = { activeElement: null };
+  t.after(() => {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+  });
+
+  setupInput({
+    onMove: (direction) => moves.push(direction),
+    onCrouch: () => { crouches++; },
+  });
+
+  let prevented = 0;
+  const right = { code: "ArrowRight", preventDefault: () => { prevented++; } };
+  listeners.get("keydown")(right);
+  listeners.get("keydown")({ ...right, repeat: true });
+
+  assert.deepEqual(moves, [1]);
+  assert.equal(prevented, 2);
+
+  listeners.get("blur")();
+  assert.deepEqual(moves, [1, 0]);
+  assert.equal(crouches, 1);
+});
