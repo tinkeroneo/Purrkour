@@ -124,15 +124,26 @@ const hud = createHUD(ui);
 const audio = createAudio(ui.soundBtn, runStorage);
 if (initialTheme) game.userTheme = initialTheme;
 
-setupThemeControls(game, ui.themeBtn, ui.autoThemeBtn);
-setupHudMinimode(uiRoot, ui.minimalBtn);
+setupThemeControls(game, ui.themeBtn, ui.autoThemeBtn, focusGameSurface);
+setupHudMinimode(uiRoot, ui.minimalBtn, focusGameSurface);
 setupSpeedIndicator(ui.speedBtn);
-setupCrouchButton(game, ui.crouchBtn);
-setupCrouchButton(game, ui.touchCrouchBtn);
-setupSettingsMenu(ui.settingsBtn, ui.settingsPanel);
-setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage, audio);
-setupAlbum(game, album, ui);
-setupSetpieceAction(game, ui.setpieceActionBtn);
+setupCrouchButton(game, ui.crouchBtn, focusGameSurface);
+setupCrouchButton(game, ui.touchCrouchBtn, focusGameSurface);
+setupSettingsMenu(ui.settingsBtn, ui.settingsPanel, focusGameSurface);
+setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage, audio, focusGameSurface);
+setupAlbum(game, album, ui, focusGameSurface);
+setupSetpieceAction(game, ui.setpieceActionBtn, focusGameSurface);
+
+function focusGameSurface() {
+  if (game.helpOpen || ui.gameOverDialog?.open) return false;
+  const focus = () => {
+    if (game.helpOpen || ui.gameOverDialog?.open) return;
+    try { canvasEl.focus({ preventScroll: true }); } catch { canvasEl.focus(); }
+  };
+  focus();
+  window.requestAnimationFrame(focus);
+  return true;
+}
 
 function getLocalStorage() {
   try {
@@ -158,7 +169,7 @@ function storeTheme(theme) {
   else runStorage.removeItem(THEME_STORAGE_KEY);
 }
 
-function setupThemeControls(game, themeButton, autoButton) {
+function setupThemeControls(game, themeButton, autoButton, returnFocus) {
   if (!themeButton) return;
   const order = getThemeOrder();
   if (!order.length) return;
@@ -183,6 +194,7 @@ function setupThemeControls(game, themeButton, autoButton) {
     // smooth fade if supported by background
     game.themeFade = { active: true, from, to: next, t: 0, dur: 80 };
     syncAutoButton();
+    returnFocus?.();
   }
 
   function clearOverride() {
@@ -190,6 +202,7 @@ function setupThemeControls(game, themeButton, autoButton) {
     storeTheme(null);
     // let progression reclaim theme next tick
     syncAutoButton();
+    returnFocus?.();
   }
 
   themeButton.addEventListener("click", nextTheme);
@@ -197,7 +210,7 @@ function setupThemeControls(game, themeButton, autoButton) {
   syncAutoButton();
 }
 
-function setupCrouchButton(game, el) {
+function setupCrouchButton(game, el, returnFocus) {
   if (!el) return;
   function setCrouch(active) {
     if (!game.input) game.input = { moveDir: 0, crouch: false };
@@ -213,7 +226,10 @@ function setupCrouchButton(game, el) {
     setCrouch(true);
   }, { passive: false });
   for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
-    el.addEventListener(eventName, () => setCrouch(false), { passive: true });
+    el.addEventListener(eventName, () => {
+      setCrouch(false);
+      returnFocus?.();
+    }, { passive: true });
   }
   for (const eventName of ["contextmenu", "selectstart"]) {
     el.addEventListener(eventName, (event) => event.preventDefault());
@@ -221,26 +237,28 @@ function setupCrouchButton(game, el) {
 }
 
 
-function setupHudMinimode(uiRoot, button) {
+function setupHudMinimode(uiRoot, button, returnFocus) {
   if (!uiRoot || !button) return;
   function toggleMinimode() {
     const minimal = uiRoot.classList.toggle("minimal");
     button.textContent = minimal ? "+" : "HUD";
     button.setAttribute("aria-pressed", String(minimal));
     button.setAttribute("aria-label", minimal ? "Vollständige Ansicht einschalten" : "Kompaktansicht einschalten");
+    returnFocus?.();
   }
   button.addEventListener("click", toggleMinimode);
 }
 
-function setupSetpieceAction(game, button) {
+function setupSetpieceAction(game, button, returnFocus) {
   button?.addEventListener("click", () => {
     if (game.setpiece?.active && game.setpiece.phase === "travel") {
       game.setpiece.actionRequested = true;
     }
+    returnFocus?.();
   });
 }
 
-function setupSettingsMenu(button, panel) {
+function setupSettingsMenu(button, panel, returnFocus) {
   if (!button || !panel) return;
   function setOpen(open) {
     panel.hidden = !open;
@@ -250,14 +268,25 @@ function setupSettingsMenu(button, panel) {
     event.stopPropagation();
     setOpen(panel.hidden);
   });
-  panel.addEventListener("click", (event) => event.stopPropagation());
-  window.addEventListener("pointerdown", () => setOpen(false), { passive: true });
+  panel.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (!event.target.closest?.("button")) return;
+    setOpen(false);
+    returnFocus?.();
+  });
+  window.addEventListener("pointerdown", (event) => {
+    if (button.contains(event.target) || panel.contains(event.target)) return;
+    setOpen(false);
+  }, { passive: true });
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setOpen(false);
+    if (event.key === "Escape" && !panel.hidden) {
+      setOpen(false);
+      returnFocus?.();
+    }
   });
 }
 
-function setupHelp(game, dialog, openButton, closeButton, storage, audio) {
+function setupHelp(game, dialog, openButton, closeButton, storage, audio, returnFocus) {
   if (!dialog || !openButton || !closeButton) return;
 
   function openHelp() {
@@ -278,6 +307,7 @@ function setupHelp(game, dialog, openButton, closeButton, storage, audio) {
     game.safeTimer = Math.max(game.safeTimer ?? 0, 30);
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
+    returnFocus?.();
   }
 
   openButton.addEventListener("click", openHelp);
@@ -302,7 +332,7 @@ function setupSpeedIndicator(el) {
   el.title = "Pace steigt automatisch mit der Progression";
 }
 
-function setupAlbum(game, album, ui) {
+function setupAlbum(game, album, ui, returnFocus) {
   if (!ui.albumDialog || !ui.albumBtn || !ui.closeAlbumBtn) return;
   const worldLabels = {
     forest: "Wald", ocean: "Ozean", island: "Insel", mars: "Mars", mountain: "Berge",
@@ -356,6 +386,7 @@ function setupAlbum(game, album, ui) {
     game.safeTimer = Math.max(game.safeTimer ?? 0, 30);
     if (typeof ui.albumDialog.close === "function") ui.albumDialog.close();
     else ui.albumDialog.removeAttribute("open");
+    returnFocus?.();
   }
 
   ui.albumBtn.addEventListener("click", openAlbum);
@@ -401,6 +432,7 @@ function closeGameOver() {
   if (!ui.gameOverDialog) return;
   if (typeof ui.gameOverDialog.close === "function") ui.gameOverDialog.close();
   else ui.gameOverDialog.removeAttribute("open");
+  focusGameSurface();
 }
 
 if (ui.gameOverDialog) {
@@ -480,6 +512,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 setupInput({
+  onGameFocus: focusGameSurface,
   onJump: () => {
     if (game.pause?.active) {
       togglePause();
@@ -514,6 +547,7 @@ if (ui.restBtn) {
   ui.restBtn.addEventListener("click", (e) => {
     e.preventDefault();
     togglePause();
+    focusGameSurface();
   }, { passive: false });
 }
 
@@ -637,6 +671,7 @@ applyScenePreview();
 ui.presentationSkip?.addEventListener("click", () => {
   audio.ensure();
   dismissPresentation(game.presentation);
+  focusGameSurface();
 });
 if (PRESENTATION_PREVIEWS[game.presentationPreview]) {
   beginPresentation(game.presentation, { ...PRESENTATION_PREVIEWS[game.presentationPreview], pinned: true });

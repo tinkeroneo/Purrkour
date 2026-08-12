@@ -1,4 +1,4 @@
-export function setupInput({ onJump, onKey, onMove, onCrouch }) {
+export function setupInput({ onJump, onKey, onMove, onCrouch, onGameFocus }) {
   let last = 0;
   const keys = new Set();
 
@@ -11,6 +11,7 @@ export function setupInput({ onJump, onKey, onMove, onCrouch }) {
   function triggerJump(e) {
     if (isUiEvent(e)) return;
     e?.preventDefault?.();
+    onGameFocus?.();
     const now = performance.now();
     if (now - last < 120) return;
     last = now;

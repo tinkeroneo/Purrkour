@@ -67,6 +67,34 @@ class CdpClient {
   }
 }
 
+async function evaluateValue(client, expression) {
+  const result = await client.send("Runtime.evaluate", { expression, returnByValue: true });
+  return result.result?.value;
+}
+
+async function waitForValue(client, expression, predicate, label) {
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const value = await evaluateValue(client, expression);
+    if (predicate(value)) return value;
+    await delay(25);
+  }
+  throw new Error(`Timed out waiting for ${label}`);
+}
+
+async function clickElement(client, selector) {
+  const point = await evaluateValue(client, `(() => {
+    const rect = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect();
+    return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+  })()`);
+  if (!point) throw new Error(`Missing click target: ${selector}`);
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1,
+  });
+  await client.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1,
+  });
+}
+
 async function readCanvasSize(client) {
   const result = await client.send("Runtime.evaluate", {
     expression: `(() => {
@@ -147,6 +175,38 @@ async function verifyOrientationCycle(chrome, url, profileRoot) {
     assert.equal(portraitAfter.crouchVisible, true);
     assert.equal(portraitAfter.moveButtons, 0);
 
+    const initialAudio = await evaluateValue(client, `(() => {
+      const sound = document.querySelector("#soundBtn");
+      return {
+        pressed: sound?.getAttribute("aria-pressed"),
+        label: sound?.getAttribute("aria-label"),
+        preference: localStorage.getItem("purrkour_sfx.v2"),
+      };
+    })()`);
+    assert.deepEqual(initialAudio, { pressed: "false", label: "Sound einschalten", preference: null });
+
+    await clickElement(client, "#settingsBtn");
+    await waitForValue(client, "document.querySelector('#settingsPanel').hidden", (hidden) => hidden === false, "settings menu");
+    await clickElement(client, "#soundBtn");
+    const enabledAudio = await waitForValue(client, `(() => ({
+      pressed: document.querySelector("#soundBtn")?.getAttribute("aria-pressed"),
+      panelHidden: document.querySelector("#settingsPanel")?.hidden,
+      active: document.activeElement?.id,
+      preference: localStorage.getItem("purrkour_sfx.v2"),
+    }))()`, (value) => value?.pressed === "true" && value?.active === "game", "sound enable and game focus");
+    assert.deepEqual(enabledAudio, { pressed: "true", panelHidden: true, active: "game", preference: "on" });
+
+    await clickElement(client, "#settingsBtn");
+    await waitForValue(client, "document.querySelector('#settingsPanel').hidden", (hidden) => hidden === false, "settings menu reopen");
+    await clickElement(client, "#soundBtn");
+    const mutedAudio = await waitForValue(client, `(() => ({
+      pressed: document.querySelector("#soundBtn")?.getAttribute("aria-pressed"),
+      panelHidden: document.querySelector("#settingsPanel")?.hidden,
+      active: document.activeElement?.id,
+      preference: localStorage.getItem("purrkour_sfx.v2"),
+    }))()`, (value) => value?.pressed === "false" && value?.active === "game", "sound mute and game focus");
+    assert.deepEqual(mutedAudio, { pressed: "false", panelHidden: true, active: "game", preference: "off" });
+
     const screenshotPath = process.env.PURRKOUR_ORIENTATION_SCREENSHOT;
     if (screenshotPath) {
       const capture = await client.send("Page.captureScreenshot", {
@@ -217,6 +277,7 @@ try {
   assert.match(stdout, /id="helpDialog"[^>]*open/);
   assert.match(stdout, /class="heart"/);
   assert.match(stdout, /id="minimalBtn"/);
+  assert.match(stdout, /id="soundBtn"[^>]*aria-label="Sound einschalten"[^>]*aria-pressed="false"/);
   assert.match(stdout, /id="journeyProgress"/);
   assert.match(stdout, /id="flowDisplay"/);
 

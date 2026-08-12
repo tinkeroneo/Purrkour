@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { URL } from "node:url";
 import { createAudio } from "../src/core/audio.js";
 
 class AudioParamStub {
@@ -42,7 +44,7 @@ test("audio context is created only after an explicit unlock gesture", async (t)
     createBufferSource() { return new AudioNodeStub(counters); }
     createBuffer() { return { getChannelData: () => new Float32Array(16) }; }
   }
-  const preferences = new Map([["purrkour_sfx", "on"]]);
+  const preferences = new Map([["purrkour_sfx.v2", "on"]]);
   globalThis.window = { AudioContext: AudioContextStub };
   globalThis.localStorage = {
     getItem: (key) => preferences.get(key) ?? null,
@@ -82,10 +84,46 @@ test("blocked preference storage does not break audio setup", () => {
   };
   try {
     const audio = createAudio(null);
-    assert.equal(audio.enabled, true);
+    assert.equal(audio.enabled, false);
     assert.doesNotThrow(() => audio.setEnabled(false));
   } finally {
     globalThis.window = originalWindow;
     globalThis.localStorage = originalStorage;
   }
+});
+
+test("fresh and legacy sessions start muted until sound is explicitly enabled", () => {
+  const originalWindow = globalThis.window;
+  const preferences = new Map([["purrkour_sfx", "on"]]);
+  const attributes = new Map();
+  const button = {
+    textContent: "",
+    setAttribute: (key, value) => attributes.set(key, value),
+    addEventListener() {},
+  };
+  globalThis.window = {};
+  try {
+    const audio = createAudio(button, {
+      getItem: (key) => preferences.get(key) ?? null,
+      setItem: (key, value) => preferences.set(key, value),
+    });
+    assert.equal(audio.enabled, false);
+    assert.equal(button.textContent, "🔇");
+    assert.equal(attributes.get("aria-pressed"), "false");
+    assert.equal(preferences.has("purrkour_sfx.v2"), false);
+
+    audio.setEnabled(true);
+    assert.equal(audio.enabled, true);
+    assert.equal(preferences.get("purrkour_sfx.v2"), "on");
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
+test("every sound source is routed through the muteable mixer", () => {
+  const source = new URL("../src/core/audio.js", import.meta.url);
+  return readFile(source, "utf8").then((text) => {
+    assert.equal((text.match(/audioCtx\.destination/g) || []).length, 1);
+    assert.match(text, /master\.connect\(audioCtx\.destination\)/);
+  });
 });

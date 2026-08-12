@@ -1,3 +1,5 @@
+const AUDIO_STORAGE_KEY = "purrkour_sfx.v2";
+
 export function createAudio(soundBtnEl, storage = null) {
     let preferenceStorage = storage;
     if (!preferenceStorage) {
@@ -6,19 +8,19 @@ export function createAudio(soundBtnEl, storage = null) {
     let audioCtx = null;
     let unlocked = false;
     let pendingAmbience = null;
-    let enabled = readPreference() === "on";
+    let enabled = readPreference();
 
     function readPreference() {
         try {
-            return preferenceStorage?.getItem("purrkour_sfx") ?? "on";
+            return preferenceStorage?.getItem(AUDIO_STORAGE_KEY) === "on";
         } catch {
-            return "on";
+            return false;
         }
     }
 
     function writePreference(value) {
         try {
-            preferenceStorage?.setItem("purrkour_sfx", value);
+            preferenceStorage?.setItem(AUDIO_STORAGE_KEY, value);
         } catch {
             // Audio remains usable when storage is blocked or full.
         }
@@ -68,14 +70,19 @@ export function createAudio(soundBtnEl, storage = null) {
     }
 
 
-    function setEnabled(on) {
-        enabled = !!on;
-        writePreference(enabled ? "on" : "off");
+    function syncButton() {
         if (soundBtnEl) {
             soundBtnEl.textContent = enabled ? "🔊" : "🔇";
             soundBtnEl.setAttribute("aria-pressed", String(enabled));
             soundBtnEl.setAttribute("aria-label", enabled ? "Sound ausschalten" : "Sound einschalten");
         }
+    }
+
+    function setEnabled(on) {
+        enabled = !!on;
+        writePreference(enabled ? "on" : "off");
+        syncButton();
+        if (master) master.gain.value = enabled ? 0.85 : 0;
         if (!enabled) {
             pendingAmbience = null;
             stopAmbience();
@@ -179,7 +186,7 @@ export function createAudio(soundBtnEl, storage = null) {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
 
     o.connect(g).connect(lp);
-    lp.connect(audioCtx.destination);
+    lp.connect(sfxBus);
 
     o.start(t0);
     o.stop(t0 + 0.13);
@@ -229,7 +236,7 @@ function chime(vol = 0.045) {
         engineLfo: null,
         engineLfoGain: null
     };
-    setEnabled(enabled);
+    syncButton();
     function stopNode(n) {
         try { n?.stop?.(); } catch {
             // A stopped WebAudio node cannot be stopped twice.

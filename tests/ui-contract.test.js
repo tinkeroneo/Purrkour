@@ -21,6 +21,10 @@ test("mobile controls stay focused on crouching without browser selection", () =
   assert.match(html, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(input, /\.touch-controls, #presentationSkip/);
   assert.match(main, /\["contextmenu", "selectstart"\]/);
+  assert.match(html, /<canvas id="game" tabindex="-1"/);
+  assert.match(html, /id="soundBtn"[^>]*aria-label="Sound einschalten"[^>]*aria-pressed="false"/);
+  assert.match(main, /onGameFocus: focusGameSurface/);
+  assert.match(main, /button\.contains\(event\.target\) \|\| panel\.contains\(event\.target\)/);
 });
 
 test("discoverable help, theme and compact-view controls replace hidden gestures", () => {

@@ -303,7 +303,7 @@
       <div class="settings-wrap">
         <button class="btn" id="settingsBtn" type="button" aria-label="Einstellungen öffnen" aria-expanded="false" aria-controls="settingsPanel" title="Einstellungen">⚙</button>
         <div class="settings-panel" id="settingsPanel" hidden>
-          <button class="btn" id="soundBtn" type="button" aria-label="Sound ausschalten" aria-pressed="true" title="Sound an/aus">🔊</button>
+          <button class="btn" id="soundBtn" type="button" aria-label="Sound einschalten" aria-pressed="false" title="Sound an/aus">🔇</button>
           <button class="btn theme theme-button" id="themeBtn" type="button" aria-label="Nächstes Thema" title="Nächstes Thema">🌍 <span id="catnip">wald</span></button>
           <button class="btn" id="autoThemeBtn" type="button" aria-label="Automatischen Themenwechsel verwenden" aria-pressed="true" title="Themen automatisch wechseln">Auto</button>
           <button class="btn" id="minimalBtn" type="button" aria-label="Kompaktansicht einschalten" aria-pressed="false" title="HUD kompakter anzeigen">HUD</button>
@@ -368,7 +368,7 @@
     <button class="btn" id="closeAlbumBtn" type="button">Weiterlaufen</button>
   </dialog>
 
-  <canvas id="game" role="img" aria-label="Purrkour Spielfeld" aria-describedby="hint"></canvas>
+  <canvas id="game" tabindex="-1" role="img" aria-label="Purrkour Spielfeld" aria-describedby="hint"></canvas>
 
   <script type="module" src="./src/main.js"></script>
 </body>
