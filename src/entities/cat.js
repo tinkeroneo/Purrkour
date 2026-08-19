@@ -5,6 +5,12 @@ import { getOverlay } from "../world/overlays.js";
 const BASE_GRAVITY = 0.34;
 const BASE_JUMP_VY = -9.0;
 
+export function getCatPose(crouching) {
+  return crouching
+    ? { scaleX: 1.14, scaleY: 0.6 }
+    : { scaleX: 1, scaleY: 1 };
+}
+
 export function createCat(game, hud) {
   const cat = {
     baseX: 110,
@@ -95,6 +101,7 @@ function draw(ctx) {
 
     const fur = "#3b3b3b", furDark = "#2a2a2a", eye = "#f5f7ff", nose = "#ff9aa2";
     const running = (cat.frame <= 3);
+    const pose = getCatPose(!!game.input?.crouch);
     const runPhase = cat.runPhase ?? 0;
     const bob = running ? Math.abs(Math.sin(runPhase * 2)) * 1.2 : 0;
 
@@ -103,10 +110,10 @@ function draw(ctx) {
     const sx = 1 + sq * cat.squashAmp;
     const sy = 1 - sq * cat.squashAmp;
     const cx = cat.x + cat.w * 0.5;
-    const cy = cat.y + bob + (cat.vy < -1 ? -2 : 0) + cat.h * 0.5;
-    ctx.translate(cx, cy);
-    ctx.scale(sx, sy);
-    ctx.translate(-cat.w * 0.5, -cat.h * 0.5);
+    const footY = cat.y + bob + (cat.vy < -1 ? -2 : 0) + cat.h;
+    ctx.translate(cx, footY);
+    ctx.scale(sx * pose.scaleX, sy * pose.scaleY);
+    ctx.translate(-cat.w * 0.5, -cat.h);
 
 // Visual alignment: the tail extends far to the left, beyond the collision box.
     // Shift the sprite slightly right so it doesn't look like it clips into solids.

@@ -11,6 +11,11 @@ import {
     rectangleInsideViewport,
 } from "../game/presentation-layout.js";
 
+export function getToastTop(viewportWidth, viewportHeight, hudSafeTop = 0) {
+    const fallback = viewportWidth <= 700 ? 156 : 112;
+    return clamp(Math.max(fallback, hudSafeTop), 8, Math.max(8, viewportHeight - 40));
+}
+
 export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
     const { cat } = catApi;
 
@@ -92,11 +97,13 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
             ctx.strokeStyle = "rgba(0,0,0,0.10)";
             ctx.lineWidth = 2;
             const ww = 44 + b.text.length * 4, hh = 22;
-            roundRect(ctx, b.x - ww / 2, b.y - hh, ww, hh, 10); ctx.fill(); ctx.stroke();
+            const safeY = (game.hudSafeTop || 0) + hh + 6 - (game.cameraY || 0);
+            const bubbleY = Math.max(b.y, safeY);
+            roundRect(ctx, b.x - ww / 2, bubbleY - hh, ww, hh, 10); ctx.fill(); ctx.stroke();
             ctx.fillStyle = "rgba(20,20,20,0.9)";
             ctx.font = "12px system-ui, sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(b.text, b.x, b.y - 7);
+            ctx.fillText(b.text, b.x, bubbleY - 7);
             ctx.globalAlpha = 1;
         }
     }
@@ -105,7 +112,7 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         const t = objects.toastState();
         if (t.toastTimer > 0) {
             const a = clamp(t.toastTimer / 60, 0, 1);
-            const top = canvas.W <= 700 ? 156 : 112;
+            const top = getToastTop(canvas.W, canvas.H, game.hudSafeTop);
             ctx.globalAlpha = 0.85 * a;
             ctx.fillStyle = "rgba(0,0,0,0.22)";
             roundRect(ctx, canvas.W * 0.10, top, canvas.W * 0.80, 28, 10); ctx.fill();
@@ -167,7 +174,8 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
 
     function drawTunnel(o) {
         const x = o.x, y = o.y, w = o.w, h = o.h;
-        const archH = Math.max(12, h * 0.55);
+        const branch = o.variant === "branch";
+        const beamH = branch ? 14 : 16;
         ctx.save();
         // base shadow
         ctx.globalAlpha = 0.16;
@@ -177,11 +185,26 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.fill();
         ctx.globalAlpha = 1;
 
-        // arch body
-        ctx.fillStyle = "rgba(70,70,80,0.95)";
-        roundRect(ctx, x, y + (h - archH), w, archH, 10); ctx.fill();
-        ctx.fillStyle = "rgba(30,30,35,0.95)";
-        roundRect(ctx, x + 8, y + (h - archH) + 6, w - 16, archH - 10, 8); ctx.fill();
+        ctx.fillStyle = branch ? "#493521" : "rgba(70,70,80,0.98)";
+        roundRect(ctx, x, y + 3, w, beamH, 7); ctx.fill();
+        ctx.fillStyle = branch ? "#6d5130" : "#ffd166";
+        for (let bx = x + 10; bx < x + w - 6; bx += 24) {
+            if (branch) {
+                ctx.beginPath();
+                ctx.arc(bx, y + 2, 7, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.save();
+                ctx.translate(bx, y + 5);
+                ctx.rotate(-0.55);
+                ctx.fillRect(-2, 0, 5, beamH - 4);
+                ctx.restore();
+            }
+        }
+        ctx.fillStyle = "rgba(255,209,102,.96)";
+        ctx.font = "900 20px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("↓", x + w * 0.5, y - 5);
         ctx.restore();
     }
 

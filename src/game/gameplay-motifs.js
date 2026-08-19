@@ -29,6 +29,7 @@ const BEAT_MOTIF_OVERRIDES = Object.freeze({
 });
 
 export const WORLD_SIGNATURE_MOMENTS = Object.freeze({
+  forest: Object.freeze({ id: "fallen-branch", phase: "variation", spacing: 500 }),
   jungle: Object.freeze({ id: "canopy-crossing", phase: "variation", spacing: 540 }),
   cliff: Object.freeze({ id: "summit-stair", phase: "challenge", spacing: 620 }),
   city: Object.freeze({ id: "under-over", phase: "challenge", spacing: 560 }),

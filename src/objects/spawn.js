@@ -9,6 +9,7 @@ import { nightFactor } from "../world/daynight.js";
 import { getGameplayMotif, getSignatureMoment } from "../game/gameplay-motifs.js";
 import {
   beginRiskRoute,
+  getRiskRouteLift,
   shouldStartRiskRoute,
 } from "../game/risk-routes.js";
 
@@ -59,26 +60,19 @@ export function createSpawner(game, terrain, objects, canvas) {
 
     const routeId = game.riskRoute.id;
 
-    const w = 104;
+    const w = 116;
     const h = 44;
     const extra = Math.min(12, Math.floor((game.score || 0) / 60));
     const count = (15 + Math.min(2, extra)) + Math.floor(Math.random() * 4);
-    const stepX = 180 + Math.floor(Math.random() * 42);
-    const entryGap = 220 + Math.floor(Math.random() * 90);
-    const baseLift = 150 + Math.floor(Math.random() * 44);
-    const peakLift = 420 + Math.floor(Math.random() * 140);
+    const stepX = 158 + Math.floor(Math.random() * 24);
+    const entryGap = 150 + Math.floor(Math.random() * 42);
+    const baseLift = 68 + Math.floor(Math.random() * 10);
+    const peakLift = 250 + Math.floor(Math.random() * 46);
     const tokenIndices = new Set([1, 4, 7, 10, count - 3]);
 
     for (let i = 0; i < count; i++) {
-      // intentionally skip occasional segments to avoid a "continuous runway"
-      if (!tokenIndices.has(i) && i > 2 && i < count - 2 && i % 7 === 0 && Math.random() < 0.65) continue;
-
       const x = spawnX + entryGap + i * stepX;
-      const phase = (count > 1) ? (i / (count - 1)) : 0;
-      const climb = Math.pow(phase, 0.58);
-      const arc = Math.sin(climb * Math.PI); // climbs faster early, then glides down
-      const wave = Math.sin(i * 0.82) * 14;
-      const lift = baseLift + (arc * peakLift) + wave;
+      const lift = getRiskRouteLift(i, count, baseLift, peakLift);
       const topY = terrain.surfaceAt(x) - lift;
       objects.add({
         kind: "platform", type: "fence", x, y: topY, w, h, yMode: "fixed", yOffset: 0,
@@ -134,6 +128,19 @@ export function createSpawner(game, terrain, objects, canvas) {
           w: 22, h: 16, taken: false, yMode: "fixed",
         }, moment.id);
       }
+    } else if (themeKey === "forest") {
+      const branchW = 118, branchH = 52;
+      addSignatureObject({
+        kind: "obstacle", type: "tunnel", variant: "branch", x: spawnX,
+        y: terrain.surfaceAt(spawnX) - branchH, w: branchW, h: branchH,
+        yMode: "ground", yOffset: -branchH,
+      }, moment.id);
+      const mouseX = spawnX + 165;
+      addSignatureObject({
+        kind: "collectible", type: "mouse", x: mouseX,
+        y: terrain.surfaceAt(mouseX) - 24, w: 22, h: 16,
+        taken: false, yMode: "fixed",
+      }, moment.id);
     } else if (themeKey === "cliff") {
       for (let i = 0; i < 3; i++) {
         const x = spawnX + i * 132;
@@ -151,11 +158,11 @@ export function createSpawner(game, terrain, objects, canvas) {
       const goatX = spawnX + 420;
       addSignatureObject(createGoat(goatX, terrain.surfaceAt(goatX) - 48, { w: 58, h: 48 }), moment.id);
     } else if (themeKey === "city") {
-      const tunnelW = 92;
+      const tunnelW = 104, tunnelH = 52;
       addSignatureObject({
-        kind: "obstacle", type: "tunnel", x: spawnX,
-        y: terrain.surfaceAt(spawnX) - 40, w: tunnelW, h: 40,
-        yMode: "ground", yOffset: -40,
+        kind: "obstacle", type: "tunnel", variant: "gantry", x: spawnX,
+        y: terrain.surfaceAt(spawnX) - tunnelH, w: tunnelW, h: tunnelH,
+        yMode: "ground", yOffset: -tunnelH,
       }, moment.id);
       const carX = spawnX + 245;
       addSignatureObject({
@@ -482,10 +489,10 @@ export function createSpawner(game, terrain, objects, canvas) {
         }));
       }
     } else if (type === "tunnel") {
-      const w = 92, h = 40;
+      const w = 104, h = 52;
       const posTunnel = placeGroundObstacle(spawnX, w, h, 22);
       objects.add({
-        kind: "obstacle", type: "tunnel",
+        kind: "obstacle", type: "tunnel", variant: themeKey === "city" ? "gantry" : "rock",
         x: posTunnel.x, y: posTunnel.y,
         w, h,
         yMode: "ground", yOffset: -h

@@ -16,6 +16,7 @@ test("mobile controls stay focused on crouching without browser selection", () =
   assert.match(html, /@media \(any-pointer:coarse\)/);
   assert.match(html, /min-width:44px; min-height:44px/);
   assert.match(html, /-webkit-user-select:none; user-select:none; -webkit-touch-callout:none/);
+  assert.match(html, /#ui\{[\s\S]*?-webkit-user-select:none; user-select:none; -webkit-touch-callout:none/);
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/);
   assert.match(html, /Tippen: Sprung/);
   assert.match(html, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
@@ -24,6 +25,8 @@ test("mobile controls stay focused on crouching without browser selection", () =
   assert.match(html, /<canvas id="game" tabindex="-1"/);
   assert.match(html, /id="soundBtn"[^>]*aria-label="Sound einschalten"[^>]*aria-pressed="false"/);
   assert.match(main, /onGameFocus: focusGameSurface/);
+  assert.match(main, /ResizeObserver\(syncHudSafeArea\)/);
+  assert.match(main, /uiRoot\?\.addEventListener\(eventName, \(event\) => event\.preventDefault\(\)\)/);
   assert.match(main, /button\.contains\(event\.target\) \|\| panel\.contains\(event\.target\)/);
 });
 

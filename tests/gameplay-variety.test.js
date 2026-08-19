@@ -42,6 +42,7 @@ test("night sightlines differ from mountain vertical play and city owns ducking"
 });
 
 const scenarios = [
+  ["forest", "FOREST_INTRO", "variation", "fallen-branch"],
   ["jungle", "JUNGLE_RUN", "variation", "canopy-crossing"],
   ["cliff", "CLIFF_RUN", "challenge", "summit-stair"],
   ["city", "CITY_RUN", "challenge", "under-over"],
@@ -49,7 +50,7 @@ const scenarios = [
 ];
 
 test("late worlds own one deliberate signature window", () => {
-  assert.equal(Object.keys(WORLD_SIGNATURE_MOMENTS).length, 4);
+  assert.equal(Object.keys(WORLD_SIGNATURE_MOMENTS).length, 5);
   for (const [theme, , phase, id] of scenarios) {
     assert.equal(getSignatureMoment(theme, phase)?.id, id);
     assert.equal(getSignatureMoment(theme, "establish"), null);

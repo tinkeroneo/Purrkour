@@ -6,8 +6,22 @@ import {
   collectRiskToken,
   createRiskRouteState,
   expireRiskRoute,
+  getRiskRouteLift,
   shouldStartRiskRoute,
 } from "../src/game/risk-routes.js";
+
+test("gold routes start low and climb in reachable steps", () => {
+  for (const count of [15, 18]) {
+    const lifts = Array.from({ length: count }, (_, index) => getRiskRouteLift(index, count, 78, 296));
+    assert.ok(lifts[0] <= 80, "entry platform must be reachable with one jump");
+    for (let index = 1; index < lifts.length; index++) {
+      assert.ok(
+        Math.abs(lifts[index] - lifts[index - 1]) <= 80,
+        `height step ${index - 1} -> ${index} must stay reachable`,
+      );
+    }
+  }
+});
 
 test("risk routes start at deliberate score milestones but not in safe sections", () => {
   const route = createRiskRouteState();

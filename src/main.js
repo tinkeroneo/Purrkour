@@ -134,6 +134,19 @@ setupHelp(game, ui.helpDialog, ui.helpBtn, ui.closeHelpBtn, runStorage, audio, f
 setupAlbum(game, album, ui, focusGameSurface);
 setupSetpieceAction(game, ui.setpieceActionBtn, focusGameSurface);
 
+for (const eventName of ["contextmenu", "selectstart"]) {
+  uiRoot?.addEventListener(eventName, (event) => event.preventDefault());
+}
+
+function syncHudSafeArea() {
+  const bottom = uiRoot?.getBoundingClientRect?.().bottom;
+  game.hudSafeTop = Number.isFinite(bottom) ? Math.ceil(bottom + 10) : 0;
+}
+
+if (typeof globalThis.ResizeObserver === "function" && uiRoot) {
+  new globalThis.ResizeObserver(syncHudSafeArea).observe(uiRoot);
+}
+
 function focusGameSurface() {
   if (game.helpOpen || ui.gameOverDialog?.open) return false;
   const focus = () => {
@@ -466,6 +479,7 @@ function resizeLayout() {
   }
 
   hud.sync(game, cat.cat);
+  syncHudSafeArea();
 }
 
 resizeLayout();
