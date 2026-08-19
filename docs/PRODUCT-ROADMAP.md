@@ -28,7 +28,7 @@ Stand: 2026-08-11
 | P1 | Reiseinszenierung | sichere Kapitelkarten blockieren nur kurz und sind quittierbar; Wiederholungen bleiben kompakt, Setpiece-Wechsel eigenständig | umgesetzt |
 | P1 | Weltcharakter | jede Welt besitzt eigene, sicher begrenzte Werte für Schwerkraft, Sprung, Kontrolle und Pace | umgesetzt |
 | P1 | Aktive Setpieces | bis zu drei klar sichtbare Reisemanöver machen Meer- und Raketenfahrt spielbar statt rein passiv | umgesetzt |
-| P2 | Klangmotive pro Beat | kurze weltabhängige Zweitonmotive markieren neue Reiseabschnitte über die bestehende WebAudio-Schicht | technisch umgesetzt; Audioabnahme offen |
+| P2 | Adaptive Klangidentität | warme weltabhängige Motive reagieren auf Nacht, Flow und Reisen; Noise bleibt nur als dezente Textur | erste Fassung umgesetzt; Hörabnahme offen |
 | P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | umgesetzt |
 
 ## Sprint 4: Feinschliff und Spielrhythmus

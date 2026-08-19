@@ -28,8 +28,10 @@ test("audio context is created only after an explicit unlock gesture", async (t)
   const originalWindow = globalThis.window;
   const originalStorage = globalThis.localStorage;
   const counters = { contexts: 0, started: 0, stopped: 0 };
+  let context = null;
   class AudioContextStub {
     constructor() {
+      context = this;
       counters.contexts += 1;
       this.state = "suspended";
       this.currentTime = 0;
@@ -67,6 +69,12 @@ test("audio context is created only after an explicit unlock gesture", async (t)
   assert.equal(counters.contexts, 1);
   assert.equal(audio.unlocked, true);
   assert.ok(counters.started > 0, "pending ambience should start after unlock");
+
+  const startedBeforeScore = counters.started;
+  audio.setScore({ theme: "forest", intensity: 0.5 });
+  context.currentTime = 0.1;
+  audio.setScore({ theme: "forest", intensity: 0.5 });
+  assert.equal(counters.started, startedBeforeScore + 8, "four score notes should use two voices each");
 
   const startedBeforeTravel = counters.started;
   audio.SFX.travelPhase("ocean", "travel");

@@ -173,6 +173,12 @@ if (game.setpiece?.active) {
                         tau: 0.18,
                     });
                 }
+                audio.setScore?.({
+                    theme: game.theme,
+                    night: n,
+                    intensity: Math.min(1, 0.24 + Math.max(0, (game.flow?.multiplier || 1) - 1) * 0.18 + (isFlight ? 0.2 : 0)),
+                    mode: isFlight ? game.setpiece?.mode : null,
+                });
             }
             // --- setpieces (ocean crossing etc.) ---
             setpieces.update();

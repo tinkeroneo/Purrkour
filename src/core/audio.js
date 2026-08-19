@@ -1,3 +1,5 @@
+import { frequencyForSemitone, getSoundScoreProfile, motifGap } from "./sound-score.js";
+
 const AUDIO_STORAGE_KEY = "purrkour_sfx.v2";
 
 export function createAudio(soundBtnEl, storage = null) {
@@ -8,6 +10,7 @@ export function createAudio(soundBtnEl, storage = null) {
     let audioCtx = null;
     let unlocked = false;
     let pendingAmbience = null;
+    let pendingScore = null;
     let enabled = readPreference();
 
     function readPreference() {
@@ -26,22 +29,26 @@ export function createAudio(soundBtnEl, storage = null) {
         }
     }
     // --- simple mixer buses ---
-    let master = null, sfxBus = null, ambBus = null;
+    let master = null, sfxBus = null, ambBus = null, musicBus = null;
 
     function initMixer() {
         if (!audioCtx || master) return;
 
         master = audioCtx.createGain();
-        master.gain.value = 0.85; // global volume
+        master.gain.value = 0.78;
 
         sfxBus = audioCtx.createGain();
-        sfxBus.gain.value = 1.0;
+        sfxBus.gain.value = 0.92;
 
         ambBus = audioCtx.createGain();
-        ambBus.gain.value = 0.28; // ambience always subtle
+        ambBus.gain.value = 0.10;
+
+        musicBus = audioCtx.createGain();
+        musicBus.gain.value = 0.52;
 
         sfxBus.connect(master);
         ambBus.connect(master);
+        musicBus.connect(master);
         master.connect(audioCtx.destination);
     }
 
@@ -53,6 +60,7 @@ export function createAudio(soundBtnEl, storage = null) {
         initMixer();
         unlocked = audioCtx?.state === "running";
         if (unlocked && pendingAmbience) applyAmbience(pendingAmbience);
+        if (unlocked && pendingScore) applyScore(pendingScore, true);
     }
 
     function unlock() {
@@ -82,10 +90,12 @@ export function createAudio(soundBtnEl, storage = null) {
         enabled = !!on;
         writePreference(enabled ? "on" : "off");
         syncButton();
-        if (master) master.gain.value = enabled ? 0.85 : 0;
+        if (master) master.gain.value = enabled ? 0.78 : 0;
         if (!enabled) {
             pendingAmbience = null;
+            pendingScore = null;
             stopAmbience();
+            stopScore();
         }
     }
 
@@ -110,14 +120,17 @@ export function createAudio(soundBtnEl, storage = null) {
         o.start(t0);
         o.stop(t0 + dur + 0.02);
     }
+    let noiseBuffer = null;
     function makeNoiseSource() {
         const bufferSize = 2 * audioCtx.sampleRate;
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+        if (!noiseBuffer) {
+            noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+        }
 
         const src = audioCtx.createBufferSource();
-        src.buffer = buffer;
+        src.buffer = noiseBuffer;
         src.loop = true;
         return src;
     }
@@ -360,20 +373,19 @@ function chime(vol = 0.045) {
         }
 
 
-        ensureLayer("wind", 380, "noise");
-        ensureLayer("ocean", 160, "noise");
-        ensureLayer("night", 2600, "noise");
-        ensureLayer("whoosh", 120, "whoosh");
-        ensureLayer("rumble", 100, "rumble");
-        ensureLayer("engine", 62, "engine");
-
         const t0 = audioCtx.currentTime;
-        amb.windGain.gain.setTargetAtTime(Math.max(0.0001, wind), t0, tau);
-        amb.oceanGain.gain.setTargetAtTime(Math.max(0.0001, ocean), t0, tau);
-        amb.nightGain.gain.setTargetAtTime(Math.max(0.0001, night), t0, tau);
-        amb.whooshGain.gain.setTargetAtTime(Math.max(0.0001, whoosh), t0, tau);
-        amb.rumbleGain.gain.setTargetAtTime(Math.max(0.0001, rumble), t0, tau);
-        amb.engineGain.gain.setTargetAtTime(Math.max(0.0001, engine), t0, tau);
+        const layers = [
+            ["wind", wind, 380, "noise"],
+            ["ocean", ocean, 160, "noise"],
+            ["night", night, 2600, "noise"],
+            ["whoosh", whoosh, 120, "whoosh"],
+            ["rumble", rumble, 100, "rumble"],
+            ["engine", engine, 62, "engine"],
+        ];
+        for (const [key, amount, frequency, type] of layers) {
+            if (amount > 0.0002 || amb[key]) ensureLayer(key, frequency, type);
+            amb[`${key}Gain`]?.gain.setTargetAtTime(Math.max(0.0001, amount), t0, tau);
+        }
 
     }
 
@@ -381,6 +393,84 @@ function chime(vol = 0.045) {
         if (!enabled) return;
         pendingAmbience = { ...mix };
         if (isReady()) applyAmbience(pendingAmbience);
+    }
+
+    const scoreNodes = new Set();
+    let scoreKey = "";
+    let nextMotifAt = 0;
+
+    function trackScoreNode(node) {
+        scoreNodes.add(node);
+        node.onended = () => scoreNodes.delete(node);
+    }
+
+    function stopScore() {
+        for (const node of scoreNodes) stopNode(node);
+        scoreNodes.clear();
+        scoreKey = "";
+        nextMotifAt = 0;
+    }
+
+    function pluck(freq, start, duration, profile, volume) {
+        const body = audioCtx.createOscillator();
+        const shimmer = audioCtx.createOscillator();
+        const bodyGain = audioCtx.createGain();
+        const shimmerGain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        const envelope = audioCtx.createGain();
+
+        body.type = profile.wave;
+        body.frequency.setValueAtTime(freq, start);
+        shimmer.type = "sine";
+        shimmer.frequency.setValueAtTime(freq * 2.005, start);
+        bodyGain.gain.value = 0.78;
+        shimmerGain.gain.value = 0.22;
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(profile.brightness, start);
+        filter.frequency.exponentialRampToValueAtTime(Math.max(280, profile.brightness * 0.42), start + duration);
+        filter.Q.value = 0.7;
+        envelope.gain.setValueAtTime(0.0001, start);
+        envelope.gain.exponentialRampToValueAtTime(volume, start + 0.018);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        body.connect(bodyGain).connect(filter);
+        shimmer.connect(shimmerGain).connect(filter);
+        filter.connect(envelope).connect(musicBus);
+        trackScoreNode(body);
+        trackScoreNode(shimmer);
+        body.start(start);
+        shimmer.start(start);
+        body.stop(start + duration + 0.03);
+        shimmer.stop(start + duration + 0.03);
+    }
+
+    function applyScore(scene = {}, immediate = false) {
+        if (!isReady()) return;
+        const profile = getSoundScoreProfile(scene.theme, scene.mode);
+        const night = Math.max(0, Math.min(1, Number(scene.night) || 0));
+        const intensity = Math.max(0, Math.min(1, Number(scene.intensity) || 0));
+        const nextKey = `${profile.key}:${night > 0.7 ? "night" : "day"}:${scene.mode || "run"}`;
+        const now = audioCtx.currentTime;
+        if (scoreKey !== nextKey) {
+            scoreKey = nextKey;
+            nextMotifAt = now + (immediate ? 0.04 : 0.12);
+        }
+        if (now + 0.025 < nextMotifAt) return;
+
+        const start = Math.max(now + 0.025, nextMotifAt);
+        const duration = 0.72 + intensity * 0.16;
+        const volume = 0.024 + intensity * 0.010;
+        profile.notes.forEach((semitone, index) => {
+            const offset = index * profile.step;
+            pluck(frequencyForSemitone(profile.root, semitone, night), start + offset, duration, profile, volume);
+        });
+        nextMotifAt = start + motifGap(profile, intensity);
+    }
+
+    function setScore(scene = {}) {
+        if (!enabled) return;
+        pendingScore = { ...scene };
+        if (isReady()) applyScore(pendingScore);
     }
 
     const SFX = {
@@ -418,7 +508,9 @@ function chime(vol = 0.045) {
         ensure: unlock,
         SFX,
         setAmbience,
+        setScore,
         stopAmbience,
+        stopScore,
         get enabled() { return enabled; },
         get unlocked() { return unlocked; },
         setEnabled
