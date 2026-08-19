@@ -7,6 +7,7 @@ import { createScorpion } from "../entities/scorpion.js";
 import { getTheme } from "../world/themes.js";
 import { nightFactor } from "../world/daynight.js";
 import { getGameplayMotif, getSignatureMoment } from "../game/gameplay-motifs.js";
+import { createPlatformRun, nextPlatformPackDistance } from "../game/platform-layout.js";
 import {
   beginRiskRoute,
   getRiskRouteLift,
@@ -330,64 +331,25 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
     }
 
     const type = rndType();
+    let platformRunSpan = 0;
 
     if (type === "fence") {
-      const doStair = random() < clamp(CALM.staircaseChance * motif.stairMul, 0.08, 0.72);
+      const doStair = !safeMode && random() < clamp(CALM.staircaseChance * motif.stairMul, 0.08, 0.72);
       const count = doStair
         ? (CALM.staircaseMin + Math.floor(random() * (CALM.staircaseMax - CALM.staircaseMin + 1)))
         : 1;
+      const run = createPlatformRun({
+        spawnX,
+        count,
+        surfaceAt: (x) => terrain.surfaceAt(x),
+        random,
+        forceGround: safeMode,
+      });
+      platformRunSpan = run.span;
 
-      let x = spawnX;
-      const fenceH = 56;
-
-      for (let i = 0; i < count; i++) {
-        const w = 72 + Math.floor(random() * 28);
-        const h = fenceH;
-
-        const ww = Math.max(48, w);
-        const hh = Math.max(28, h);
-
-        const groundFence = (random() < 0.68);
-        let topY;
-        let yMode = "ground";
-        let yOffset = -h;
-
-        if (!groundFence) {
-          const lift = 80 + random() * 110;
-          topY = terrain.surfaceAt(x) - h - lift;
-          yMode = "fixed";
-        } else {
-          topY = terrain.surfaceAt(x) - h;
-        }
-        objects.add({ kind: "platform", type: "fence", x, y: topY, w: ww, h: hh, yMode, yOffset });
-        // avoid overlapping existing solids/platforms
-        {
-          const marginX = 8;
-          const marginY = 2;
-
-          const box = {
-            x: x + marginX,
-            y: topY + marginY,
-            w: ww - marginX * 2,
-            h: hh - marginY
-          };
-
-          let tries = 0;
-          while (overlapsSolid(box) && tries < 10) {
-            x += ww + 34;
-            box.x = x + marginX;
-
-            if (yMode === "ground") {
-              topY = terrain.surfaceAt(x) - hh;
-            }
-            box.y = topY + marginY;
-
-            tries++;
-          }
-        }
-
-
-
+      for (const platform of run.platforms) {
+        const { x, y: topY, w, h, yMode } = platform;
+        objects.add(platform);
         // collectibles on fences
         if (random() < 0.30 * CALM.collectiblesScale) {
           const my = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.35) - h - 28) : (topY - 30);
@@ -411,7 +373,6 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
           }
         }
 
-        x += w + 40;
       }
 
     } else if (type === "bird") {
@@ -556,7 +517,9 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
       }
     }
 
-    nextSpawnIn = gapMin + Math.floor(random() * 105);
+    nextSpawnIn = platformRunSpan > 0
+      ? nextPlatformPackDistance(gapMin, platformRunSpan, Math.floor(random() * 85))
+      : gapMin + Math.floor(random() * 105);
     if (safeMode) nextSpawnIn += 120;
   }
 

@@ -150,3 +150,36 @@ test("a run seed reproduces the gameplay spawn sequence", () => {
   assert.deepEqual(seededSpawnSnapshot(424242), first);
   assert.notDeepEqual(seededSpawnSnapshot(424243), first);
 });
+
+test("the spawner keeps a staircase together instead of colliding with itself", () => {
+  const game = {
+    theme: "forest",
+    tick: 1,
+    score: 500,
+    _effSpeed: 800,
+    safeTimer: 0,
+    catnipTimer: 0,
+    nextBonusLifeScore: Number.POSITIVE_INFINITY,
+    presentationPreview: "",
+    progression: { beatId: "FOREST_INTRO", sectionPhase: "flow", gameplayMotif: "rhythm" },
+    setpiece: { active: false },
+    riskRoute: { id: 0, nextAt: Number.POSITIVE_INFINITY },
+    vertical: { band: "ground" },
+    lives: 7,
+    maxLives: 7,
+  };
+  const objects = {
+    list: [],
+    add(object) { this.list.push(object); },
+    toast() {},
+  };
+  const spawner = createSpawner(game, { surfaceAt: () => 620 }, objects, { W: 390, H: 844 }, () => 0);
+
+  spawner.update();
+  const platforms = objects.list.filter((object) => object.kind === "platform");
+  assert.equal(platforms.length, 2);
+  assert.equal(platforms[0].platformRunIndex, 0);
+  assert.equal(platforms[1].platformRunIndex, 1);
+  assert.ok(platforms[1].x - (platforms[0].x + platforms[0].w) >= 48);
+  assert.ok(platforms[1].x < 800, "the second step must remain part of the visible run");
+});
