@@ -26,6 +26,35 @@ async function findChrome() {
   throw new Error("Chrome not found. Set CHROME_PATH to run the browser smoke test.");
 }
 
+async function dumpDom(chrome, url, profileRoot, label) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const userDataDir = path.join(profileRoot, `attempt-${attempt}`);
+    try {
+      const { stdout, stderr } = await execFileAsync(chrome, [
+        "--headless=new",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--disable-gpu-compositing",
+        "--disable-dev-shm-usage",
+        "--no-sandbox",
+        "--no-first-run",
+        "--hide-scrollbars",
+        `--user-data-dir=${userDataDir}`,
+        "--virtual-time-budget=3000",
+        "--dump-dom",
+        url,
+      ], { timeout: 30000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+      if (stdout.trim()) return stdout;
+      lastError = new Error(`${label} returned empty DOM${stderr ? `: ${stderr.trim()}` : ""}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await delay(250 * attempt);
+  }
+  throw new Error(`${label} failed after 3 attempts: ${lastError?.message || "empty DOM"}`);
+}
+
 async function waitForDevTools(profile) {
   const activePort = path.join(profile, "DevToolsActivePort");
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -258,19 +287,12 @@ try {
   });
   const address = server.address();
   const chrome = await findChrome();
-  const { stdout } = await execFileAsync(chrome, [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-software-rasterizer",
-    "--disable-gpu-compositing",
-    "--no-sandbox",
-    "--no-first-run",
-    "--hide-scrollbars",
-    `--user-data-dir=${profile}`,
-    "--virtual-time-budget=3000",
-    "--dump-dom",
+  const stdout = await dumpDom(
+    chrome,
     `http://127.0.0.1:${address.port}/?help=1`,
-  ], { timeout: 30000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+    path.join(profile, "initial"),
+    "initial page",
+  );
 
   assert.match(stdout, /<title>Purrkour<\/title>/);
   assert.match(stdout, /<canvas id="game"/);
@@ -281,19 +303,12 @@ try {
   assert.match(stdout, /id="journeyProgress"/);
   assert.match(stdout, /id="flowDisplay"/);
 
-  const { stdout: balloonPreview } = await execFileAsync(chrome, [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-software-rasterizer",
-    "--disable-gpu-compositing",
-    "--no-sandbox",
-    "--no-first-run",
-    "--hide-scrollbars",
-    `--user-data-dir=${path.join(profile, "balloon")}`,
-    "--virtual-time-budget=3000",
-    "--dump-dom",
+  const balloonPreview = await dumpDom(
+    chrome,
     `http://127.0.0.1:${address.port}/?preview=setpiece&mode=ocean&vehicle=balloon&checkpoint=travel-50&seed=1337&help=0`,
-  ], { timeout: 30000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+    path.join(profile, "balloon"),
+    "balloon preview",
+  );
   assert.match(balloonPreview, /data-preview-ready="true"/);
   assert.match(balloonPreview, /data-preview-vehicle="balloon"/);
   assert.match(balloonPreview, /data-preview-phase="travel"/);
@@ -302,19 +317,12 @@ try {
   assert.match(balloonPreview, /data-preview-cue-overlap="false"/);
   assert.match(balloonPreview, /data-preview-vehicle-in-bounds="true"/);
 
-  const { stdout: rocketReturn } = await execFileAsync(chrome, [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-software-rasterizer",
-    "--disable-gpu-compositing",
-    "--no-sandbox",
-    "--no-first-run",
-    "--hide-scrollbars",
-    `--user-data-dir=${path.join(profile, "rocket")}`,
-    "--virtual-time-budget=3000",
-    "--dump-dom",
+  const rocketReturn = await dumpDom(
+    chrome,
     `http://127.0.0.1:${address.port}/?preview=setpiece&mode=rocket&checkpoint=control-return&seed=1337&help=0&reduced=1`,
-  ], { timeout: 30000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
+    path.join(profile, "rocket"),
+    "rocket return preview",
+  );
   assert.match(rocketReturn, /data-preview-phase="control"/);
   assert.match(rocketReturn, /data-preview-control-returned="true"/);
   assert.match(rocketReturn, /data-preview-canvas="painted"/);
