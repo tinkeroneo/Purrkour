@@ -167,6 +167,8 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
         objects.pawprints.length = 0;
         objects.bubbles.length = 0;
         resetGameState(game);
+        lifecycle.resetRunRandom?.();
+        lifecycle.resetSpawner?.();
         game.progressionApi?.reset?.();
         terrain.init();
         resetCatPosition();

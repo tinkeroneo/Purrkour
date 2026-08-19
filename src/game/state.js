@@ -6,11 +6,12 @@ import { createRiskRouteState } from "./risk-routes.js";
 import { getInitialBaseSpeed } from "./speed.js";
 import { getWorldRule } from "./world-rules.js";
 
-export function createGameState({ initialTheme: initialThemeOverride } = {}) {
+export function createGameState({ initialTheme: initialThemeOverride, runSeed = 1 } = {}) {
     const initialTheme = initialThemeOverride || "forest";
     const initialThemeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
     return {
         initialTheme,
+        runSeed,
         tick: 0,
         score: 0,
         mice: 0,
@@ -141,7 +142,10 @@ export function resetGameState(game) {
     const reducedMotion = !!game.reducedMotion;
     const presentationPreview = game.presentationPreview || "";
     const userTheme = game.userTheme || null;
-    const initial = createGameState({ initialTheme: game.initialTheme || "forest" });
+    const initial = createGameState({
+        initialTheme: game.initialTheme || "forest",
+        runSeed: game.runSeed,
+    });
     for (const key of Object.keys(game)) delete game[key];
     Object.assign(game, initial);
     if (progressionApi) game.progressionApi = progressionApi;

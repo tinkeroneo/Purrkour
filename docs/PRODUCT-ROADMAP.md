@@ -29,7 +29,7 @@ Stand: 2026-08-11
 | P1 | Weltcharakter | jede Welt besitzt eigene, sicher begrenzte Werte für Schwerkraft, Sprung, Kontrolle und Pace | umgesetzt |
 | P1 | Aktive Setpieces | bis zu drei klar sichtbare Reisemanöver machen Meer- und Raketenfahrt spielbar statt rein passiv | umgesetzt |
 | P2 | Klangmotive pro Beat | kurze weltabhängige Zweitonmotive markieren neue Reiseabschnitte über die bestehende WebAudio-Schicht | technisch umgesetzt; Audioabnahme offen |
-| P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | Backlog |
+| P2 | Teilen/Wiederholen | kompakte Run-Zusammenfassung mit Seed und Best-Flow | umgesetzt |
 
 ## Sprint 4: Feinschliff und Spielrhythmus
 

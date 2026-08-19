@@ -59,7 +59,11 @@ test("game over remains visible until the player requests a restart", () => {
   assert.match(html, /id="gameOverScore"/);
   assert.match(html, /id="gameOverBest"/);
   assert.match(html, /id="gameOverCause"/);
-  assert.match(html, /<button[^>]*id="restartBtn"[^>]*>Erneut spielen<\/button>/);
+  assert.match(html, /id="gameOverSeed"/);
+  assert.match(html, /<button[^>]*id="restartBtn"[^>]*>Gleichen Lauf wiederholen<\/button>/);
+  assert.match(html, /id="newRunBtn"/);
+  assert.match(html, /id="shareRunBtn"/);
+  assert.match(html, /id="shareRunStatus"[^>]*role="status"/);
   assert.doesNotMatch(collider, /setTimeout\(resetAll/);
   assert.match(collider, /game\.finished = true/);
 });

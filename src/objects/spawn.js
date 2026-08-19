@@ -14,7 +14,7 @@ import {
 } from "../game/risk-routes.js";
 
 
-export function createSpawner(game, terrain, objects, canvas) {
+export function createSpawner(game, terrain, objects, canvas, random = Math.random) {
   // calmer start tuning
   const CALM = {
     gapBase: 360,
@@ -63,11 +63,11 @@ export function createSpawner(game, terrain, objects, canvas) {
     const w = 116;
     const h = 44;
     const extra = Math.min(12, Math.floor((game.score || 0) / 60));
-    const count = (15 + Math.min(2, extra)) + Math.floor(Math.random() * 4);
-    const stepX = 158 + Math.floor(Math.random() * 24);
-    const entryGap = 150 + Math.floor(Math.random() * 42);
-    const baseLift = 68 + Math.floor(Math.random() * 10);
-    const peakLift = 250 + Math.floor(Math.random() * 46);
+    const count = (15 + Math.min(2, extra)) + Math.floor(random() * 4);
+    const stepX = 158 + Math.floor(random() * 24);
+    const entryGap = 150 + Math.floor(random() * 42);
+    const baseLift = 68 + Math.floor(random() * 10);
+    const peakLift = 250 + Math.floor(random() * 46);
     const tokenIndices = new Set([1, 4, 7, 10, count - 3]);
 
     for (let i = 0; i < count; i++) {
@@ -216,8 +216,8 @@ export function createSpawner(game, terrain, objects, canvas) {
     const gapMin = clamp(minGapForScore(game.score) * motif.gapMul, 200, 440);
     // During setpieces (ocean/air vehicles) we don't spawn normal hazards/collectibles.
     if (game.setpiece?.active) { nextSpawnIn = gapMin + 140; return; }
-    const allowClose = Math.random() < clamp(closeGapChance(game.score) * motif.closeMul, 0, 0.12);
-    const closeGap = allowClose ? Math.floor(gapMin * (0.62 + Math.random() * 0.12)) : 0;
+    const allowClose = random() < clamp(closeGapChance(game.score) * motif.closeMul, 0, 0.12);
+    const closeGap = allowClose ? Math.floor(gapMin * (0.62 + random() * 0.12)) : 0;
 
     const pFence = z("fence") * clamp(0.20 + game.score * 0.0018, 0.18, 0.28);
     const pBird = z("bird") * clamp((0.08 + game.score * 0.0015) * CALM.animalsScale, 0.06, 0.12);
@@ -321,7 +321,7 @@ export function createSpawner(game, terrain, objects, canvas) {
         ["yarn", pYarnV], ["tunnel", pTunnelV],
       ];
       const total = weighted.reduce((sum, entry) => sum + entry[1], 0);
-      let r = Math.random() * total;
+      let r = random() * total;
       for (const [key, weight] of weighted) {
         r -= weight;
         if (r <= 0) return key;
@@ -332,28 +332,28 @@ export function createSpawner(game, terrain, objects, canvas) {
     const type = rndType();
 
     if (type === "fence") {
-      const doStair = Math.random() < clamp(CALM.staircaseChance * motif.stairMul, 0.08, 0.72);
+      const doStair = random() < clamp(CALM.staircaseChance * motif.stairMul, 0.08, 0.72);
       const count = doStair
-        ? (CALM.staircaseMin + Math.floor(Math.random() * (CALM.staircaseMax - CALM.staircaseMin + 1)))
+        ? (CALM.staircaseMin + Math.floor(random() * (CALM.staircaseMax - CALM.staircaseMin + 1)))
         : 1;
 
       let x = spawnX;
       const fenceH = 56;
 
       for (let i = 0; i < count; i++) {
-        const w = 72 + Math.floor(Math.random() * 28);
+        const w = 72 + Math.floor(random() * 28);
         const h = fenceH;
 
         const ww = Math.max(48, w);
         const hh = Math.max(28, h);
 
-        const groundFence = (Math.random() < 0.68);
+        const groundFence = (random() < 0.68);
         let topY;
         let yMode = "ground";
         let yOffset = -h;
 
         if (!groundFence) {
-          const lift = 80 + Math.random() * 110;
+          const lift = 80 + random() * 110;
           topY = terrain.surfaceAt(x) - h - lift;
           yMode = "fixed";
         } else {
@@ -389,21 +389,21 @@ export function createSpawner(game, terrain, objects, canvas) {
 
 
         // collectibles on fences
-        if (Math.random() < 0.30 * CALM.collectiblesScale) {
+        if (random() < 0.30 * CALM.collectiblesScale) {
           const my = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.35) - h - 28) : (topY - 30);
           {
             const pos = placeCollectible(x + w * 0.36, my, 22, 16);
             objects.add({ kind: "collectible", type: "mouse", x: pos.x, y: pos.y, w: 22, h: 16, taken: false, yMode: "fixed" });
           }
         }
-        if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
+        if (random() < (pCatnipT * vbCatnip) * 0.55) {
           const cy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.62) - h - 36) : (topY - 36);
           {
             const pos = placeCollectible(x + w * 0.64, cy, 18, 18);
             objects.add({ kind: "collectible", type: "catnip", x: pos.x, y: pos.y, w: 18, h: 18, taken: false, yMode: "fixed" });
           }
         }
-        if (Math.random() < pFishT * 0.45) {
+        if (random() < pFishT * 0.45) {
           const fy = (yMode === "ground") ? (terrain.surfaceAt(x + w * 0.16) - h - 28) : (topY - 28);
           {
             const pos = placeCollectible(x + w * 0.16, fy, 18, 14);
@@ -418,22 +418,22 @@ export function createSpawner(game, terrain, objects, canvas) {
       const w = 36, h = 20;
       const extra = (game.catnipTimer > 0) ? 18 : 0;
       const ground = terrain.surfaceAt(spawnX);
-      const drop = Math.random() < 0.22; // bird "von oben"
-      const flyY = drop ? (-80 - Math.random() * 140) : (ground - (150 + Math.random() * 75 + extra));
+      const drop = random() < 0.22; // bird "von oben"
+      const flyY = drop ? (-80 - random() * 140) : (ground - (150 + random() * 75 + extra));
       const night = nightFactor(game.tick, game.score);
       const themeVariant = theme.birdVariant || "crow";
-      const variant = (night > 0.78 && Math.random() < 0.45) ? "bat" : themeVariant;
-      const restY = ground - (150 + Math.random() * 60 + extra);
+      const variant = (night > 0.78 && random() < 0.45) ? "bat" : themeVariant;
+      const restY = ground - (150 + random() * 60 + extra);
       objects.add(createBird({
         variant,
         x: spawnX,
         y: flyY,
         w,
         h,
-        flapT: Math.random() * 1000,
+        flapT: random() * 1000,
         yMode: "fixed",
         drop,
-        vy: drop ? (0.2 + Math.random() * 0.6) : 0,
+        vy: drop ? (0.2 + random() * 0.6) : 0,
         restY
       }));
 
@@ -442,7 +442,7 @@ export function createSpawner(game, terrain, objects, canvas) {
       if (themeKey === "city") {
         // city: cars as harmless setpieces/platforms (no chase)
         const carTypes = ["car", "suv", "bus"];
-        const carType = carTypes[Math.floor(Math.random() * carTypes.length)];
+        const carType = carTypes[Math.floor(random() * carTypes.length)];
         const dims = (carType === "bus")
           ? { w: 150, h: 56 }
           : (carType === "suv")
@@ -457,7 +457,7 @@ export function createSpawner(game, terrain, objects, canvas) {
           w, h,
           yMode: "ground", yOffset: -h,
           carType,
-          drivePhase: Math.random() * 1000
+          drivePhase: random() * 1000
         });
       } else if (themeKey === "jungle") {
         const w = 54, h = 54;
@@ -480,10 +480,10 @@ export function createSpawner(game, terrain, objects, canvas) {
           y: posDog.y,
           w,
           h,
-          asleep: (Math.random() < 0.55),
+          asleep: (random() < 0.55),
           chasing: false,
-          chaseSpeedBoost: 1.45 + Math.random() * 0.22,
-          anim: Math.random() * 100,
+          chaseSpeedBoost: 1.45 + random() * 0.22,
+          anim: random() * 100,
           yMode: "ground",
           yOffset: -h
         }));
@@ -509,28 +509,28 @@ export function createSpawner(game, terrain, objects, canvas) {
     }
 
     // extra collectibles
-    if (Math.random() < (pMouseT * vbMouse)) {
-      const mx = spawnX + 30 + Math.random() * 40;
-      const my = (Math.random() < 0.70)
+    if (random() < (pMouseT * vbMouse)) {
+      const mx = spawnX + 30 + random() * 40;
+      const my = (random() < 0.70)
         ? (terrain.surfaceAt(mx) - 16)
-        : (terrain.surfaceAt(mx) - 70 - Math.random() * 25);
+        : (terrain.surfaceAt(mx) - 70 - random() * 25);
       {
         const pos = placeCollectible(mx, my, 22, 16);
         objects.add({ kind: "collectible", type: "mouse", x: pos.x, y: pos.y, w: 22, h: 16, taken: false, yMode: "fixed" });
       }
     }
-    if (Math.random() < (pFishT * vbFish) * 0.55) {
+    if (random() < (pFishT * vbFish) * 0.55) {
       const fx = spawnX + 40;
       {
-        const fy = terrain.surfaceAt(fx) - 88 - Math.random() * 30;
+        const fy = terrain.surfaceAt(fx) - 88 - random() * 30;
         const pos = placeCollectible(fx, fy, 18, 14);
         objects.add({ kind: "collectible", type: "fish", x: pos.x, y: pos.y, w: 18, h: 14, taken: false, yMode: "fixed" });
       }
     }
-    if (Math.random() < (pCatnipT * vbCatnip) * 0.55) {
+    if (random() < (pCatnipT * vbCatnip) * 0.55) {
       const cx = spawnX + 20;
       {
-        const cy = terrain.surfaceAt(cx) - 200 - Math.random() * 140;
+        const cy = terrain.surfaceAt(cx) - 200 - random() * 140;
         const pos = placeCollectible(cx, cy, 18, 18);
         objects.add({ kind: "collectible", type: "catnip", x: pos.x, y: pos.y, w: 18, h: 18, taken: false, yMode: "fixed" });
       }
@@ -539,7 +539,7 @@ export function createSpawner(game, terrain, objects, canvas) {
     // close combo (fair)
     if (closeGap > 0) {
       const x2 = spawnX + closeGap;
-      if (Math.random() < 0.55) {
+      if (random() < 0.55) {
         const size = 26;
         const pos2 = placeGroundObstacle(x2, size, size, 18);
         objects.add({ kind: "obstacle", type: "yarn", x: pos2.x, y: pos2.y, w: size, h: size, yMode: "ground", yOffset: -size });
@@ -547,16 +547,16 @@ export function createSpawner(game, terrain, objects, canvas) {
         const w = 34, h = 18;
         objects.add(createBird({
           x: x2,
-          y: terrain.surfaceAt(x2) - (160 + Math.random() * 40),
+          y: terrain.surfaceAt(x2) - (160 + random() * 40),
           w,
           h,
-          flapT: Math.random() * 1000,
+          flapT: random() * 1000,
           yMode: "fixed"
         }));
       }
     }
 
-    nextSpawnIn = gapMin + Math.floor(Math.random() * 105);
+    nextSpawnIn = gapMin + Math.floor(random() * 105);
     if (safeMode) nextSpawnIn += 120;
   }
 

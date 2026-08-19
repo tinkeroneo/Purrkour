@@ -9,7 +9,7 @@ import { createFixedStepClock } from "./timestep.js";
 export function createLoop({ game, cat, terrain, lakes, bg, objects, spawner, collider, drawer, hud, audio, album, canvas }) {
     const setpieces = createSetpieceManager({
         game, objects, startThemeFade, canvas, terrain, audio,
-        random: game.previewRandom || Math.random,
+        random: () => game.random?.() ?? Math.random(),
     });
     const clock = createFixedStepClock();
     game.setpieceApi = setpieces;

@@ -1,6 +1,7 @@
 import { makeCanvas } from "./core/util.js";
 import { createAudio } from "./core/audio.js";
 import { setupInput } from "./core/input.js";
+import { createRunSeed, createSeededRandom, normalizeRunSeed } from "./core/random.js";
 import { createSafeStorage } from "./core/storage.js";
 
 import { createGameState } from "./game/state.js";
@@ -13,6 +14,7 @@ import { getSetpiecePresentationCue, PRESENTATION_PREVIEWS } from "./game/presen
 import { getSetpieceCatTargetX } from "./game/setpieces.js";
 import { setupDebugControls } from "./game/debug.js";
 import { recordScore } from "./game/records.js";
+import { createReplayUrl, createRunSummary, createShareText } from "./game/run-summary.js";
 
 import { createTerrain } from "./world/terrain.js";
 import { createBackground } from "./world/background.js";
@@ -84,7 +86,11 @@ const ui = {
   gameOverFlow: document.getElementById("gameOverFlow"),
   gameOverCause: document.getElementById("gameOverCause"),
   gameOverBestLabel: document.getElementById("gameOverBestLabel"),
+  gameOverSeed: document.getElementById("gameOverSeed"),
   restartBtn: document.getElementById("restartBtn"),
+  newRunBtn: document.getElementById("newRunBtn"),
+  shareRunBtn: document.getElementById("shareRunBtn"),
+  shareRunStatus: document.getElementById("shareRunStatus"),
   presentationSkip: document.getElementById("presentationSkip"),
   setpieceActionBtn: document.getElementById("setpieceActionBtn"),
   pauseStatus: document.getElementById("pauseStatus"),
@@ -99,15 +105,17 @@ const ONBOARDING_STORAGE_KEY = "purrkour.onboardingSeen.v1";
 const runStorage = createSafeStorage(getLocalStorage());
 const query = new URLSearchParams(window.location.search);
 const previewKind = query.get("preview") || "";
-const previewRandom = ["setpiece", "ocean-travel", "rocket-travel"].includes(previewKind)
-  ? createSeededRandom(query.get("seed"))
-  : null;
+const requestedSeed = previewKind ? (query.get("seed") || "1337") : query.get("run");
+const initialRunSeed = normalizeRunSeed(requestedSeed, createRunSeed());
 if (query.get("touch") === "1") document.body.classList.add("touch-preview");
 const queryTheme = query.get("theme");
 const storedTheme = runStorage.getItem(THEME_STORAGE_KEY);
 const initialTheme = queryTheme || config.initialTheme || storedTheme || undefined;
-const game = createGameState({ initialTheme });
-if (previewRandom) game.previewRandom = previewRandom;
+const game = createGameState({ initialTheme, runSeed: initialRunSeed });
+function resetRunRandom() {
+  game.random = createSeededRandom(game.runSeed);
+}
+resetRunRandom();
 game.reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 window.matchMedia?.("(prefers-reduced-motion: reduce)").addEventListener?.("change", (event) => {
   game.reducedMotion = !!event.matches;
@@ -164,17 +172,6 @@ function getLocalStorage() {
   } catch {
     return null;
   }
-}
-
-function createSeededRandom(value) {
-  let seed = (Number.parseInt(value || "1337", 10) >>> 0) || 1337;
-  return () => {
-    seed += 0x6D2B79F5;
-    let t = seed;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 function storeTheme(theme) {
@@ -413,7 +410,7 @@ function setupAlbum(game, album, ui, returnFocus) {
 
 
 
-const terrain = createTerrain(() => canvas.W, () => canvas.H, previewRandom || Math.random);
+const terrain = createTerrain(() => canvas.W, () => canvas.H, () => game.random());
 // Lakes are currently disabled (keeps core gameplay calmer). We keep a tiny no-op
 // object so other modules can call lakes.update/draw safely.
 const lakes = { reset() {}, update() {}, draw() {} };
@@ -422,19 +419,26 @@ const bg = createBackground(() => canvas.W, () => canvas.H, lakes, game, hud);
 const cat = createCat(game, hud);
 const objects = createObjects();
 const drawer = createDrawer(ctx, canvas, game, cat, terrain, lakes, bg);
-const spawner = createSpawner(game, terrain, objects, canvas);
+const spawner = createSpawner(game, terrain, objects, canvas, () => game.random());
 const collider = createCollider(game, cat, terrain, objects, audio, hud, canvas, {
   onGameOver: showGameOver,
+  resetRunRandom,
+  resetSpawner: () => spawner.reset(),
 });
+
+let lastRunSummary = null;
 
 function showGameOver({ score, cause }) {
   album.finishRun(game);
   const result = recordScore(runStorage, score);
+  lastRunSummary = createRunSummary(game, result.best);
   if (ui.gameOverScore) ui.gameOverScore.textContent = String(score);
   if (ui.gameOverBest) ui.gameOverBest.textContent = String(result.best);
   if (ui.gameOverFlow) ui.gameOverFlow.textContent = `x${getFlowMultiplier(game.flow?.best)}`;
   if (ui.gameOverCause) ui.gameOverCause.textContent = cause || game.lastFailureCause || "Hindernis berührt";
   if (ui.gameOverBestLabel) ui.gameOverBestLabel.hidden = !result.isNewBest;
+  if (ui.gameOverSeed) ui.gameOverSeed.textContent = `#${lastRunSummary.seed}`;
+  if (ui.shareRunStatus) ui.shareRunStatus.textContent = "";
   if (!ui.gameOverDialog) return;
 
   if (typeof ui.gameOverDialog.showModal === "function") ui.gameOverDialog.showModal();
@@ -480,6 +484,38 @@ function resizeLayout() {
 
   hud.sync(game, cat.cat);
   syncHudSafeArea();
+}
+
+if (ui.newRunBtn) {
+  ui.newRunBtn.addEventListener("click", () => {
+    game.runSeed = createRunSeed();
+    collider.resetAll();
+    closeGameOver();
+  });
+}
+
+if (ui.shareRunBtn) {
+  ui.shareRunBtn.addEventListener("click", async () => {
+    const summary = lastRunSummary || createRunSummary(game);
+    const url = createReplayUrl(window.location.href, summary);
+    const text = createShareText(summary);
+    const navigatorApi = globalThis.navigator;
+    try {
+      if (typeof navigatorApi?.share === "function") {
+        await navigatorApi.share({ title: "Purrkour", text, url });
+        if (ui.shareRunStatus) ui.shareRunStatus.textContent = "Lauf geteilt.";
+      } else if (typeof navigatorApi?.clipboard?.writeText === "function") {
+        await navigatorApi.clipboard.writeText(`${text}\n${url}`);
+        if (ui.shareRunStatus) ui.shareRunStatus.textContent = "Link kopiert.";
+      } else {
+        throw new Error("Sharing is unavailable");
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError" && ui.shareRunStatus) {
+        ui.shareRunStatus.textContent = "Teilen nicht verfügbar.";
+      }
+    }
+  });
 }
 
 resizeLayout();

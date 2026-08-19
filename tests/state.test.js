@@ -21,11 +21,13 @@ test("run reset restores the canonical initial state", () => {
   game.riskRoute = { active: true, id: 4, completed: 2 };
   game.presentation.active = true;
   game.unknownRunField = true;
+  game.runSeed = 424242;
 
   const reset = resetGameState(game);
 
   assert.equal(reset, game);
   assert.equal(game.initialTheme, "city");
+  assert.equal(game.runSeed, 424242);
   assert.equal(game.theme, "city");
   assert.equal(game.score, 0);
   assert.equal(game.lives, 7);

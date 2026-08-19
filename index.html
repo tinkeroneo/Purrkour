@@ -167,6 +167,11 @@
     #gameOverFlow{ color:var(--gold); }
     #gameOverBestLabel{ color:var(--gold); font-weight:900; }
     #restartBtn,#closeHelpBtn,#closeAlbumBtn{ width:100%; font-size:16px; background:var(--gold); color:#17202a; }
+    .run-seed{ color:rgba(255,255,255,.68); font-size:12px; }
+    .run-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .run-actions #restartBtn{ grid-column:1 / -1; }
+    .run-actions .btn-secondary{ background:rgba(255,255,255,.11); color:#fff; }
+    .run-share-status{ min-height:18px; color:rgba(255,255,255,.72); font-size:12px; }
     #helpDialog{ text-align:left; }
     #helpDialog h1,#helpDialog>p{ text-align:center; }
     #helpDialog ul{ display:grid; gap:10px; padding-left:22px; line-height:1.35; }
@@ -353,7 +358,13 @@
       <p>Bester Flow<strong id="gameOverFlow">x1</strong></p>
     </div>
     <p id="gameOverBestLabel" hidden>Neuer Bestwert! 🎉</p>
-    <button class="btn" id="restartBtn" type="button">Erneut spielen</button>
+    <p class="run-seed">Lauf <strong id="gameOverSeed">#1</strong></p>
+    <div class="run-actions">
+      <button class="btn" id="restartBtn" type="button">Gleichen Lauf wiederholen</button>
+      <button class="btn btn-secondary" id="newRunBtn" type="button">Neuer Lauf</button>
+      <button class="btn btn-secondary" id="shareRunBtn" type="button">Lauf teilen</button>
+    </div>
+    <p class="run-share-status" id="shareRunStatus" role="status" aria-live="polite"></p>
   </dialog>
 
   <dialog id="albumDialog" aria-labelledby="albumTitle" aria-describedby="albumIntro">

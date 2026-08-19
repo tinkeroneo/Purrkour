@@ -303,6 +303,18 @@ try {
   assert.match(stdout, /id="journeyProgress"/);
   assert.match(stdout, /id="flowDisplay"/);
 
+  const gameOverPreview = await dumpDom(
+    chrome,
+    `http://127.0.0.1:${address.port}/?preview=game-over&seed=4242&help=0`,
+    path.join(profile, "game-over"),
+    "game over preview",
+  );
+  assert.match(gameOverPreview, /id="gameOverDialog"[^>]*open/);
+  assert.match(gameOverPreview, /id="gameOverSeed">#4242</);
+  assert.match(gameOverPreview, /id="restartBtn"[^>]*>Gleichen Lauf wiederholen</);
+  assert.match(gameOverPreview, /id="newRunBtn"/);
+  assert.match(gameOverPreview, /id="shareRunBtn"/);
+
   const balloonPreview = await dumpDom(
     chrome,
     `http://127.0.0.1:${address.port}/?preview=setpiece&mode=ocean&vehicle=balloon&checkpoint=travel-50&seed=1337&help=0`,

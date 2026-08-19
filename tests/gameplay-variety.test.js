@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { createSeededRandom } from "../src/core/random.js";
 import {
   getGameplayMotif,
   getSectionPhase,
@@ -95,4 +96,57 @@ test("each late world spawns its signature composition once per beat", () => {
       `${theme} signature should not repeat in the same beat`,
     );
   }
+});
+
+function seededSpawnSnapshot(seed) {
+  const game = {
+    theme: "island",
+    tick: 1,
+    score: 500,
+    _effSpeed: 800,
+    safeTimer: 0,
+    catnipTimer: 0,
+    nextBonusLifeScore: Number.POSITIVE_INFINITY,
+    presentationPreview: "",
+    progression: { beatId: "ISLAND_RUN", sectionPhase: "flow", gameplayMotif: "island" },
+    setpiece: { active: false },
+    riskRoute: { id: 0, nextAt: Number.POSITIVE_INFINITY },
+    vertical: { band: "ground" },
+    lives: 7,
+    maxLives: 7,
+  };
+  const objects = {
+    list: [],
+    add(object) { this.list.push(object); },
+    toast() {},
+  };
+  const spawner = createSpawner(
+    game,
+    { surfaceAt: () => 620 },
+    objects,
+    { W: 390, H: 844 },
+    createSeededRandom(seed),
+  );
+
+  for (let tick = 1; tick <= 6; tick++) {
+    game.tick = tick;
+    spawner.update();
+  }
+
+  return objects.list.map((object) => ({
+    kind: object.kind,
+    type: object.type,
+    variant: object.variant,
+    x: Math.round(object.x * 1000) / 1000,
+    y: Math.round(object.y * 1000) / 1000,
+    w: object.w,
+    h: object.h,
+  }));
+}
+
+test("a run seed reproduces the gameplay spawn sequence", () => {
+  const first = seededSpawnSnapshot(424242);
+  assert.ok(first.length >= 6);
+  assert.deepEqual(seededSpawnSnapshot(424242), first);
+  assert.notDeepEqual(seededSpawnSnapshot(424243), first);
 });
