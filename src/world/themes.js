@@ -8,9 +8,10 @@ import { cityTheme } from "./themes/city.js";
 import { desertTheme } from "./themes/desert.js";
 import { marsTheme } from "./themes/mars.js";
 import { cliffTheme } from "./themes/cliff.js";
+import { volcanoTheme } from "./themes/volcano.js";
 
 // UI/default cycle order (aligned to progression arc, unique keys)
-export const THEME_ORDER = ["forest", "ocean", "island", "mars", "mountain", "jungle", "cliff", "city", "desert"];
+export const THEME_ORDER = ["forest", "ocean", "island", "mars", "mountain", "jungle", "cliff", "city", "desert", "volcano"];
 
 export const THEMES = {
   forest: forestTheme,
@@ -22,6 +23,7 @@ export const THEMES = {
   desert: desertTheme,
   mars: marsTheme,
   cliff: cliffTheme,
+  volcano: volcanoTheme,
 };
 
 for (const theme of Object.values(THEMES)) {

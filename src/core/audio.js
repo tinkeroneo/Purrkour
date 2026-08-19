@@ -2,6 +2,15 @@ import { frequencyForSemitone, getSoundScoreProfile, motifGap } from "./sound-sc
 
 const AUDIO_STORAGE_KEY = "purrkour_sfx.v2";
 
+export function shapeAmbienceTexture(amount, type = "noise") {
+    const level = Math.max(0, Number(amount) || 0);
+    if (type === "engine") return level * 0.7;
+    if (type === "rumble") return level * 0.42;
+    const floor = type === "whoosh" ? 0.035 : 0.045;
+    if (level <= floor) return 0.0001;
+    return (level - floor) * (type === "whoosh" ? 0.42 : 0.34);
+}
+
 export function createAudio(soundBtnEl, storage = null) {
     let preferenceStorage = storage;
     if (!preferenceStorage) {
@@ -41,7 +50,7 @@ export function createAudio(soundBtnEl, storage = null) {
         sfxBus.gain.value = 0.92;
 
         ambBus = audioCtx.createGain();
-        ambBus.gain.value = 0.10;
+        ambBus.gain.value = 0.06;
 
         musicBus = audioCtx.createGain();
         musicBus.gain.value = 0.52;
@@ -383,8 +392,9 @@ function chime(vol = 0.045) {
             ["engine", engine, 62, "engine"],
         ];
         for (const [key, amount, frequency, type] of layers) {
-            if (amount > 0.0002 || amb[key]) ensureLayer(key, frequency, type);
-            amb[`${key}Gain`]?.gain.setTargetAtTime(Math.max(0.0001, amount), t0, tau);
+            const target = shapeAmbienceTexture(amount, type);
+            if (target > 0.0002 || amb[key]) ensureLayer(key, frequency, type);
+            amb[`${key}Gain`]?.gain.setTargetAtTime(target, t0, tau);
         }
 
     }
@@ -488,7 +498,7 @@ function chime(vol = 0.045) {
         dash: () => tone({ freq: 520, dur: 0.05, type: "triangle", vol: 0.03, slideTo: 640 }),
         travelPhase,
         chapter: (theme = "forest") => {
-            const roots = { forest: 392, ocean: 330, island: 440, mars: 247, mountain: 349, jungle: 415, cliff: 294, city: 466, desert: 370 };
+            const roots = { forest: 392, ocean: 330, island: 440, mars: 247, mountain: 349, jungle: 415, cliff: 294, city: 466, desert: 370, volcano: 220 };
             const root = roots[theme] || roots.forest;
             tone({ freq: root, dur: 0.09, type: "sine", vol: 0.034, slideTo: root * 1.08 });
             setTimeout(() => tone({ freq: root * 1.5, dur: 0.12, type: "triangle", vol: 0.027, slideTo: root * 1.62 }), 85);

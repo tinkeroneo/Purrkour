@@ -172,6 +172,33 @@ export function createDrawer(ctx, canvas, game, catApi, terrain, lakes, bg) {
         ctx.restore();
     }
 
+    function drawLavaVent(o) {
+        const pulse = game.reducedMotion ? 0.5 : 0.5 + Math.sin(game.tick * 0.16 + o.x * 0.03) * 0.5;
+        const x = o.x + o.w * 0.5;
+        const baseY = o.y + o.h;
+        ctx.save();
+        ctx.globalAlpha = 0.24 + pulse * 0.12;
+        ctx.fillStyle = "rgba(255,82,28,.95)";
+        ctx.beginPath(); ctx.ellipse(x, baseY - 4, o.w * 0.7, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#342e32";
+        ctx.beginPath();
+        ctx.moveTo(o.x, baseY); ctx.lineTo(o.x + 7, o.y + 13); ctx.lineTo(x, o.y + 7);
+        ctx.lineTo(o.x + o.w - 7, o.y + 14); ctx.lineTo(o.x + o.w, baseY); ctx.closePath(); ctx.fill();
+        const plume = ctx.createLinearGradient(0, baseY, 0, o.y - 25 - pulse * 10);
+        plume.addColorStop(0, "rgba(255,48,20,.96)");
+        plume.addColorStop(0.55, "rgba(255,132,35,.92)");
+        plume.addColorStop(1, "rgba(255,224,112,.08)");
+        ctx.fillStyle = plume;
+        ctx.beginPath();
+        ctx.moveTo(x - 9, baseY - 4);
+        ctx.quadraticCurveTo(x - 17, o.y - 3, x - 3, o.y - 18 - pulse * 12);
+        ctx.quadraticCurveTo(x + 2, o.y - 28 - pulse * 12, x + 5, o.y - 10);
+        ctx.quadraticCurveTo(x + 17, o.y - 1, x + 9, baseY - 4);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+
     function drawTunnel(o) {
         const x = o.x, y = o.y, w = o.w, h = o.h;
         const branch = o.variant === "branch";
@@ -339,6 +366,28 @@ if (themeKey === "mountain" || themeKey === "cliff") {
     roundRect(ctx, o.x, topY + 8, o.w, o.h - 6, 14); ctx.fill();
     ctx.fillStyle = "rgba(85,85,85,0.9)";
     ctx.fillRect(o.x + 10, topY + 16, o.w - 20, 6);
+    ctx.restore();
+    return;
+}
+if (themeKey === "volcano") {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = "#ff572e";
+    ctx.beginPath();
+    ctx.ellipse(o.x + o.w * 0.52, Math.max(groundYAtLeft, groundYAtRight), o.w * 0.42, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    const basalt = ctx.createLinearGradient(o.x, topY, o.x, topY + o.h);
+    basalt.addColorStop(0, "#61545a");
+    basalt.addColorStop(0.18, "#3c353a");
+    basalt.addColorStop(1, "#262227");
+    ctx.fillStyle = basalt;
+    roundRect(ctx, o.x, topY + 5, o.w, o.h - 4, 10); ctx.fill();
+    ctx.strokeStyle = "rgba(255,92,40,.7)";
+    ctx.lineWidth = 2;
+    for (let px = o.x + 16; px < o.x + o.w - 8; px += 27) {
+        ctx.beginPath(); ctx.moveTo(px, topY + 12); ctx.lineTo(px - 5, topY + 27); ctx.lineTo(px + 4, topY + 38); ctx.stroke();
+    }
     ctx.restore();
     return;
 }
@@ -930,6 +979,7 @@ if (themeKey === "mountain" || themeKey === "cliff") {
                     if (o.draw) o.draw(ctx, game);
                 }
                 else if (o.type === "tunnel") drawTunnel(o);
+                else if (o.type === "lava_vent") drawLavaVent(o);
                 else drawYarn(o);
             } else if (o.kind === "collectible") {
                 if (o.type === "mouse" || o.type === "route_mouse") drawMouse(o);

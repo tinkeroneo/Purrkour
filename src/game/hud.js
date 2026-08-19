@@ -27,6 +27,7 @@ export function createHUD(ui) {
     cliff: "Klippen",
     city: "Stadt",
     desert: "Wüste",
+    volcano: "Vulkan",
   };
 
   function setBiome(label) {

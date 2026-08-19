@@ -52,6 +52,8 @@ function speedForBeat(beatId, u) {
       return lerp(2.25, 2.85, easeInOut(u));
     case "NIGHT_PASSAGE":
       return lerp(2.35, 2.60, easeInOut(u));
+    case "VOLCANO_RUN":
+      return lerp(2.15, 2.55, easeInOut(u));
     default:
       return 2.25;
   }
@@ -106,6 +108,7 @@ const BEATS = [
   { id: "CLIFF_RUN", label: "Klippenpfad", theme: "cliff", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "edges", night: false, safeOnEnter: 0 },
   { id: "CITY_RUN", label: "Dächer der Stadt", theme: "city", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "duck-rhythm", night: false, safeOnEnter: 0 },
   { id: "DESERT_RUN", label: "Wüstenwind", theme: "desert", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "wide-jumps", night: false, safeOnEnter: 0 },
+  { id: "VOLCANO_RUN", label: "Glutgrat", theme: "volcano", lenScore: 230, minTicks: seconds(35), maxTicks: seconds(90), motif: "caldera", night: false, safeOnEnter: SAFE_AFTER_CHECKPOINT },
 
   // Return journey back to forest loop
   { id: "RETURN_JOURNEY", label: "Heimreise", theme: "ocean", lenScore: 1, night: false, safeOnEnter: 0, setpiece: "ocean", targetTheme: "forest" },
@@ -180,7 +183,7 @@ export function createProgression({ game, objects, startThemeFade, audio }) {
       kind: cinematic ? "chapter" : "milestone",
       kicker: journeyComplete ? "REISE VOLLENDET" : (cue.kicker || `ETAPPE ${idx + 1}`),
       title: journeyComplete ? "Wieder daheim" : beat.label,
-      subtitle: journeyComplete ? "Neun Welten. Eine Spur zurück zum Anfang." : `${cue.subtitle || "Die Reise geht weiter"} · ${worldRule.label}`,
+      subtitle: journeyComplete ? "Zehn Welten. Eine Spur zurück zum Anfang." : `${cue.subtitle || "Die Reise geht weiter"} · ${worldRule.label}`,
       accent: cue.accent,
       reducedMotion: game.reducedMotion,
       pinned: game.presentationPreview === "chapter" && idx === 0,

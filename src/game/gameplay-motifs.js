@@ -16,6 +16,7 @@ export const WORLD_GAMEPLAY_MOTIFS = Object.freeze({
   cliff: Object.freeze({ label: "Kanten und Höhenwechsel", gap: 0.95, stair: 1.7, close: 1.1, weights: Object.freeze({ fence: 1.25, dog: 1.3, bird: 1.35, yarn: 0.65, tunnel: 0 }) }),
   city: Object.freeze({ label: "Ducken zwischen Dachlinien", gap: 0.84, stair: 0.8, close: 1.8, weights: Object.freeze({ fence: 0.7, dog: 1.7, bird: 0.85, yarn: 0.65, tunnel: 1.2 }) }),
   desert: Object.freeze({ label: "Weite Sprünge im schweren Sand", gap: 1.05, stair: 0.85, close: 1.25, weights: Object.freeze({ fence: 0.9, dog: 1.35, bird: 0.8, yarn: 1.45, tunnel: 0.25 }) }),
+  volcano: Object.freeze({ label: "Basaltinseln und Glutfontänen", gap: 1.04, stair: 1.35, close: 0.9, weights: Object.freeze({ fence: 1.35, dog: 0.65, bird: 0.95, yarn: 1.5, tunnel: 0 }) }),
 });
 
 const BEAT_MOTIF_OVERRIDES = Object.freeze({
@@ -34,6 +35,7 @@ export const WORLD_SIGNATURE_MOMENTS = Object.freeze({
   cliff: Object.freeze({ id: "summit-stair", phase: "challenge", spacing: 620 }),
   city: Object.freeze({ id: "under-over", phase: "challenge", spacing: 560 }),
   desert: Object.freeze({ id: "scorpion-slalom", phase: "variation", spacing: 600 }),
+  volcano: Object.freeze({ id: "caldera-run", phase: "variation", spacing: 660 }),
 });
 
 export function getSignatureMoment(themeKey, phase) {

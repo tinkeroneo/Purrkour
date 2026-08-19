@@ -346,7 +346,7 @@ function setupAlbum(game, album, ui, returnFocus) {
   if (!ui.albumDialog || !ui.albumBtn || !ui.closeAlbumBtn) return;
   const worldLabels = {
     forest: "Wald", ocean: "Ozean", island: "Insel", mars: "Mars", mountain: "Berge",
-    jungle: "Dschungel", cliff: "Klippen", city: "Stadt", desert: "Wüste",
+    jungle: "Dschungel", cliff: "Klippen", city: "Stadt", desert: "Wüste", volcano: "Vulkan",
   };
   const setpieceLabels = { ocean: "Meerfahrt", rocket: "Raketenflug" };
 
@@ -613,6 +613,8 @@ function applyScenePreview() {
   if (game.presentationPreview === "world") {
     game.presentation.active = false;
     game.presentation.blocking = false;
+    game.travelPreviewFrozen = true;
+    document.body.dataset.previewTheme = String(game.theme);
     if (query.get("night") === "1" && game.progression) {
       game.progression.night = 1;
       game.progression.nightTarget = 1;
@@ -634,7 +636,7 @@ function applyScenePreview() {
       kind: "chapter",
       kicker: "REISE VOLLENDET",
       title: "Wieder daheim",
-      subtitle: "Neun Welten. Eine Spur zurück zum Anfang.",
+      subtitle: "Zehn Welten. Eine Spur zurück zum Anfang.",
       accent: "#ffd166",
       pinned: true,
       reducedMotion: game.reducedMotion,

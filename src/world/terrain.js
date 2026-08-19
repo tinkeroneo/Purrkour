@@ -157,6 +157,31 @@ if (palette?.key === "mars") {
 
   // reset alpha for remaining draws
   ctx.globalAlpha = 0.10;
+} else if (palette?.key === "volcano") {
+  ctx.globalAlpha = 0.76;
+  ctx.strokeStyle = "rgba(255,83,34,.92)";
+  ctx.lineWidth = 3;
+  for (let x = -20; x < W + 50; x += 78) {
+    const y = surfaceAt(x) + 7;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 16, y + 8);
+    ctx.lineTo(x + 9, y + 19);
+    ctx.lineTo(x + 32, y + 29);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 0.4;
+  ctx.strokeStyle = "rgba(255,211,92,.96)";
+  ctx.lineWidth = 1;
+  for (let x = -20; x < W + 50; x += 78) {
+    const y = surfaceAt(x) + 7;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 16, y + 8);
+    ctx.lineTo(x + 9, y + 19);
+    ctx.lineTo(x + 32, y + 29);
+    ctx.stroke();
+  }
 } else {
   // grass highlights (subtle, static)
   ctx.globalAlpha = 0.06;

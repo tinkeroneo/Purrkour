@@ -8,6 +8,7 @@ export const WORLD_RULES = Object.freeze({
   cliff: { label: "Windige Kanten", gravityMul: 0.96, jumpMul: 1.05, controlMul: 0.88, paceMul: 1.06 },
   city: { label: "Schnelle Dächer", gravityMul: 1.03, jumpMul: 0.98, controlMul: 1.15, paceMul: 1.09 },
   desert: { label: "Schwerer Sand", gravityMul: 1.06, jumpMul: 1, controlMul: 0.98, paceMul: 1.08 },
+  volcano: { label: "Heiße Basaltsprünge", gravityMul: 1.04, jumpMul: 1.05, controlMul: 0.94, paceMul: 1.05 },
 });
 
 export function getWorldRule(theme) {

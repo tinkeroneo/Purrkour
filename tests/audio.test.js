@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { URL } from "node:url";
-import { createAudio } from "../src/core/audio.js";
+import { createAudio, shapeAmbienceTexture } from "../src/core/audio.js";
 
 class AudioParamStub {
   constructor() { this.value = 0; }
@@ -134,4 +134,11 @@ test("every sound source is routed through the muteable mixer", () => {
     assert.equal((text.match(/audioCtx\.destination/g) || []).length, 1);
     assert.match(text, /master\.connect\(audioCtx\.destination\)/);
   });
+});
+
+test("quiet world ambience is gated while travel textures remain audible", () => {
+  assert.equal(shapeAmbienceTexture(0.03, "noise"), 0.0001);
+  assert.equal(shapeAmbienceTexture(0.035, "whoosh"), 0.0001);
+  assert.ok(shapeAmbienceTexture(0.3, "noise") > 0.08);
+  assert.ok(shapeAmbienceTexture(0.18, "engine") > shapeAmbienceTexture(0.18, "noise"));
 });

@@ -468,6 +468,13 @@ export function createCollider(game, catApi, terrain, objects, audio, hud, canva
                     continue;
                 }
 
+                if (o.type === "lava_vent") {
+                    objects.addBubble("heiß!", cat.x + cat.w * 0.55, cat.y - 8);
+                    loseLife("Lavafontäne");
+                    objects.list.splice(i, 1); i--;
+                    continue;
+                }
+
                 if (o.type === "dog") {
                     startChase(o);
                     continue;

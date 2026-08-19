@@ -12,7 +12,7 @@ import {
 import { createSpawner } from "../src/objects/spawn.js";
 
 test("every gameplay world has a complete motif recipe", () => {
-  const worlds = ["forest", "island", "mars", "mountain", "jungle", "cliff", "city", "desert"];
+  const worlds = ["forest", "island", "mars", "mountain", "jungle", "cliff", "city", "desert", "volcano"];
   for (const world of worlds) {
     const recipe = WORLD_GAMEPLAY_MOTIFS[world];
     assert.ok(recipe?.label, `${world} needs a motif label`);
@@ -48,10 +48,11 @@ const scenarios = [
   ["cliff", "CLIFF_RUN", "challenge", "summit-stair"],
   ["city", "CITY_RUN", "challenge", "under-over"],
   ["desert", "DESERT_RUN", "variation", "scorpion-slalom"],
+  ["volcano", "VOLCANO_RUN", "variation", "caldera-run"],
 ];
 
 test("late worlds own one deliberate signature window", () => {
-  assert.equal(Object.keys(WORLD_SIGNATURE_MOMENTS).length, 5);
+  assert.equal(Object.keys(WORLD_SIGNATURE_MOMENTS).length, 6);
   for (const [theme, , phase, id] of scenarios) {
     assert.equal(getSignatureMoment(theme, phase)?.id, id);
     assert.equal(getSignatureMoment(theme, "establish"), null);
@@ -86,6 +87,9 @@ test("each late world spawns its signature composition once per beat", () => {
     spawner.update();
     const firstCount = objects.list.filter((object) => object.signatureMoment === id).length;
     assert.ok(firstCount >= 2, `${theme} should create a readable signature pack`);
+    if (theme === "volcano") {
+      assert.ok(objects.list.some((object) => object.type === "lava_vent"), "volcano needs its own lava hazard");
+    }
 
     game._effSpeed = 800;
     game.tick++;

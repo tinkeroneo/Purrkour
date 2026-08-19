@@ -315,6 +315,17 @@ try {
   assert.match(gameOverPreview, /id="newRunBtn"/);
   assert.match(gameOverPreview, /id="shareRunBtn"/);
 
+  const volcanoPreview = await dumpDom(
+    chrome,
+    `http://127.0.0.1:${address.port}/?preview=world&theme=volcano&seed=1337&help=0`,
+    path.join(profile, "volcano"),
+    "volcano world preview",
+  );
+  assert.match(volcanoPreview, /data-preview-ready="true"/);
+  assert.match(volcanoPreview, /data-preview-theme="volcano"/);
+  assert.match(volcanoPreview, /data-preview-canvas="painted"/);
+  assert.match(volcanoPreview, /id="catnip">Vulkan</);
+
   const balloonPreview = await dumpDom(
     chrome,
     `http://127.0.0.1:${address.port}/?preview=setpiece&mode=ocean&vehicle=balloon&checkpoint=travel-50&seed=1337&help=0`,

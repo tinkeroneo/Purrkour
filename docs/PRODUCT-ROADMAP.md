@@ -24,7 +24,7 @@ Stand: 2026-08-11
 | P0 | Aktionsfeedback | Funken, Flow-Puls und klare Tier-Meldungen machen Können sichtbar | umgesetzt |
 | P1 | Laufaufträge | Mäusejagd, Flow-Ziel und Mutpfoten-Manöver rotieren deterministisch und vergeben eigene Boni | umgesetzt |
 | P1 | Routenentscheidungen | eine explizite Wahl zwischen sicherem Weg und Goldpfad geht dem Höhenpfad voraus; fünf Goldmäuse bilden das separate Ziel | umgesetzt |
-| P1 | Reisealbum | eine persistente Neun-Welten-Karte zeigt Entdeckung und Bewegungscharakter sowie Bestwerte, Aufträge, Routen und Reisemanöver | umgesetzt |
+| P1 | Reisealbum | eine persistente Zehn-Welten-Karte zeigt Entdeckung und Bewegungscharakter sowie Bestwerte, Aufträge, Routen und Reisemanöver | umgesetzt |
 | P1 | Reiseinszenierung | sichere Kapitelkarten blockieren nur kurz und sind quittierbar; Wiederholungen bleiben kompakt, Setpiece-Wechsel eigenständig | umgesetzt |
 | P1 | Weltcharakter | jede Welt besitzt eigene, sicher begrenzte Werte für Schwerkraft, Sprung, Kontrolle und Pace | umgesetzt |
 | P1 | Aktive Setpieces | bis zu drei klar sichtbare Reisemanöver machen Meer- und Raketenfahrt spielbar statt rein passiv | umgesetzt |
@@ -47,7 +47,7 @@ Stand: 2026-08-11
 - Auftrag, Fortschritt und Bonus sind ohne Hilfe verständlich und wechseln deterministisch.
 - Der Goldpfad ist als freiwillige, riskantere Route lesbar und blockiert den Bodenweg nicht.
 - Meer- und Raketenreisen bieten eine begrenzte, belohnte Aktion mit sichtbarem Zustand.
-- Alle neun Weltregeln liegen in sicheren Tuning-Grenzen und drei simulierte Gesamtreisen bleiben stabil.
+- Alle zehn Weltregeln liegen in sicheren Tuning-Grenzen und drei simulierte Gesamtreisen bleiben stabil.
 - Das Reisealbum überlebt Neustarts und bleibt bei beschädigtem oder gesperrtem Storage sicher.
 - HUD und alle Aktionen bleiben bei exakt 390 × 844 vollständig sichtbar.
 - Automatische Tests, Browser-Smoke und Release-Budget bleiben grün.

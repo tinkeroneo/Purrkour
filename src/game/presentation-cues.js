@@ -12,6 +12,7 @@ const BEAT_CUES = Object.freeze({
   CLIFF_RUN: { kicker: "KAPITEL 06", subtitle: "Der Wind zeigt den Weg", accent: "#cfd6df" },
   CITY_RUN: { kicker: "KAPITEL 07", subtitle: "Über den Dächern", accent: "#f3a6db" },
   DESERT_RUN: { kicker: "KAPITEL 08", subtitle: "Spuren im Abendgold", accent: "#ffc26e" },
+  VOLCANO_RUN: { kicker: "KAPITEL 09", subtitle: "Über Basalt und Glut", accent: "#ff7043" },
   RETURN_JOURNEY: { kicker: "HEIMREISE", subtitle: "Zurück zum ersten Pfad", accent: "#75d8ea" },
 });
 

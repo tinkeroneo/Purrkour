@@ -194,6 +194,29 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
           w: 18, h: 14, taken: false, yMode: "fixed",
         }, moment.id);
       }
+    } else if (themeKey === "volcano") {
+      const lifts = [0, 48, 20];
+      for (let i = 0; i < 3; i++) {
+        const x = spawnX + i * 148;
+        const h = 52;
+        const y = terrain.surfaceAt(x) - h - lifts[i];
+        addSignatureObject({
+          kind: "platform", type: "fence", x, y, w: 96, h,
+          yMode: lifts[i] === 0 ? "ground" : "fixed", yOffset: -h,
+        }, moment.id);
+        addSignatureObject({
+          kind: "collectible", type: "mouse", x: x + 36, y: y - 28,
+          w: 22, h: 16, taken: false, yMode: "fixed",
+        }, moment.id);
+        if (i < 2) {
+          const ventX = x + 112;
+          addSignatureObject({
+            kind: "obstacle", type: "lava_vent", x: ventX,
+            y: terrain.surfaceAt(ventX) - 40, w: 34, h: 40,
+            yMode: "ground", yOffset: -40,
+          }, moment.id);
+        }
+      }
     }
 
     nextSpawnIn = moment.spacing;
@@ -247,8 +270,8 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
           const ob = { x: o.x + 8, y: o.y + 4, w: Math.max(1, o.w - 16), h: Math.max(1, o.h - 4) };
           if (aabb(box, ob)) return true;
         }
-        // treat yarn/dog as solid for "don't spawn inside"
-        if (o.kind === "obstacle" && (o.type === "yarn" || o.type === "dog" || o.type === "tunnel")) {
+        // treat ground hazards as solid for "don't spawn inside"
+        if (o.kind === "obstacle" && (o.type === "yarn" || o.type === "lava_vent" || o.type === "dog" || o.type === "tunnel")) {
           const ob = { x: o.x + 2, y: o.y + 2, w: Math.max(1, o.w - 4), h: Math.max(1, o.h - 4) };
           if (aabb(box, ob)) return true;
         }
@@ -428,7 +451,7 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
         const w = 58, h = 48;
         const posGoat = placeGroundObstacle(spawnX, w, h, 26);
         objects.add(createGoat(posGoat.x, posGoat.y, { w, h }));
-      } else if (themeKey === "desert") {
+      } else if (themeKey === "desert" || themeKey === "volcano") {
         const w = 58, h = 48;
         const posGoat = placeGroundObstacle(spawnX, w, h, 26);
         objects.add(createScorpion(posGoat.x, posGoat.y, { w, h }));
@@ -458,14 +481,16 @@ export function createSpawner(game, terrain, objects, canvas, random = Math.rand
         w, h,
         yMode: "ground", yOffset: -h
       });
-    } else { // yarn slow
-      const size = 28;
-      const posYarn = placeGroundObstacle(spawnX, size, size, 18);
+    } else { // yarn slow / lava vent
+      const lavaVent = themeKey === "volcano";
+      const width = lavaVent ? 34 : 28;
+      const height = lavaVent ? 40 : 28;
+      const posYarn = placeGroundObstacle(spawnX, width, height, 18);
       objects.add({
-        kind: "obstacle", type: "yarn",
+        kind: "obstacle", type: lavaVent ? "lava_vent" : "yarn",
         x: posYarn.x, y: posYarn.y,
-        w: size, h: size,
-        yMode: "ground", yOffset: -size
+        w: width, h: height,
+        yMode: "ground", yOffset: -height
       });
     }
 

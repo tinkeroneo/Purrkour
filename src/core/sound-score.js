@@ -8,6 +8,7 @@ const PROFILES = {
   cliff: { root: 174.61, notes: [0, 7, 14, 10], step: 0.46, gap: 8.4, brightness: 1200, wave: "triangle" },
   city: { root: 207.65, notes: [0, 3, 7, 5], step: 0.26, gap: 6.4, brightness: 950, wave: "triangle" },
   desert: { root: 185.00, notes: [0, 1, 7, 5], step: 0.40, gap: 8.1, brightness: 1000, wave: "triangle" },
+  volcano: { root: 138.59, notes: [0, 6, 3, 10], step: 0.42, gap: 7.8, brightness: 820, wave: "triangle" },
 };
 
 export const SOUND_SCORE_THEMES = Object.freeze(Object.keys(PROFILES));

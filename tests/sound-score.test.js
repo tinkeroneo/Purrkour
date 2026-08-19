@@ -9,7 +9,7 @@ import {
 } from "../src/core/sound-score.js";
 
 test("every world has a restrained adaptive score profile", () => {
-  const worlds = ["forest", "ocean", "island", "mars", "mountain", "jungle", "cliff", "city", "desert"];
+  const worlds = ["forest", "ocean", "island", "mars", "mountain", "jungle", "cliff", "city", "desert", "volcano"];
   assert.deepEqual(SOUND_SCORE_THEMES, worlds);
   for (const world of worlds) {
     const profile = getSoundScoreProfile(world);

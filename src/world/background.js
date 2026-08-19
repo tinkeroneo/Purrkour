@@ -225,6 +225,18 @@ export function createBackground(getW, getH, lakes, game, hud) {
             ctx.beginPath();
             ctx.arc(W * 0.78, H * 0.21, Math.min(44, W * 0.045), 0, Math.PI * 2);
             ctx.fill();
+        } else if (themeKey === "volcano") {
+            const glow = ctx.createRadialGradient(W * 0.7, H * 0.62, 8, W * 0.7, H * 0.62, H * 0.46);
+            glow.addColorStop(0, "rgba(255,105,42,.34)");
+            glow.addColorStop(1, "rgba(255,105,42,0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, W, H * 0.82);
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = "rgba(48,40,48,.9)";
+            ctx.beginPath();
+            ctx.ellipse(W * 0.64, H * 0.17, W * 0.19, 22, -0.12, 0, Math.PI * 2);
+            ctx.ellipse(W * 0.76, H * 0.22, W * 0.16, 18, 0.08, 0, Math.PI * 2);
+            ctx.fill();
         }
         ctx.restore();
     }
@@ -291,6 +303,20 @@ export function createBackground(getW, getH, lakes, game, hud) {
             ctx.beginPath();
             ctx.moveTo(lx - 130, base); ctx.lineTo(lx - 90, base - 74); ctx.lineTo(lx + 22, base - 74);
             ctx.lineTo(lx + 72, base - 32); ctx.lineTo(lx + 130, base); ctx.closePath(); ctx.fill();
+        } else if (themeKey === "volcano") {
+            const lx = W * 0.68 - (motion * 0.06 % (W + 620));
+            ctx.beginPath();
+            ctx.moveTo(lx - 190, base); ctx.lineTo(lx - 42, base - 178);
+            ctx.quadraticCurveTo(lx, base - 202, lx + 45, base - 176);
+            ctx.lineTo(lx + 205, base); ctx.closePath(); ctx.fill();
+            ctx.globalAlpha = 0.72 * alpha;
+            ctx.strokeStyle = "rgba(255,93,35,.9)";
+            ctx.lineWidth = 7;
+            ctx.beginPath(); ctx.moveTo(lx + 4, base - 181); ctx.quadraticCurveTo(lx - 16, base - 118, lx + 34, base - 42); ctx.stroke();
+            ctx.globalAlpha = 0.48 * alpha;
+            ctx.strokeStyle = "rgba(255,196,72,.95)";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(lx + 4, base - 181); ctx.quadraticCurveTo(lx - 14, base - 116, lx + 34, base - 42); ctx.stroke();
         } else if (themeKey === "island") {
             const lx = W * 0.72 - (motion * 0.08 % (W + 620));
             ctx.fillRect(lx, base - 76, 24, 76);
@@ -343,6 +369,15 @@ export function createBackground(getW, getH, lakes, game, hud) {
             ctx.strokeStyle = "rgba(22,31,44,.9)";
             ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(0, H * 0.17); ctx.quadraticCurveTo(W * 0.5, H * 0.23, W, H * 0.14); ctx.stroke();
+        } else if (themeKey === "volcano") {
+            ctx.globalAlpha = 0.42;
+            for (let i = 0; i < 16; i++) {
+                const drift = game.reducedMotion ? 0 : game.tick * (0.4 + (i % 3) * 0.12);
+                const x = ((i * 83 - drift) % (W + 100) + W + 100) % (W + 100) - 50;
+                const y = H * (0.2 + ((i * 47) % 55) / 100);
+                ctx.fillStyle = i % 3 === 0 ? "rgba(255,204,92,.9)" : "rgba(255,91,40,.76)";
+                ctx.fillRect(x, y, 2 + (i % 2), 2 + (i % 2));
+            }
         } else if (themeKey === "desert" || themeKey === "mars") {
             ctx.globalAlpha = themeKey === "mars" ? 0.12 : 0.1;
             ctx.strokeStyle = themeKey === "mars" ? "rgba(255,180,150,.8)" : "rgba(255,248,218,.9)";
@@ -478,6 +513,17 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (themeKey === "volcano") {
+    ctx.globalAlpha = 0.62;
+    ctx.fillStyle = `rgba(${p.far[0]},${p.far[1]},${p.far[2]},0.62)`;
+    ctx.beginPath();
+    ctx.moveTo(0, Hv * 0.63);
+    for (let x = 0; x <= Wv; x += 44) {
+      const ridge = ((Math.floor((x + far) / 44) * 37) % 5) * 8;
+      ctx.lineTo(x, Hv * 0.63 - ridge + Math.sin((x + far) * 0.014) * 9);
+    }
+    ctx.lineTo(Wv, Hv); ctx.lineTo(0, Hv); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
   } else if (themeKey === "ocean" || themeKey === "island") {
     // Ocean/Island: flat horizon band (no mountains)
     ctx.globalAlpha = 0.35;
@@ -611,6 +657,27 @@ export function createBackground(getW, getH, lakes, game, hud) {
       ctx.fillStyle = `rgba(${Math.max(0, p.far[0] - 10)},${Math.max(0, p.far[1] - 10)},${Math.max(0, p.far[2] - 10)},0.55)`;
     }
     ctx.globalAlpha = 1;
+  } else if (themeKey === "volcano") {
+    const lavaY = Hv * 0.73;
+    const lava = ctx.createLinearGradient(0, lavaY, 0, Hv);
+    lava.addColorStop(0, "rgba(255,126,37,.72)");
+    lava.addColorStop(0.34, "rgba(226,55,22,.78)");
+    lava.addColorStop(1, "rgba(95,24,26,.86)");
+    ctx.fillStyle = lava;
+    ctx.fillRect(0, lavaY, Wv, Hv - lavaY);
+    ctx.globalAlpha = 0.58;
+    ctx.strokeStyle = "rgba(255,220,106,.9)";
+    ctx.lineWidth = 2;
+    for (let line = 0; line < 4; line++) {
+      const y = lavaY + 13 + line * 19;
+      ctx.beginPath();
+      for (let x = 0; x <= Wv; x += 22) {
+        const yy = y + Math.sin((x + mid) * 0.045 + line * 1.7) * 3;
+        if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   } else if (themeKey === "desert") {
     // dunes
     ctx.globalAlpha = 0.35;
@@ -628,10 +695,10 @@ export function createBackground(getW, getH, lakes, game, hud) {
     ctx.globalAlpha = 1;
   }
 
-  drawHighClouds(ctx, near, p.n ?? 0);
+  drawHighClouds(ctx, near, p.n ?? 0, themeKey);
 }
 
-function drawHighClouds(ctx, near, night) {
+function drawHighClouds(ctx, near, night, themeKey) {
     const W = getW(), H = getH();
     const band = game.vertical?.band ?? "ground";
     if (band === "ground") return;
@@ -639,7 +706,7 @@ function drawHighClouds(ctx, near, night) {
     const strength = (band === "air") ? 0.22 : 0.14;
     ctx.save();
     ctx.globalAlpha = strength * (1 - night * 0.25);
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    ctx.fillStyle = themeKey === "volcano" ? "rgba(58,49,57,.82)" : "rgba(255,255,255,0.8)";
     const baseY = (band === "air") ? H * 0.22 : H * 0.30;
     for (let i = 0; i < 7; i++) {
         const x = ((i * 180) - (near * 1.2)) % (W + 240) - 120;
